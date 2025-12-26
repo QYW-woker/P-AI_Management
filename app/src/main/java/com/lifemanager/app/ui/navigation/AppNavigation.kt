@@ -19,6 +19,7 @@ import com.lifemanager.app.feature.finance.asset.MonthlyAssetScreen
 import com.lifemanager.app.feature.finance.expense.MonthlyExpenseScreen
 import com.lifemanager.app.feature.finance.transaction.DailyTransactionScreen
 import com.lifemanager.app.feature.todo.TodoScreen
+import com.lifemanager.app.feature.diary.DiaryScreen
 
 /**
  * 窗口尺寸类型
@@ -310,7 +311,9 @@ fun AppNavHost(
 
         // 日记
         composable(Screen.Diary.route) {
-            PlaceholderScreen(title = "日记")
+            DiaryScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         // 时间统计
