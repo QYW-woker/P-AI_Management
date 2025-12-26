@@ -13,6 +13,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.lifemanager.app.feature.home.HomeScreen
+import com.lifemanager.app.feature.finance.income.MonthlyIncomeExpenseScreen
+import com.lifemanager.app.feature.finance.income.FieldManagementScreen
 
 /**
  * 窗口尺寸类型
@@ -221,8 +223,19 @@ fun AppNavHost(
 
         // 月度收支
         composable(Screen.MonthlyIncomeExpense.route) {
-            // TODO: 实现月度收支页面
-            PlaceholderScreen(title = "月度收支")
+            MonthlyIncomeExpenseScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToFieldManagement = {
+                    navController.navigate(Screen.FieldManagement.createRoute("INCOME"))
+                }
+            )
+        }
+
+        // 字段管理（简化路由，不带参数）
+        composable("field_management") {
+            FieldManagementScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         // 目标管理
@@ -253,14 +266,14 @@ fun AppNavHost(
             PlaceholderScreen(title = "添加${if (type == "INCOME") "收入" else "支出"}")
         }
 
-        // 字段管理
+        // 字段管理（带参数）
         composable(
             route = Screen.FieldManagement.route,
             arguments = listOf(navArgument("moduleType") { type = NavType.StringType })
-        ) { backStackEntry ->
-            val moduleType = backStackEntry.arguments?.getString("moduleType") ?: "INCOME"
-            // TODO: 实现字段管理页面
-            PlaceholderScreen(title = "类别管理 - $moduleType")
+        ) {
+            FieldManagementScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         // 待办
