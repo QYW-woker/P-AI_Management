@@ -20,6 +20,7 @@ import com.lifemanager.app.feature.finance.expense.MonthlyExpenseScreen
 import com.lifemanager.app.feature.finance.transaction.DailyTransactionScreen
 import com.lifemanager.app.feature.todo.TodoScreen
 import com.lifemanager.app.feature.diary.DiaryScreen
+import com.lifemanager.app.feature.timetrack.TimeTrackScreen
 
 /**
  * 窗口尺寸类型
@@ -318,7 +319,9 @@ fun AppNavHost(
 
         // 时间统计
         composable(Screen.TimeTrack.route) {
-            PlaceholderScreen(title = "时间统计")
+            TimeTrackScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         // 习惯打卡
