@@ -22,6 +22,7 @@ import com.lifemanager.app.feature.todo.TodoScreen
 import com.lifemanager.app.feature.diary.DiaryScreen
 import com.lifemanager.app.feature.timetrack.TimeTrackScreen
 import com.lifemanager.app.feature.habit.HabitScreen
+import com.lifemanager.app.feature.savings.SavingsPlanScreen
 
 /**
  * 窗口尺寸类型
@@ -334,7 +335,9 @@ fun AppNavHost(
 
         // 存钱计划
         composable(Screen.SavingsPlan.route) {
-            PlaceholderScreen(title = "存钱计划")
+            SavingsPlanScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         // 设置
