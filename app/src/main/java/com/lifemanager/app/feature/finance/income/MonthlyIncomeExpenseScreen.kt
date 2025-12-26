@@ -27,7 +27,7 @@ import com.lifemanager.app.domain.model.FieldStats
 import com.lifemanager.app.domain.model.IncomeExpenseUiState
 import com.lifemanager.app.domain.model.MonthlyIncomeExpenseWithField
 import com.lifemanager.app.domain.model.MonthlyStats
-import com.lifemanager.app.ui.component.charts.PieChart
+import com.lifemanager.app.ui.component.charts.PieChartView
 import com.lifemanager.app.ui.component.charts.PieChartData
 import java.text.NumberFormat
 import java.util.Locale
@@ -54,7 +54,7 @@ fun MonthlyIncomeExpenseScreen(
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
 
     // 当前选中的标签页 (0: 收入, 1: 支出)
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
         topBar = {
@@ -416,15 +416,16 @@ private fun FieldStatsChart(
                         .size(120.dp)
                         .padding(8.dp)
                 ) {
-                    PieChart(
+                    PieChartView(
                         data = stats.map {
                             PieChartData(
-                                value = it.amount.toFloat(),
-                                color = parseColor(it.fieldColor),
-                                label = it.fieldName
+                                label = it.fieldName,
+                                value = it.amount,
+                                color = parseColor(it.fieldColor)
                             )
                         },
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
+                        showLegend = false
                     )
                 }
 
