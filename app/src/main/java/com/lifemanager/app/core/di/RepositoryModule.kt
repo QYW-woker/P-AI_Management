@@ -1,8 +1,10 @@
 package com.lifemanager.app.core.di
 
 import com.lifemanager.app.data.repository.CustomFieldRepositoryImpl
+import com.lifemanager.app.data.repository.MonthlyAssetRepositoryImpl
 import com.lifemanager.app.data.repository.MonthlyIncomeExpenseRepositoryImpl
 import com.lifemanager.app.domain.repository.CustomFieldRepository
+import com.lifemanager.app.domain.repository.MonthlyAssetRepository
 import com.lifemanager.app.domain.repository.MonthlyIncomeExpenseRepository
 import dagger.Binds
 import dagger.Module
@@ -36,4 +38,13 @@ abstract class RepositoryModule {
     abstract fun bindCustomFieldRepository(
         impl: CustomFieldRepositoryImpl
     ): CustomFieldRepository
+
+    /**
+     * 提供月度资产仓库实例
+     */
+    @Binds
+    @Singleton
+    abstract fun bindMonthlyAssetRepository(
+        impl: MonthlyAssetRepositoryImpl
+    ): MonthlyAssetRepository
 }

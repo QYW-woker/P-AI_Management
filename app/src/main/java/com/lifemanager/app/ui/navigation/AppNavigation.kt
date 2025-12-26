@@ -15,6 +15,7 @@ import androidx.navigation.navArgument
 import com.lifemanager.app.feature.home.HomeScreen
 import com.lifemanager.app.feature.finance.income.MonthlyIncomeExpenseScreen
 import com.lifemanager.app.feature.finance.income.FieldManagementScreen
+import com.lifemanager.app.feature.finance.asset.MonthlyAssetScreen
 
 /**
  * 窗口尺寸类型
@@ -234,6 +235,13 @@ fun AppNavHost(
         // 字段管理（简化路由，不带参数）
         composable("field_management") {
             FieldManagementScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 月度资产
+        composable(Screen.MonthlyAsset.route) {
+            MonthlyAssetScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }
