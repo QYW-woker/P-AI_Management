@@ -89,7 +89,6 @@ dependencies {
     // Material 3设计
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material3:material3-window-size-class")
-    implementation("androidx.compose.material3:material3-adaptive-navigation-suite")
 
     // Material Icons扩展
     implementation("androidx.compose.material:material-icons-extended")
