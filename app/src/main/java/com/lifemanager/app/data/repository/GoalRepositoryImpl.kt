@@ -5,10 +5,12 @@ import com.lifemanager.app.core.database.entity.GoalEntity
 import com.lifemanager.app.domain.repository.GoalRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * 目标仓库实现
  */
+@Singleton
 class GoalRepositoryImpl @Inject constructor(
     private val goalDao: GoalDao
 ) : GoalRepository {

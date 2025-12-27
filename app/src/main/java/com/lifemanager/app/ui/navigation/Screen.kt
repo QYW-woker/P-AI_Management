@@ -90,6 +90,22 @@ sealed class Screen(val route: String) {
 
     /** AI设置 */
     object AISettings : Screen("ai_settings")
+
+    // ==================== 认证模块 ====================
+
+    /** 登录页面 */
+    object Login : Screen("login")
+
+    /** 注册页面 */
+    object Register : Screen("register")
+
+    // ==================== 法律页面 ====================
+
+    /** 隐私政策 */
+    object PrivacyPolicy : Screen("privacy_policy")
+
+    /** 用户协议 */
+    object TermsOfService : Screen("terms_of_service")
 }
 
 /**

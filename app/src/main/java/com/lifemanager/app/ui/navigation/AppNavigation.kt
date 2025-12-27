@@ -1,6 +1,7 @@
 package com.lifemanager.app.ui.navigation
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -27,6 +28,10 @@ import com.lifemanager.app.feature.goal.GoalScreen
 import com.lifemanager.app.feature.datacenter.DataCenterScreen
 import com.lifemanager.app.feature.profile.ProfileScreen
 import com.lifemanager.app.feature.settings.SettingsScreen
+import com.lifemanager.app.feature.auth.LoginScreen
+import com.lifemanager.app.feature.auth.RegisterScreen
+import com.lifemanager.app.feature.legal.PrivacyPolicyScreen
+import com.lifemanager.app.feature.legal.TermsOfServiceScreen
 
 /**
  * 窗口尺寸类型
@@ -288,7 +293,8 @@ fun AppNavHost(
         // 个人中心
         composable(Screen.Profile.route) {
             ProfileScreen(
-                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                onNavigateToLogin = { navController.navigate(Screen.Login.route) }
             )
         }
 
@@ -350,13 +356,58 @@ fun AppNavHost(
         // 设置
         composable(Screen.Settings.route) {
             SettingsScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToLogin = { navController.navigate(Screen.Login.route) },
+                onNavigateToPrivacy = { navController.navigate(Screen.PrivacyPolicy.route) },
+                onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) }
             )
         }
 
         // AI设置
         composable(Screen.AISettings.route) {
             PlaceholderScreen(title = "AI设置")
+        }
+
+        // 登录
+        composable(Screen.Login.route) {
+            LoginScreen(
+                onNavigateToRegister = { navController.navigate(Screen.Register.route) },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateToPrivacy = { navController.navigate(Screen.PrivacyPolicy.route) },
+                onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) }
+            )
+        }
+
+        // 注册
+        composable(Screen.Register.route) {
+            RegisterScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNavigateToPrivacy = { navController.navigate(Screen.PrivacyPolicy.route) },
+                onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) }
+            )
+        }
+
+        // 隐私政策
+        composable(Screen.PrivacyPolicy.route) {
+            PrivacyPolicyScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 用户协议
+        composable(Screen.TermsOfService.route) {
+            TermsOfServiceScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

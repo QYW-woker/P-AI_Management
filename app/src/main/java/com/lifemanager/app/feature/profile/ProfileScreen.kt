@@ -26,6 +26,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun ProfileScreen(
     onNavigateToSettings: () -> Unit,
+    onNavigateToLogin: () -> Unit = {},
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -52,7 +53,7 @@ fun ProfileScreen(
         ) {
             // 用户信息卡片
             item {
-                UserInfoCard()
+                UserInfoCard(onLoginClick = onNavigateToLogin)
             }
 
             // 使用统计
@@ -77,9 +78,13 @@ fun ProfileScreen(
  * 用户信息卡片
  */
 @Composable
-private fun UserInfoCard() {
+private fun UserInfoCard(
+    onLoginClick: () -> Unit = {}
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onLoginClick),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -111,18 +116,24 @@ private fun UserInfoCard() {
             // 用户信息
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "生活管家用户",
+                    text = "点击登录/注册",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "让AI帮你管理生活",
+                    text = "登录后同步数据，畅享更多功能",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
             }
+
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
+            )
         }
     }
 }

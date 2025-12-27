@@ -23,6 +23,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 @Composable
 fun SettingsScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToLogin: () -> Unit = {},
+    onNavigateToPrivacy: () -> Unit = {},
+    onNavigateToTerms: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
@@ -139,14 +142,26 @@ fun SettingsScreen(
                         icon = Icons.Outlined.Description,
                         title = "隐私政策",
                         value = "",
-                        onClick = { /* TODO */ }
+                        onClick = onNavigateToPrivacy
                     )
                     Divider(modifier = Modifier.padding(start = 56.dp))
                     ClickableSettingItem(
                         icon = Icons.Outlined.Gavel,
                         title = "用户协议",
                         value = "",
-                        onClick = { /* TODO */ }
+                        onClick = onNavigateToTerms
+                    )
+                }
+            }
+
+            // 账户
+            item {
+                SettingsSection(title = "账户") {
+                    ClickableSettingItem(
+                        icon = Icons.Outlined.Login,
+                        title = "登录/注册",
+                        value = "",
+                        onClick = onNavigateToLogin
                     )
                 }
             }

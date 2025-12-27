@@ -15,6 +15,8 @@ import com.lifemanager.app.core.database.entity.*
  */
 @Database(
     entities = [
+        // 用户
+        UserEntity::class,
         // 基础配置
         CustomFieldEntity::class,
         // 目标管理
@@ -39,7 +41,7 @@ import com.lifemanager.app.core.database.entity.*
         SavingsPlanEntity::class,
         SavingsRecordEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -121,6 +123,11 @@ abstract class AppDatabase : RoomDatabase() {
      * 存钱记录DAO
      */
     abstract fun savingsRecordDao(): SavingsRecordDao
+
+    /**
+     * 用户DAO
+     */
+    abstract fun userDao(): UserDao
 
     companion object {
         /**

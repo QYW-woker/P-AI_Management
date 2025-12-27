@@ -153,4 +153,10 @@ object DatabaseModule {
     fun provideSavingsRecordDao(database: AppDatabase): SavingsRecordDao {
         return database.savingsRecordDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideUserDao(database: AppDatabase): UserDao {
+        return database.userDao()
+    }
 }
