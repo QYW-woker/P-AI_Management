@@ -1,6 +1,7 @@
 package com.lifemanager.app.core.ocr
 
 import com.lifemanager.app.core.ai.model.PaymentInfo
+import com.lifemanager.app.core.ai.model.TransactionType
 import com.lifemanager.app.core.ai.service.AIService
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -85,18 +86,18 @@ class PaymentOcrParser @Inject constructor(
 
         // 判断类型
         val type = when {
-            isIncome && !isExpense -> "INCOME"
-            isExpense && !isIncome -> "EXPENSE"
+            isIncome && !isExpense -> TransactionType.INCOME
+            isExpense && !isIncome -> TransactionType.EXPENSE
             isIncome && isExpense -> {
                 // 都包含时，根据优先级判断
                 if (text.indexOf(incomeKeywords.first { text.contains(it) }) <
                     text.indexOf(expenseKeywords.first { text.contains(it) })) {
-                    "INCOME"
+                    TransactionType.INCOME
                 } else {
-                    "EXPENSE"
+                    TransactionType.EXPENSE
                 }
             }
-            else -> "EXPENSE" // 默认为支出
+            else -> TransactionType.EXPENSE // 默认为支出
         }
 
         val merchant = extractMerchant(text)
@@ -106,9 +107,9 @@ class PaymentOcrParser @Inject constructor(
         return PaymentInfo(
             amount = amount,
             type = type,
-            merchant = merchant,
-            time = time,
-            source = source,
+            payee = merchant,
+            timestamp = time?.atZone(java.time.ZoneId.systemDefault())?.toInstant()?.toEpochMilli(),
+            paymentMethod = source,
             rawText = text
         )
     }

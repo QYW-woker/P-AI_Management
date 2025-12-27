@@ -102,7 +102,7 @@ class ScreenshotParser @Inject constructor(
      * 解析截图
      */
     suspend fun parseScreenshot(ocrResult: OcrResult): ScreenshotParseResult {
-        val text = ocrResult.fullText
+        val text = ocrResult.rawText
 
         if (text.isBlank()) {
             return ScreenshotParseResult.NotRecognized(text, "未识别到文字内容")

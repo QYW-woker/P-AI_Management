@@ -27,6 +27,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.lifemanager.app.core.ai.model.PaymentInfo
+import com.lifemanager.app.core.ai.model.TransactionType
 import java.io.File
 
 /**
@@ -283,7 +284,7 @@ private fun PaymentInfoCard(
                 Text(
                     text = "¥${String.format("%.2f", payment.amount)}",
                     style = MaterialTheme.typography.titleMedium,
-                    color = if (payment.type == "EXPENSE") {
+                    color = if (payment.type == TransactionType.EXPENSE) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.primary
@@ -303,13 +304,13 @@ private fun PaymentInfoCard(
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Text(
-                    text = if (payment.type == "EXPENSE") "支出" else "收入",
+                    text = if (payment.type == TransactionType.EXPENSE) "支出" else "收入",
                     style = MaterialTheme.typography.bodyMedium
                 )
             }
 
             // 商户
-            payment.merchant?.let { merchant ->
+            payment.payee?.let { payee ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -321,7 +322,7 @@ private fun PaymentInfoCard(
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = merchant,
+                        text = payee,
                         style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1
                     )
@@ -329,20 +330,22 @@ private fun PaymentInfoCard(
             }
 
             // 来源
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "来源",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    text = getSourceName(payment.source),
-                    style = MaterialTheme.typography.bodyMedium
-                )
+            payment.paymentMethod?.let { method ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "来源",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = getSourceName(method),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

@@ -131,7 +131,8 @@ class VoiceCommandProcessor @Inject constructor(
         return when (intent) {
             is CommandIntent.Transaction -> {
                 val typeStr = if (intent.type == com.lifemanager.app.core.ai.model.TransactionType.EXPENSE) "支出" else "收入"
-                "记录${typeStr}: ${intent.description ?: ""}，金额 ¥${String.format("%.2f", intent.amount)}"
+                val amount = intent.amount ?: 0.0
+                "记录${typeStr}: ${intent.note ?: intent.categoryName ?: ""}，金额 ¥${String.format("%.2f", amount)}"
             }
 
             is CommandIntent.Todo -> {
@@ -161,24 +162,25 @@ class VoiceCommandProcessor @Inject constructor(
                     com.lifemanager.app.core.ai.model.TimeTrackAction.PAUSE -> "暂停"
                     com.lifemanager.app.core.ai.model.TimeTrackAction.RESUME -> "继续"
                 }
-                "${actionStr}计时: ${intent.taskName}"
+                "${actionStr}计时: ${intent.note ?: intent.categoryName ?: "任务"}"
             }
 
             is CommandIntent.Navigate -> {
-                "打开: ${intent.destination}"
+                "打开: ${intent.screen}"
             }
 
             is CommandIntent.Query -> {
-                val typeStr = when (intent.queryType) {
-                    com.lifemanager.app.core.ai.model.QueryType.BALANCE -> "查询余额"
-                    com.lifemanager.app.core.ai.model.QueryType.EXPENSE -> "查询支出"
-                    com.lifemanager.app.core.ai.model.QueryType.INCOME -> "查询收入"
-                    com.lifemanager.app.core.ai.model.QueryType.TODO -> "查询待办"
-                    com.lifemanager.app.core.ai.model.QueryType.GOAL -> "查询目标"
-                    com.lifemanager.app.core.ai.model.QueryType.HABIT -> "查询习惯"
-                    com.lifemanager.app.core.ai.model.QueryType.GENERAL -> "查询"
+                val typeStr = when (intent.type) {
+                    com.lifemanager.app.core.ai.model.QueryType.TODAY_EXPENSE -> "查询今日支出"
+                    com.lifemanager.app.core.ai.model.QueryType.MONTH_EXPENSE -> "查询本月支出"
+                    com.lifemanager.app.core.ai.model.QueryType.MONTH_INCOME -> "查询本月收入"
+                    com.lifemanager.app.core.ai.model.QueryType.CATEGORY_EXPENSE -> "查询分类支出"
+                    com.lifemanager.app.core.ai.model.QueryType.HABIT_STREAK -> "查询习惯"
+                    com.lifemanager.app.core.ai.model.QueryType.GOAL_PROGRESS -> "查询目标"
+                    com.lifemanager.app.core.ai.model.QueryType.SAVINGS_PROGRESS -> "查询储蓄"
                 }
-                intent.timePeriod?.let { "$typeStr ($it)" } ?: typeStr
+                val timePeriod = intent.params["timePeriod"] as? String
+                timePeriod?.let { "$typeStr ($it)" } ?: typeStr
             }
 
             is CommandIntent.Goal -> {

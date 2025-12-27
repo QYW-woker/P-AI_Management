@@ -54,17 +54,23 @@ class VoiceCommandExecutor @Inject constructor(
      * 执行记账操作
      */
     private suspend fun executeTransaction(intent: CommandIntent.Transaction): ExecutionResult {
-        val date = parseDate(intent.date) ?: LocalDate.now()
+        val amount = intent.amount ?: return ExecutionResult.NeedMoreInfo(
+            intent = intent,
+            missingFields = listOf("amount"),
+            prompt = "请提供金额"
+        )
+
+        val date = intent.date?.let { LocalDate.ofEpochDay(it.toLong()) } ?: LocalDate.now()
         val now = LocalTime.now()
 
         val entity = DailyTransactionEntity(
             id = 0,
             type = if (intent.type == TransactionType.EXPENSE) "EXPENSE" else "INCOME",
-            amount = intent.amount,
+            amount = amount,
             categoryId = intent.categoryId,
             date = date.toEpochDay().toInt(),
-            time = now.format(DateTimeFormatter.ofPattern("HH:mm")),
-            note = intent.description ?: "",
+            time = intent.time ?: now.format(DateTimeFormatter.ofPattern("HH:mm")),
+            note = intent.note ?: "",
             source = TransactionSource.VOICE
         )
 
@@ -72,11 +78,11 @@ class VoiceCommandExecutor @Inject constructor(
 
         val typeStr = if (intent.type == TransactionType.EXPENSE) "支出" else "收入"
         return ExecutionResult.Success(
-            message = "已记录${typeStr}: ${intent.description ?: ""}，金额 ¥${String.format("%.2f", intent.amount)}",
+            message = "已记录${typeStr}: ${intent.note ?: intent.categoryName ?: ""}，金额 ¥${String.format("%.2f", amount)}",
             data = mapOf(
                 "type" to intent.type.name,
-                "amount" to intent.amount,
-                "description" to (intent.description ?: "")
+                "amount" to amount,
+                "note" to (intent.note ?: "")
             )
         )
     }
@@ -85,15 +91,11 @@ class VoiceCommandExecutor @Inject constructor(
      * 执行添加待办操作
      */
     private suspend fun executeTodo(intent: CommandIntent.Todo): ExecutionResult {
-        val dueDateTime = intent.dueDate?.let { parseDateTime(it) }
-        val dueDate = dueDateTime?.first
-        val dueTime = dueDateTime?.second
-
-        // 将优先级数字转换为字符串
-        val priorityStr = when (intent.priority) {
-            3 -> Priority.HIGH
-            2 -> Priority.MEDIUM
-            1 -> Priority.LOW
+        // 将优先级字符串转换为Priority枚举
+        val priorityEnum = when (intent.priority?.uppercase()) {
+            "HIGH", "高" -> Priority.HIGH
+            "MEDIUM", "中" -> Priority.MEDIUM
+            "LOW", "低" -> Priority.LOW
             else -> Priority.NONE
         }
 
@@ -101,17 +103,17 @@ class VoiceCommandExecutor @Inject constructor(
             id = 0,
             title = intent.title,
             description = intent.description ?: "",
-            priority = priorityStr,
-            dueDate = dueDate,
-            dueTime = dueTime
+            priority = priorityEnum,
+            dueDate = intent.dueDate,
+            dueTime = intent.dueTime
         )
 
         todoRepository.insert(entity)
 
-        val dueDateStr = if (dueDate != null) {
-            val date = LocalDate.ofEpochDay(dueDate.toLong())
+        val dueDateStr = if (intent.dueDate != null) {
+            val date = LocalDate.ofEpochDay(intent.dueDate.toLong())
             val dateStr = date.format(DateTimeFormatter.ofPattern("MM月dd日"))
-            if (dueTime != null) "$dateStr $dueTime" else dateStr
+            if (intent.dueTime != null) "$dateStr ${intent.dueTime}" else dateStr
         } else ""
 
         return ExecutionResult.Success(
@@ -127,16 +129,13 @@ class VoiceCommandExecutor @Inject constructor(
      * 执行写日记操作
      */
     private suspend fun executeDiary(intent: CommandIntent.Diary): ExecutionResult {
-        val date = parseDate(intent.date) ?: LocalDate.now()
-
-        // 解析心情为评分
-        val moodScore = intent.mood?.let { parseMoodScore(it) }
+        val date = LocalDate.now()
 
         val entity = DiaryEntity(
             id = 0,
             date = date.toEpochDay().toInt(),
             content = intent.content,
-            moodScore = moodScore
+            moodScore = intent.mood
         )
 
         diaryRepository.insert(entity)
@@ -148,27 +147,14 @@ class VoiceCommandExecutor @Inject constructor(
     }
 
     /**
-     * 解析心情文字为评分
-     */
-    private fun parseMoodScore(mood: String): Int {
-        return when {
-            mood.contains("非常开心") || mood.contains("很开心") || mood.contains("超级") -> 5
-            mood.contains("开心") || mood.contains("高兴") || mood.contains("快乐") -> 4
-            mood.contains("一般") || mood.contains("普通") -> 3
-            mood.contains("不开心") || mood.contains("难过") || mood.contains("伤心") -> 2
-            mood.contains("很难过") || mood.contains("崩溃") || mood.contains("糟糕") -> 1
-            else -> 3
-        }
-    }
-
-    /**
      * 执行习惯打卡
      */
     private suspend fun executeHabitCheckin(intent: CommandIntent.HabitCheckin): ExecutionResult {
         // TODO: 实现习惯打卡逻辑
         return ExecutionResult.NeedMoreInfo(
-            question = "请确认要打卡的习惯名称",
-            suggestions = listOf()
+            intent = intent,
+            missingFields = listOf("habitId"),
+            prompt = "请确认要打卡的习惯名称"
         )
     }
 
@@ -176,7 +162,6 @@ class VoiceCommandExecutor @Inject constructor(
      * 执行时间追踪
      */
     private suspend fun executeTimeTrack(intent: CommandIntent.TimeTrack): ExecutionResult {
-        // TODO: 实现时间追踪逻辑
         val actionStr = when (intent.action) {
             TimeTrackAction.START -> "开始"
             TimeTrackAction.STOP -> "停止"
@@ -184,11 +169,12 @@ class VoiceCommandExecutor @Inject constructor(
             TimeTrackAction.RESUME -> "继续"
         }
 
+        val taskName = intent.note ?: intent.categoryName ?: "任务"
         return ExecutionResult.Success(
-            message = "${actionStr}计时: ${intent.taskName}",
+            message = "${actionStr}计时: $taskName",
             data = mapOf(
                 "action" to intent.action.name,
-                "taskName" to intent.taskName
+                "note" to taskName
             )
         )
     }
@@ -198,8 +184,8 @@ class VoiceCommandExecutor @Inject constructor(
      */
     private suspend fun executeNavigate(intent: CommandIntent.Navigate): ExecutionResult {
         return ExecutionResult.Success(
-            message = "正在打开: ${intent.destination}",
-            data = mapOf("destination" to intent.destination)
+            message = "正在打开: ${intent.screen}",
+            data = mapOf("screen" to intent.screen)
         )
     }
 
@@ -207,39 +193,23 @@ class VoiceCommandExecutor @Inject constructor(
      * 执行查询
      */
     private suspend fun executeQuery(intent: CommandIntent.Query): ExecutionResult {
-        return when (intent.queryType) {
-            QueryType.BALANCE -> queryBalance(intent.timePeriod)
-            QueryType.EXPENSE -> queryExpense(intent.timePeriod)
-            QueryType.INCOME -> queryIncome(intent.timePeriod)
-            QueryType.TODO -> queryTodo(intent.timePeriod)
-            QueryType.GOAL -> queryGoal(intent.timePeriod)
-            QueryType.HABIT -> queryHabit(intent.timePeriod)
-            QueryType.GENERAL -> ExecutionResult.NeedMoreInfo(
-                question = "请问您想查询什么？",
-                suggestions = listOf("余额", "本月支出", "本月收入", "待办事项")
+        val timePeriod = intent.params["timePeriod"] as? String
+
+        return when (intent.type) {
+            QueryType.TODAY_EXPENSE -> queryExpense("今天")
+            QueryType.MONTH_EXPENSE -> queryExpense("本月")
+            QueryType.MONTH_INCOME -> queryIncome("本月")
+            QueryType.CATEGORY_EXPENSE -> {
+                val category = intent.params["category"] as? String ?: "全部"
+                queryExpense("本月 $category")
+            }
+            QueryType.HABIT_STREAK -> queryHabit(timePeriod)
+            QueryType.GOAL_PROGRESS -> queryGoal(timePeriod)
+            QueryType.SAVINGS_PROGRESS -> ExecutionResult.Success(
+                message = "储蓄进度查询功能开发中",
+                data = emptyMap<String, Any>()
             )
         }
-    }
-
-    /**
-     * 查询余额
-     */
-    private suspend fun queryBalance(timePeriod: String?): ExecutionResult {
-        val (startDate, endDate) = parseTimePeriodToEpochDay(timePeriod)
-
-        val income = transactionRepository.getTotalByTypeInRange(startDate, endDate, "INCOME")
-        val expense = transactionRepository.getTotalByTypeInRange(startDate, endDate, "EXPENSE")
-        val balance = income - expense
-
-        val periodStr = timePeriod ?: "本月"
-        return ExecutionResult.Success(
-            message = "${periodStr}收入 ¥${String.format("%.2f", income)}，支出 ¥${String.format("%.2f", expense)}，结余 ¥${String.format("%.2f", balance)}",
-            data = mapOf(
-                "income" to income,
-                "expense" to expense,
-                "balance" to balance
-            )
-        )
     }
 
     /**
@@ -271,24 +241,12 @@ class VoiceCommandExecutor @Inject constructor(
     }
 
     /**
-     * 查询待办
-     */
-    private suspend fun queryTodo(timePeriod: String?): ExecutionResult {
-        val count = todoRepository.countPending()
-
-        return ExecutionResult.Success(
-            message = "您有 $count 个未完成的待办事项",
-            data = mapOf("count" to count)
-        )
-    }
-
-    /**
      * 查询目标
      */
     private suspend fun queryGoal(timePeriod: String?): ExecutionResult {
         return ExecutionResult.Success(
             message = "目标查询功能开发中",
-            data = emptyMap()
+            data = emptyMap<String, Any>()
         )
     }
 
@@ -298,7 +256,7 @@ class VoiceCommandExecutor @Inject constructor(
     private suspend fun queryHabit(timePeriod: String?): ExecutionResult {
         return ExecutionResult.Success(
             message = "习惯查询功能开发中",
-            data = emptyMap()
+            data = emptyMap<String, Any>()
         )
     }
 
@@ -308,19 +266,20 @@ class VoiceCommandExecutor @Inject constructor(
     private suspend fun executeGoal(intent: CommandIntent.Goal): ExecutionResult {
         return when (intent.action) {
             GoalAction.CREATE -> ExecutionResult.NeedMoreInfo(
-                question = "请提供目标详情",
-                suggestions = listOf("目标名称", "目标金额", "目标日期")
+                intent = intent,
+                missingFields = listOf("goalName", "targetAmount", "deadline"),
+                prompt = "请提供目标详情"
             )
             GoalAction.UPDATE -> ExecutionResult.Success(
                 message = "目标已更新",
-                data = emptyMap()
+                data = emptyMap<String, Any>()
             )
             GoalAction.CHECK -> ExecutionResult.Success(
                 message = "目标查看功能开发中",
-                data = emptyMap()
+                data = emptyMap<String, Any>()
             )
             GoalAction.DEPOSIT -> {
-                val amount = intent.amount
+                val amount = intent.progress
                 if (amount != null) {
                     ExecutionResult.Success(
                         message = "已向目标存入 ¥${String.format("%.2f", amount)}",
@@ -328,8 +287,9 @@ class VoiceCommandExecutor @Inject constructor(
                     )
                 } else {
                     ExecutionResult.NeedMoreInfo(
-                        question = "请提供存入金额",
-                        suggestions = listOf("100", "500", "1000")
+                        intent = intent,
+                        missingFields = listOf("amount"),
+                        prompt = "请提供存入金额"
                     )
                 }
             }
@@ -350,8 +310,9 @@ class VoiceCommandExecutor @Inject constructor(
                     )
                 } else {
                     ExecutionResult.NeedMoreInfo(
-                        question = "请提供存入金额",
-                        suggestions = listOf()
+                        intent = intent,
+                        missingFields = listOf("amount"),
+                        prompt = "请提供存入金额"
                     )
                 }
             }
@@ -364,120 +325,16 @@ class VoiceCommandExecutor @Inject constructor(
                     )
                 } else {
                     ExecutionResult.NeedMoreInfo(
-                        question = "请提供取出金额",
-                        suggestions = listOf()
+                        intent = intent,
+                        missingFields = listOf("amount"),
+                        prompt = "请提供取出金额"
                     )
                 }
             }
             SavingsAction.CHECK -> ExecutionResult.Success(
                 message = "储蓄查看功能开发中",
-                data = emptyMap()
+                data = emptyMap<String, Any>()
             )
-        }
-    }
-
-    /**
-     * 解析日期字符串
-     */
-    private fun parseDate(dateStr: String?): LocalDate? {
-        if (dateStr.isNullOrBlank()) return null
-
-        return try {
-            val today = LocalDate.now()
-            when {
-                dateStr.contains("今天") -> today
-                dateStr.contains("昨天") -> today.minusDays(1)
-                dateStr.contains("前天") -> today.minusDays(2)
-                dateStr.contains("明天") -> today.plusDays(1)
-                dateStr.contains("后天") -> today.plusDays(2)
-                else -> {
-                    // 尝试解析具体日期
-                    val formats = listOf(
-                        "yyyy-MM-dd",
-                        "yyyy年MM月dd日",
-                        "MM月dd日",
-                        "MM-dd"
-                    )
-                    for (format in formats) {
-                        try {
-                            return if (format.contains("yyyy")) {
-                                LocalDate.parse(dateStr, DateTimeFormatter.ofPattern(format))
-                            } else {
-                                LocalDate.parse("${today.year}年$dateStr",
-                                    DateTimeFormatter.ofPattern("yyyy年$format"))
-                            }
-                        } catch (e: Exception) {
-                            continue
-                        }
-                    }
-                    null
-                }
-            }
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    /**
-     * 解析日期时间字符串
-     * @return Pair<epochDay, timeString>
-     */
-    private fun parseDateTime(dateTimeStr: String?): Pair<Int, String?>? {
-        if (dateTimeStr.isNullOrBlank()) return null
-
-        return try {
-            val today = LocalDate.now()
-
-            // 解析时间部分
-            val timePattern = Regex("""(\d{1,2})[点时:](\d{1,2})?[分]?""")
-            val timeMatch = timePattern.find(dateTimeStr)
-
-            val timeStr = if (timeMatch != null) {
-                val h = timeMatch.groupValues[1].toInt()
-                val m = timeMatch.groupValues[2].takeIf { it.isNotEmpty() }?.toInt() ?: 0
-                String.format("%02d:%02d", h, m)
-            } else {
-                null
-            }
-
-            // 解析日期部分
-            val date = when {
-                dateTimeStr.contains("今天") -> today
-                dateTimeStr.contains("明天") -> today.plusDays(1)
-                dateTimeStr.contains("后天") -> today.plusDays(2)
-                dateTimeStr.contains("下周") -> {
-                    val dayOfWeek = when {
-                        dateTimeStr.contains("一") -> 1
-                        dateTimeStr.contains("二") -> 2
-                        dateTimeStr.contains("三") -> 3
-                        dateTimeStr.contains("四") -> 4
-                        dateTimeStr.contains("五") -> 5
-                        dateTimeStr.contains("六") -> 6
-                        dateTimeStr.contains("日") || dateTimeStr.contains("天") -> 7
-                        else -> 1
-                    }
-                    today.plusWeeks(1).with(java.time.DayOfWeek.of(dayOfWeek))
-                }
-                dateTimeStr.contains("周") -> {
-                    val dayOfWeek = when {
-                        dateTimeStr.contains("一") -> 1
-                        dateTimeStr.contains("二") -> 2
-                        dateTimeStr.contains("三") -> 3
-                        dateTimeStr.contains("四") -> 4
-                        dateTimeStr.contains("五") -> 5
-                        dateTimeStr.contains("六") -> 6
-                        dateTimeStr.contains("日") || dateTimeStr.contains("天") -> 7
-                        else -> today.dayOfWeek.value
-                    }
-                    val target = today.with(java.time.DayOfWeek.of(dayOfWeek))
-                    if (target.isBefore(today)) target.plusWeeks(1) else target
-                }
-                else -> today
-            }
-
-            Pair(date.toEpochDay().toInt(), timeStr)
-        } catch (e: Exception) {
-            null
         }
     }
 

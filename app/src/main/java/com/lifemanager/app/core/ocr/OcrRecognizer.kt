@@ -19,13 +19,13 @@ import kotlin.coroutines.resumeWithException
  */
 data class OcrResult(
     /** 完整识别文本 */
-    val fullText: String,
+    val rawText: String,
     /** 按行分割的文本 */
     val lines: List<String>,
     /** 文本块列表（包含位置信息） */
-    val blocks: List<TextBlock>,
+    val blocks: List<TextBlock> = emptyList(),
     /** 识别置信度（0-1） */
-    val confidence: Float
+    val confidence: Float = 0.9f
 )
 
 /**
@@ -135,7 +135,7 @@ class OcrRecognizer @Inject constructor(
                     }.average().toFloat().takeIf { !it.isNaN() } ?: 0.9f
 
                     val result = OcrResult(
-                        fullText = visionText.text,
+                        rawText = visionText.text,
                         lines = lines,
                         blocks = blocks,
                         confidence = avgConfidence

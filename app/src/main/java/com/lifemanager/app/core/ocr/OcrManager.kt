@@ -38,7 +38,9 @@ class OcrManager @Inject constructor(
             val text = processImage(inputImage)
             Result.success(OcrResult(
                 rawText = text,
-                lines = text.lines().filter { it.isNotBlank() }
+                lines = text.lines().filter { it.isNotBlank() },
+                blocks = emptyList(),
+                confidence = 0.9f
             ))
         } catch (e: Exception) {
             Result.failure(e)
@@ -56,7 +58,9 @@ class OcrManager @Inject constructor(
             val text = processImage(inputImage)
             Result.success(OcrResult(
                 rawText = text,
-                lines = text.lines().filter { it.isNotBlank() }
+                lines = text.lines().filter { it.isNotBlank() },
+                blocks = emptyList(),
+                confidence = 0.9f
             ))
         } catch (e: Exception) {
             Result.failure(e)
@@ -85,11 +89,3 @@ class OcrManager @Inject constructor(
         recognizer.close()
     }
 }
-
-/**
- * OCR识别结果
- */
-data class OcrResult(
-    val rawText: String,
-    val lines: List<String>
-)
