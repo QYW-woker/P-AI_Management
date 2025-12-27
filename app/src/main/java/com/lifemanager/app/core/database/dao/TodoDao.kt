@@ -23,7 +23,8 @@ interface TodoDao {
                 WHEN 'LOW' THEN 2
                 ELSE 3
             END,
-            dueDate ASC NULLS LAST
+            CASE WHEN dueDate IS NULL THEN 1 ELSE 0 END,
+            dueDate ASC
     """)
     fun getPendingTodos(): Flow<List<TodoEntity>>
 
