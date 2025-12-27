@@ -91,6 +91,9 @@ sealed class Screen(val route: String) {
     /** AI设置 */
     object AISettings : Screen("ai_settings")
 
+    /** AI助手 */
+    object AIAssistant : Screen("ai_assistant")
+
     // ==================== 认证模块 ====================
 
     /** 登录页面 */

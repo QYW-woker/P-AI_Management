@@ -32,6 +32,8 @@ import com.lifemanager.app.feature.auth.LoginScreen
 import com.lifemanager.app.feature.auth.RegisterScreen
 import com.lifemanager.app.feature.legal.PrivacyPolicyScreen
 import com.lifemanager.app.feature.legal.TermsOfServiceScreen
+import com.lifemanager.app.feature.ai.AISettingsScreen
+import com.lifemanager.app.feature.ai.VoiceInputScreen
 
 /**
  * 窗口尺寸类型
@@ -359,13 +361,27 @@ fun AppNavHost(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToLogin = { navController.navigate(Screen.Login.route) },
                 onNavigateToPrivacy = { navController.navigate(Screen.PrivacyPolicy.route) },
-                onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) }
+                onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) },
+                onNavigateToAISettings = { navController.navigate(Screen.AISettings.route) }
             )
         }
 
         // AI设置
         composable(Screen.AISettings.route) {
-            PlaceholderScreen(title = "AI设置")
+            AISettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // AI语音助手
+        composable(Screen.AIAssistant.route) {
+            VoiceInputScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onExecuteIntent = { intent ->
+                    // 根据意图类型导航到对应页面或执行操作
+                    // 这里可以在后续完善具体的命令执行逻辑
+                }
+            )
         }
 
         // 登录

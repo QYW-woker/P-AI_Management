@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -26,6 +27,7 @@ fun SettingsScreen(
     onNavigateToLogin: () -> Unit = {},
     onNavigateToPrivacy: () -> Unit = {},
     onNavigateToTerms: () -> Unit = {},
+    onNavigateToAISettings: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
@@ -89,6 +91,18 @@ fun SettingsScreen(
                         value = settings.reminderTime,
                         enabled = settings.enableNotification,
                         onClick = { viewModel.showTimePickerDialog() }
+                    )
+                }
+            }
+
+            // AI功能设置
+            item {
+                SettingsSection(title = "AI功能") {
+                    ClickableSettingItem(
+                        icon = Icons.Filled.SmartToy,
+                        title = "AI设置",
+                        value = "",
+                        onClick = onNavigateToAISettings
                     )
                 }
             }

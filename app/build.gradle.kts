@@ -147,6 +147,15 @@ dependencies {
     // ==================== Core KTX ====================
     implementation("androidx.core:core-ktx:1.12.0")
 
+    // ==================== ML Kit OCR (图片文字识别) ====================
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.0")
+
+    // ==================== 图片加载 (Coil) ====================
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // ==================== 权限处理 (Accompanist) ====================
+    implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+
     // ==================== 测试依赖 ====================
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
