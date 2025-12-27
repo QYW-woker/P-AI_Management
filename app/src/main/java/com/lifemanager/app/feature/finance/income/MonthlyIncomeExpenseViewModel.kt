@@ -254,7 +254,7 @@ class MonthlyIncomeExpenseViewModel @Inject constructor(
                     id = record.id,
                     yearMonth = record.yearMonth,
                     type = record.type,
-                    fieldId = record.fieldId,
+                    fieldId = record.fieldId ?: 0L,
                     amount = record.amount,
                     note = record.note,
                     isEditing = true

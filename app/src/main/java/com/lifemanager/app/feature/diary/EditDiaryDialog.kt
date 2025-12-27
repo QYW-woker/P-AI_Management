@@ -208,6 +208,7 @@ private fun MoodChip(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WeatherChip(
     emoji: String,

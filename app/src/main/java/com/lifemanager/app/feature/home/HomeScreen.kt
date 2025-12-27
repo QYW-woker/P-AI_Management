@@ -252,6 +252,7 @@ private fun QuickAccessButton(
 /**
  * 本月财务概览
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MonthlyFinanceSection(
     onNavigateToModule: (String) -> Unit
@@ -338,6 +339,7 @@ private fun MonthlyFinanceSection(
 /**
  * 目标进度
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GoalProgressSection(
     onNavigateToModule: (String) -> Unit

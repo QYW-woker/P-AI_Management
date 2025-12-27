@@ -236,6 +236,7 @@ fun AddEditTodoDialog(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PriorityChip(
     name: String,

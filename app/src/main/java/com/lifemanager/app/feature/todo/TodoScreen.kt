@@ -213,6 +213,7 @@ private fun StatItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterBar(
     currentFilter: TodoFilter,
