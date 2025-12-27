@@ -82,14 +82,15 @@ class ProfileViewModel @Inject constructor(
     private suspend fun calculateStatistics(): UserStatistics {
         val today = LocalDate.now().toEpochDay().toInt()
 
-        // 获取最早的日记日期来计算使用天数
-        val allDiaries = diaryRepository.getAll().first()
+        // 获取日记数据 - 获取从很早开始到今天的所有日记
+        val allDiaries = diaryRepository.getByDateRange(0, today).first()
         val earliestDate = allDiaries.minOfOrNull { it.date } ?: today
         val totalDays = today - earliestDate + 1
 
-        // 待办总数
-        val allTodos = todoRepository.getAllTodos().first()
-        val totalTodos = allTodos.size
+        // 待办总数 - 获取已完成和未完成的
+        val completedTodos = todoRepository.getCompletedTodos(Int.MAX_VALUE).first()
+        val pendingTodos = todoRepository.getPendingTodos().first()
+        val totalTodos = completedTodos.size + pendingTodos.size
 
         // 日记总数
         val totalDiaries = allDiaries.size
@@ -103,8 +104,7 @@ class ProfileViewModel @Inject constructor(
         val habits = habitRepository.getActiveHabits().first()
         var totalCheckins = 0
         habits.forEach { habit ->
-            val records = habitRepository.getRecordsByHabit(habit.id).first()
-            totalCheckins += records.size
+            totalCheckins += habitRepository.getTotalCheckins(habit.id, today)
         }
 
         // 存款总额
@@ -115,13 +115,8 @@ class ProfileViewModel @Inject constructor(
         val allGoals = goalRepository.getAllGoals().first()
         val completedGoals = allGoals.count { it.status == "COMPLETED" }
 
-        // 连续使用天数（基于日记记录）
-        var streak = 0
-        var checkDate = today
-        while (allDiaries.any { it.date == checkDate }) {
-            streak++
-            checkDate--
-        }
+        // 连续使用天数 - 使用日记仓库提供的方法
+        val streak = diaryRepository.getStreak(today)
 
         return UserStatistics(
             totalDays = totalDays.coerceAtLeast(1),
