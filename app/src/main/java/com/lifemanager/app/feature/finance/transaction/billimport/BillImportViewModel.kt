@@ -8,8 +8,8 @@ import com.lifemanager.app.core.database.entity.CustomFieldEntity
 import com.lifemanager.app.core.database.entity.DailyTransactionEntity
 import com.lifemanager.app.core.database.entity.ModuleType
 import com.lifemanager.app.core.database.entity.TransactionSource
-import com.lifemanager.app.data.repository.CustomFieldRepository
-import com.lifemanager.app.data.repository.DailyTransactionRepository
+import com.lifemanager.app.domain.repository.CustomFieldRepository
+import com.lifemanager.app.domain.repository.DailyTransactionRepository
 import com.lifemanager.app.domain.model.TransactionType
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
