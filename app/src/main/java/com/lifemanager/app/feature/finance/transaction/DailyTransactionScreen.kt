@@ -31,6 +31,7 @@ import java.util.Locale
 fun DailyTransactionScreen(
     onNavigateBack: () -> Unit,
     onNavigateToImport: () -> Unit = {},
+    onNavigateToCategoryManagement: () -> Unit = {},
     viewModel: DailyTransactionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -150,7 +151,11 @@ fun DailyTransactionScreen(
     if (showEditDialog) {
         AddEditTransactionDialog(
             viewModel = viewModel,
-            onDismiss = { viewModel.hideEditDialog() }
+            onDismiss = { viewModel.hideEditDialog() },
+            onNavigateToCategoryManagement = {
+                viewModel.hideEditDialog()
+                onNavigateToCategoryManagement()
+            }
         )
     }
 

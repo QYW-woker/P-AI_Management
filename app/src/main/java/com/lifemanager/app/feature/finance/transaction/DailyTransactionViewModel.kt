@@ -124,14 +124,38 @@ class DailyTransactionViewModel @Inject constructor(
         }
     }
 
+    // 收入分类
+    private val _incomeCategories = MutableStateFlow<List<CustomFieldEntity>>(emptyList())
+    val incomeCategories: StateFlow<List<CustomFieldEntity>> = _incomeCategories.asStateFlow()
+
+    // 支出分类
+    private val _expenseCategories = MutableStateFlow<List<CustomFieldEntity>>(emptyList())
+    val expenseCategories: StateFlow<List<CustomFieldEntity>> = _expenseCategories.asStateFlow()
+
     /**
-     * 观察分类
+     * 观察分类（分别观察收入和支出分类）
      */
     private fun observeCategories() {
+        // 观察收入分类
         viewModelScope.launch {
-            fieldUseCase.getFieldsByModule("DAILY_EXPENSE")
+            fieldUseCase.getFieldsByModule("INCOME")
                 .collect { fields ->
-                    _categories.value = fields
+                    _incomeCategories.value = fields
+                    // 如果当前是收入类型，更新categories
+                    if (_editState.value.type == TransactionType.INCOME) {
+                        _categories.value = fields
+                    }
+                }
+        }
+        // 观察支出分类
+        viewModelScope.launch {
+            fieldUseCase.getFieldsByModule("EXPENSE")
+                .collect { fields ->
+                    _expenseCategories.value = fields
+                    // 如果当前是支出类型，更新categories
+                    if (_editState.value.type == TransactionType.EXPENSE) {
+                        _categories.value = fields
+                    }
                 }
         }
     }
@@ -200,11 +224,17 @@ class DailyTransactionViewModel @Inject constructor(
     fun showAddDialog(type: String = TransactionType.EXPENSE) {
         _editState.value = TransactionEditState(
             type = type,
-            date = _selectedDate.value,
+            date = LocalDate.now().toEpochDay().toInt(),  // 默认今天，用户可以修改
             time = java.time.LocalTime.now().let {
                 String.format("%02d:%02d", it.hour, it.minute)
             }
         )
+        // 根据类型加载对应分类
+        _categories.value = if (type == TransactionType.INCOME) {
+            _incomeCategories.value
+        } else {
+            _expenseCategories.value
+        }
         _showEditDialog.value = true
     }
 
@@ -226,6 +256,12 @@ class DailyTransactionViewModel @Inject constructor(
                         time = transaction.transaction.time,
                         note = transaction.transaction.note
                     )
+                    // 根据类型加载对应分类
+                    _categories.value = if (transaction.transaction.type == TransactionType.INCOME) {
+                        _incomeCategories.value
+                    } else {
+                        _expenseCategories.value
+                    }
                     _showEditDialog.value = true
                 }
             } catch (e: Exception) {
@@ -246,7 +282,13 @@ class DailyTransactionViewModel @Inject constructor(
      * 更新编辑类型
      */
     fun updateEditType(type: String) {
-        _editState.value = _editState.value.copy(type = type)
+        _editState.value = _editState.value.copy(type = type, categoryId = null)
+        // 根据类型切换分类列表
+        _categories.value = if (type == TransactionType.INCOME) {
+            _incomeCategories.value
+        } else {
+            _expenseCategories.value
+        }
     }
 
     /**

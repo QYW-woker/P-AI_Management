@@ -276,7 +276,8 @@ fun AppNavHost(
         composable(Screen.DailyTransaction.route) {
             DailyTransactionScreen(
                 onNavigateBack = { navController.popBackStack() },
-                onNavigateToImport = { navController.navigate(Screen.BillImport.route) }
+                onNavigateToImport = { navController.navigate(Screen.BillImport.route) },
+                onNavigateToCategoryManagement = { navController.navigate("field_management") }
             )
         }
 

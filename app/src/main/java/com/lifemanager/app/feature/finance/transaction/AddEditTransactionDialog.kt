@@ -6,12 +6,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +26,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.lifemanager.app.core.database.entity.CustomFieldEntity
 import com.lifemanager.app.domain.model.TransactionType
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /**
  * 添加/编辑交易对话框
@@ -33,7 +38,8 @@ import com.lifemanager.app.domain.model.TransactionType
 @Composable
 fun AddEditTransactionDialog(
     viewModel: DailyTransactionViewModel,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onNavigateToCategoryManagement: () -> Unit = {}
 ) {
     val editState by viewModel.editState.collectAsState()
     val categories by viewModel.categories.collectAsState()
@@ -42,6 +48,15 @@ fun AddEditTransactionDialog(
         mutableStateOf(if (editState.amount > 0) editState.amount.toString() else "")
     }
 
+    // 日期选择器状态
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = LocalDate.ofEpochDay(editState.date.toLong())
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    )
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -49,7 +64,7 @@ fun AddEditTransactionDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.85f),
+                .fillMaxHeight(0.9f),
             shape = RoundedCornerShape(24.dp)
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -82,6 +97,7 @@ fun AddEditTransactionDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                         .padding(16.dp)
                 ) {
                     // 错误提示
@@ -164,26 +180,118 @@ fun AddEditTransactionDialog(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // 分类选择
-                    Text(
-                        text = "分类",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Medium
-                    )
+                    // 日期和时间选择
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // 日期选择
+                        OutlinedCard(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { showDatePicker = true }
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.CalendarToday,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column {
+                                    Text(
+                                        text = "日期",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = formatDate(editState.date),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+
+                        // 时间输入
+                        OutlinedTextField(
+                            value = editState.time,
+                            onValueChange = { viewModel.updateEditTime(it) },
+                            modifier = Modifier.weight(1f),
+                            label = { Text("时间") },
+                            placeholder = { Text("HH:mm") },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.AccessTime,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            },
+                            singleLine = true
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // 分类选择标题
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "分类",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        TextButton(onClick = onNavigateToCategoryManagement) {
+                            Icon(
+                                Icons.Default.Settings,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("管理分类")
+                        }
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
 
                     if (categories.isEmpty()) {
-                        Text(
-                            text = "暂无分类，请先添加分类",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "暂无分类",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                TextButton(onClick = onNavigateToCategoryManagement) {
+                                    Text("点击添加分类")
+                                }
+                            }
+                        }
                     } else {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(4),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(160.dp),
+                                .height(200.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
@@ -212,29 +320,58 @@ fun AddEditTransactionDialog(
                         onValueChange = { viewModel.updateEditNote(it) },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("添加备注（可选）") },
-                        maxLines = 2,
+                        maxLines = 3,
                         minLines = 2
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    // 时间输入
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = editState.time,
-                            onValueChange = { viewModel.updateEditTime(it) },
-                            modifier = Modifier.weight(1f),
-                            label = { Text("时间") },
-                            placeholder = { Text("HH:mm") },
-                            singleLine = true
-                        )
-                    }
                 }
             }
         }
+    }
+
+    // 日期选择器对话框
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val selectedDate = Instant.ofEpochMilli(millis)
+                                .atZone(ZoneId.systemDefault())
+                                .toLocalDate()
+                            viewModel.updateEditDate(selectedDate.toEpochDay().toInt())
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("取消")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+}
+
+/**
+ * 格式化日期显示
+ */
+private fun formatDate(epochDay: Int): String {
+    val date = LocalDate.ofEpochDay(epochDay.toLong())
+    val today = LocalDate.now()
+    val yesterday = today.minusDays(1)
+
+    return when (date) {
+        today -> "今天"
+        yesterday -> "昨天"
+        else -> date.format(DateTimeFormatter.ofPattern("MM月dd日"))
     }
 }
 
