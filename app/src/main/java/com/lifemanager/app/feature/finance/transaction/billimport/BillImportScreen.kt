@@ -382,12 +382,14 @@ private fun RecordItem(
     var showCategoryDialog by remember { mutableStateOf(false) }
 
     val selectedCategory = categories.find { it.id == record.suggestedCategoryId }
-    val categoryColor = try {
-        selectedCategory?.color?.let { Color(android.graphics.Color.parseColor(it)) }
-            ?: MaterialTheme.colorScheme.surfaceVariant
-    } catch (e: Exception) {
-        MaterialTheme.colorScheme.surfaceVariant
-    }
+    val fallbackColor = MaterialTheme.colorScheme.surfaceVariant
+    val categoryColor = selectedCategory?.color?.let { colorString ->
+        try {
+            Color(android.graphics.Color.parseColor(colorString))
+        } catch (e: Exception) {
+            null
+        }
+    } ?: fallbackColor
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -507,6 +509,8 @@ private fun CategorySelectDialog(
     onSelect: (Long) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val primaryColor = MaterialTheme.colorScheme.primary
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("选择分类") },
@@ -517,7 +521,7 @@ private fun CategorySelectDialog(
                     val color = try {
                         Color(android.graphics.Color.parseColor(category.color))
                     } catch (e: Exception) {
-                        MaterialTheme.colorScheme.primary
+                        primaryColor
                     }
 
                     Row(
