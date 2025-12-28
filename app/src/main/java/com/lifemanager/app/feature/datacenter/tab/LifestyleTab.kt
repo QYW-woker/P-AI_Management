@@ -331,7 +331,7 @@ private fun SavingsPlanProgressRow(plan: SavingsPlanProgress) {
         }
         Spacer(modifier = Modifier.height(4.dp))
         LinearProgressIndicator(
-            progress = { plan.progress },
+            progress = plan.progress,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(8.dp)

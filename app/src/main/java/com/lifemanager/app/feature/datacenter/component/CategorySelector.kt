@@ -131,7 +131,7 @@ private fun CategorySelectionDialog(
                     )
                 }
 
-                HorizontalDivider()
+                Divider()
 
                 // 分类列表
                 LazyColumn(

@@ -1,26 +1,19 @@
 package com.lifemanager.app.ui.component.charts
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberBottomAxis
-import com.patrykandpatrick.vico.compose.cartesian.axis.rememberStartAxis
-import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
-import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
-import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
-import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 
 /**
  * 折线图数据系列
@@ -34,7 +27,7 @@ data class LineChartSeries(
 /**
  * 趋势折线图组件
  *
- * 使用 Vico 库实现的折线图，支持多系列数据展示
+ * 使用 Canvas 实现的折线图，支持多系列数据展示
  *
  * @param series 数据系列列表
  * @param xLabels X轴标签列表
@@ -53,42 +46,97 @@ fun TrendLineChart(
         return
     }
 
-    val modelProducer = remember { CartesianChartModelProducer() }
-
-    LaunchedEffect(series) {
-        modelProducer.runTransaction {
-            lineSeries {
-                series.forEach { s ->
-                    series(s.values)
-                }
-            }
-        }
-    }
-
     Column(modifier = modifier) {
-        CartesianChartHost(
-            chart = rememberCartesianChart(
-                rememberLineCartesianLayer(
-                    lineProvider = LineCartesianLayer.LineProvider.series(
-                        series.map { s ->
-                            LineCartesianLayer.rememberLine(
-                                fill = LineCartesianLayer.LineFill.single(fill(s.color))
-                            )
-                        }
-                    )
-                ),
-                startAxis = rememberStartAxis(),
-                bottomAxis = rememberBottomAxis(
-                    valueFormatter = { value, _, _ ->
-                        xLabels.getOrElse(value.toInt()) { "" }
-                    }
-                )
-            ),
-            modelProducer = modelProducer,
+        // 自定义Canvas绘制折线图
+        Canvas(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(200.dp)
-        )
+        ) {
+            val width = size.width
+            val height = size.height
+            val padding = 40f
+            val chartWidth = width - padding * 2
+            val chartHeight = height - padding * 2
+
+            // 找到所有系列的最大值和最小值
+            val allValues = series.flatMap { it.values }
+            val maxValue = allValues.maxOrNull() ?: 1f
+            val minValue = allValues.minOrNull() ?: 0f
+            val valueRange = if (maxValue == minValue) 1f else maxValue - minValue
+
+            // 绘制每个系列
+            series.forEach { s ->
+                if (s.values.size < 2) return@forEach
+
+                val path = Path()
+                val pointCount = s.values.size
+
+                s.values.forEachIndexed { index, value ->
+                    val x = padding + (index.toFloat() / (pointCount - 1)) * chartWidth
+                    val normalizedValue = (value - minValue) / valueRange
+                    val y = height - padding - normalizedValue * chartHeight
+
+                    if (index == 0) {
+                        path.moveTo(x, y)
+                    } else {
+                        path.lineTo(x, y)
+                    }
+                }
+
+                // 绘制线条
+                drawPath(
+                    path = path,
+                    color = s.color,
+                    style = Stroke(width = 3f)
+                )
+
+                // 绘制数据点
+                s.values.forEachIndexed { index, value ->
+                    val x = padding + (index.toFloat() / (pointCount - 1)) * chartWidth
+                    val normalizedValue = (value - minValue) / valueRange
+                    val y = height - padding - normalizedValue * chartHeight
+
+                    drawCircle(
+                        color = s.color,
+                        radius = 6f,
+                        center = Offset(x, y)
+                    )
+                    drawCircle(
+                        color = Color.White,
+                        radius = 3f,
+                        center = Offset(x, y)
+                    )
+                }
+            }
+        }
+
+        // X轴标签
+        if (xLabels.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 40.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // 只显示首尾和中间的标签，避免拥挤
+                val labelIndices = when {
+                    xLabels.size <= 3 -> xLabels.indices.toList()
+                    xLabels.size <= 7 -> listOf(0, xLabels.size / 2, xLabels.size - 1)
+                    else -> listOf(0, xLabels.size / 4, xLabels.size / 2, 3 * xLabels.size / 4, xLabels.size - 1)
+                }
+                labelIndices.forEach { index ->
+                    if (index < xLabels.size) {
+                        Text(
+                            text = xLabels[index],
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
 
         if (showLegend && series.size > 1) {
             Spacer(modifier = Modifier.height(8.dp))

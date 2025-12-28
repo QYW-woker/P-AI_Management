@@ -16,13 +16,14 @@ import com.lifemanager.app.feature.datacenter.model.ChartType
 /**
  * 图表类型选择器组件
  *
- * 使用分段按钮形式切换不同图表类型
+ * 使用FilterChip形式切换不同图表类型
  *
  * @param selected 当前选中的图表类型
  * @param options 可选图表类型列表
  * @param onSelect 选择变更回调
  * @param modifier 修饰符
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartTypeSelector(
     selected: ChartType,
@@ -32,31 +33,22 @@ fun ChartTypeSelector(
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SingleChoiceSegmentedButtonRow {
-            options.forEachIndexed { index, chartType ->
-                SegmentedButton(
-                    selected = selected == chartType,
-                    onClick = { onSelect(chartType) },
-                    shape = SegmentedButtonDefaults.itemShape(
-                        index = index,
-                        count = options.size
-                    ),
-                    icon = {
-                        SegmentedButtonDefaults.Icon(active = selected == chartType) {
-                            Icon(
-                                imageVector = chartType.icon,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                ) {
-                    Text(chartType.displayName)
+        options.forEach { chartType ->
+            FilterChip(
+                selected = selected == chartType,
+                onClick = { onSelect(chartType) },
+                label = { Text(chartType.displayName) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = chartType.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
-            }
+            )
         }
     }
 }

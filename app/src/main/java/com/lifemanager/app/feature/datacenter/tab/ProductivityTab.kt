@@ -286,7 +286,7 @@ private fun HabitProgressRow(
             modifier = Modifier.width(80.dp)
         )
         LinearProgressIndicator(
-            progress = { progress },
+            progress = progress,
             modifier = Modifier
                 .weight(1f)
                 .height(8.dp)
