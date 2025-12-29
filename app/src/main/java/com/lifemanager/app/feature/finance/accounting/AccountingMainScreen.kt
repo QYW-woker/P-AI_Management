@@ -519,9 +519,11 @@ private fun TodayStatisticsCard(todayStats: DailyStats) {
                 valueColor = Color(0xFFF44336)
             )
 
-            VerticalDivider(
-                modifier = Modifier.height(48.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(48.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
             )
 
             // 今日收入
@@ -531,9 +533,11 @@ private fun TodayStatisticsCard(todayStats: DailyStats) {
                 valueColor = Color(0xFF4CAF50)
             )
 
-            VerticalDivider(
-                modifier = Modifier.height(48.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(48.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
             )
 
             // 今日笔数
@@ -812,7 +816,7 @@ private fun RecentTransactionItem(
 @Composable
 private fun QuickAddTransactionDialog(
     onDismiss: () -> Unit,
-    onConfirm: (type: TransactionType, amount: Double, categoryId: Long?, note: String) -> Unit,
+    onConfirm: (type: String, amount: Double, categoryId: Long?, note: String) -> Unit,
     categories: List<com.lifemanager.app.core.database.entity.CustomFieldEntity>
 ) {
     var selectedType by remember { mutableStateOf(TransactionType.EXPENSE) }

@@ -361,7 +361,7 @@ $notificationText
                 request = request
             )
 
-            val content = response.choices?.firstOrNull()?.message?.content
+            val content = response.choices?.firstOrNull()?.message?.content as? String
                 ?: return@withContext Result.failure(Exception("AI响应为空"))
 
             val paymentInfo = parseJsonToPaymentInfo(content, notificationText).copy(
@@ -413,7 +413,7 @@ $breakdown
                 request = request
             )
 
-            val content = response.choices?.firstOrNull()?.message?.content
+            val content = response.choices?.firstOrNull()?.message?.content as? String
                 ?: return@withContext Result.failure(Exception("AI响应为空"))
 
             Result.success(content)
@@ -452,7 +452,7 @@ $dataStr
                 request = request
             )
 
-            val content = response.choices?.firstOrNull()?.message?.content
+            val content = response.choices?.firstOrNull()?.message?.content as? String
                 ?: return@withContext Result.failure(Exception("AI响应为空"))
 
             Result.success(content)

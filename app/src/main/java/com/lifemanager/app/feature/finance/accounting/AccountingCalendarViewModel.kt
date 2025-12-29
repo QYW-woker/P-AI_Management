@@ -45,7 +45,10 @@ class AccountingCalendarViewModel @Inject constructor(
     val selectedDateTransactions: StateFlow<List<DailyTransactionWithCategory>> = _selectedDateTransactions.asStateFlow()
 
     // 月度统计
-    private val _monthStats = MutableStateFlow(PeriodStats())
+    private val ym = YearMonth.now()
+    private val defaultStartDate = ym.atDay(1).toEpochDay().toInt()
+    private val defaultEndDate = ym.atEndOfMonth().toEpochDay().toInt()
+    private val _monthStats = MutableStateFlow(PeriodStats(startDate = defaultStartDate, endDate = defaultEndDate))
     val monthStats: StateFlow<PeriodStats> = _monthStats.asStateFlow()
 
     init {
@@ -61,9 +64,9 @@ class AccountingCalendarViewModel @Inject constructor(
             val yearMonth = _currentYearMonth.value
             val year = yearMonth / 100
             val month = yearMonth % 100
-            val ym = YearMonth.of(year, month)
-            val startDate = ym.atDay(1).toEpochDay().toInt()
-            val endDate = ym.atEndOfMonth().toEpochDay().toInt()
+            val currentYM = YearMonth.of(year, month)
+            val startDate = currentYM.atDay(1).toEpochDay().toInt()
+            val endDate = currentYM.atEndOfMonth().toEpochDay().toInt()
 
             // 加载日历数据
             transactionDao.getDailyIncomeExpenseTotals(startDate, endDate).collectLatest { dailyData ->
@@ -76,6 +79,8 @@ class AccountingCalendarViewModel @Inject constructor(
                 val totalIncome = dailyData.sumOf { it.income }
                 val totalExpense = dailyData.sumOf { it.expense }
                 _monthStats.value = PeriodStats(
+                    startDate = startDate,
+                    endDate = endDate,
                     totalIncome = totalIncome,
                     totalExpense = totalExpense
                 )
@@ -94,17 +99,7 @@ class AccountingCalendarViewModel @Inject constructor(
                         customFieldDao.getFieldById(id)
                     }
                     DailyTransactionWithCategory(
-                        transaction = com.lifemanager.app.domain.model.DailyTransaction(
-                            id = entity.id,
-                            date = entity.date,
-                            time = entity.time,
-                            type = if (entity.type == "INCOME") TransactionType.INCOME else TransactionType.EXPENSE,
-                            amount = entity.amount,
-                            categoryId = entity.categoryId,
-                            note = entity.note,
-                            createdAt = entity.createdAt,
-                            updatedAt = entity.updatedAt
-                        ),
+                        transaction = entity,
                         category = category
                     )
                 }

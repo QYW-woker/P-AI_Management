@@ -337,9 +337,11 @@ private fun SearchStatsCard(stats: SearchStats) {
                 )
             }
 
-            VerticalDivider(
-                modifier = Modifier.height(40.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(40.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
             )
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -356,9 +358,11 @@ private fun SearchStatsCard(stats: SearchStats) {
                 )
             }
 
-            VerticalDivider(
-                modifier = Modifier.height(40.dp),
-                color = MaterialTheme.colorScheme.outlineVariant
+            Box(
+                modifier = Modifier
+                    .width(1.dp)
+                    .height(40.dp)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
             )
 
             Column(horizontalAlignment = Alignment.CenterHorizontally) {

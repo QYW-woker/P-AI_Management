@@ -40,11 +40,15 @@ class AccountingMainViewModel @Inject constructor(
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     // 今日统计
-    private val _todayStats = MutableStateFlow(DailyStats())
+    private val todayEpochDay = LocalDate.now().toEpochDay().toInt()
+    private val _todayStats = MutableStateFlow(DailyStats(date = todayEpochDay))
     val todayStats: StateFlow<DailyStats> = _todayStats.asStateFlow()
 
     // 月度统计
-    private val _monthStats = MutableStateFlow(PeriodStats())
+    private val yearMonth = YearMonth.now()
+    private val monthStartDate = yearMonth.atDay(1).toEpochDay().toInt()
+    private val monthEndDate = yearMonth.atEndOfMonth().toEpochDay().toInt()
+    private val _monthStats = MutableStateFlow(PeriodStats(startDate = monthStartDate, endDate = monthEndDate))
     val monthStats: StateFlow<PeriodStats> = _monthStats.asStateFlow()
 
     // 最近交易
@@ -74,19 +78,14 @@ class AccountingMainViewModel @Inject constructor(
     private fun loadData() {
         _uiState.value = UiState.Loading
 
-        val today = LocalDate.now().toEpochDay().toInt()
-        val yearMonth = YearMonth.now()
-        val monthStart = yearMonth.atDay(1).toEpochDay().toInt()
-        val monthEnd = yearMonth.atEndOfMonth().toEpochDay().toInt()
-
         // 加载今日统计
         viewModelScope.launch {
             try {
-                transactionDao.getTransactionsByDate(today).collectLatest { transactions ->
+                transactionDao.getTransactionsByDate(todayEpochDay).collectLatest { transactions ->
                     val income = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
                     val expense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
                     _todayStats.value = DailyStats(
-                        date = today,
+                        date = todayEpochDay,
                         totalIncome = income,
                         totalExpense = expense,
                         transactionCount = transactions.size
@@ -100,10 +99,12 @@ class AccountingMainViewModel @Inject constructor(
         // 加载月度统计
         viewModelScope.launch {
             try {
-                transactionDao.getTransactionsInRange(monthStart, monthEnd).collectLatest { transactions ->
+                transactionDao.getTransactionsInRange(monthStartDate, monthEndDate).collectLatest { transactions ->
                     val income = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
                     val expense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
                     _monthStats.value = PeriodStats(
+                        startDate = monthStartDate,
+                        endDate = monthEndDate,
                         totalIncome = income,
                         totalExpense = expense
                     )
@@ -122,17 +123,7 @@ class AccountingMainViewModel @Inject constructor(
                             customFieldDao.getFieldById(id)
                         }
                         DailyTransactionWithCategory(
-                            transaction = com.lifemanager.app.domain.model.DailyTransaction(
-                                id = entity.id,
-                                date = entity.date,
-                                time = entity.time,
-                                type = if (entity.type == "INCOME") TransactionType.INCOME else TransactionType.EXPENSE,
-                                amount = entity.amount,
-                                categoryId = entity.categoryId,
-                                note = entity.note,
-                                createdAt = entity.createdAt,
-                                updatedAt = entity.updatedAt
-                            ),
+                            transaction = entity,
                             category = category
                         )
                     }
@@ -183,7 +174,7 @@ class AccountingMainViewModel @Inject constructor(
      * 快速添加交易
      */
     fun quickAddTransaction(
-        type: TransactionType,
+        type: String,
         amount: Double,
         categoryId: Long?,
         note: String
@@ -195,8 +186,8 @@ class AccountingMainViewModel @Inject constructor(
             try {
                 val transaction = DailyTransactionEntity(
                     date = today.toEpochDay().toInt(),
-                    time = String.format("%02d:%02d", today.atStartOfDay().hour, today.atStartOfDay().minute),
-                    type = if (type == TransactionType.INCOME) "INCOME" else "EXPENSE",
+                    time = String.format("%02d:%02d", java.time.LocalTime.now().hour, java.time.LocalTime.now().minute),
+                    type = type,
                     amount = amount,
                     categoryId = categoryId,
                     note = note,

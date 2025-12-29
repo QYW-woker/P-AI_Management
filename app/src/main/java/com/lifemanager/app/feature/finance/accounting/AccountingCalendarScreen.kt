@@ -372,9 +372,7 @@ private fun SelectedDateTransactions(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f)
+        modifier = Modifier.fillMaxSize()
     ) {
         Row(
             modifier = Modifier

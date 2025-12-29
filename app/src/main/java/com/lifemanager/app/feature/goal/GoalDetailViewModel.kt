@@ -85,11 +85,11 @@ class GoalDetailViewModel @Inject constructor(
             "NUMERIC" -> {
                 val target = goal.targetValue ?: return 0f
                 if (target <= 0) return 0f
-                (goal.currentValue / target).coerceIn(0f, 1f).toFloat()
+                (goal.currentValue / target).coerceIn(0.0, 1.0).toFloat()
             }
             else -> {
                 // 百分比类型，currentValue直接是百分比
-                (goal.currentValue / 100f).coerceIn(0f, 1f).toFloat()
+                (goal.currentValue / 100.0).coerceIn(0.0, 1.0).toFloat()
             }
         }
     }

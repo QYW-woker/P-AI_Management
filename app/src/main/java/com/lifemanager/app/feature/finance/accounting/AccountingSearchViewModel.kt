@@ -102,17 +102,7 @@ class AccountingSearchViewModel @Inject constructor(
                             customFieldDao.getFieldById(id)
                         }
                         DailyTransactionWithCategory(
-                            transaction = com.lifemanager.app.domain.model.DailyTransaction(
-                                id = entity.id,
-                                date = entity.date,
-                                time = entity.time,
-                                type = if (entity.type == "INCOME") TransactionType.INCOME else TransactionType.EXPENSE,
-                                amount = entity.amount,
-                                categoryId = entity.categoryId,
-                                note = entity.note,
-                                createdAt = entity.createdAt,
-                                updatedAt = entity.updatedAt
-                            ),
+                            transaction = entity,
                             category = category
                         )
                     }
