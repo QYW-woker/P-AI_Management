@@ -123,4 +123,14 @@ interface CustomFieldDao {
      */
     @Query("SELECT COUNT(*) FROM custom_fields WHERE isPreset = 1")
     suspend fun countPresets(): Int
+
+    /**
+     * 根据多个模块类型获取所有启用的字段
+     */
+    @Query("""
+        SELECT * FROM custom_fields
+        WHERE moduleType IN (:moduleTypes) AND isEnabled = 1
+        ORDER BY moduleType, sortOrder ASC
+    """)
+    fun getFieldsByModuleTypes(moduleTypes: List<String>): Flow<List<CustomFieldEntity>>
 }

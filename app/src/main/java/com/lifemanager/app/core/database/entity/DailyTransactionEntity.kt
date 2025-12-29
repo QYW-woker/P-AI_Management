@@ -20,18 +20,28 @@ import androidx.room.PrimaryKey
             parentColumns = ["id"],
             childColumns = ["categoryId"],
             onDelete = ForeignKey.SET_NULL
+        ),
+        ForeignKey(
+            entity = LedgerEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["ledgerId"],
+            onDelete = ForeignKey.SET_NULL
         )
     ],
     indices = [
         Index(value = ["date"]),
         Index(value = ["categoryId"]),
-        Index(value = ["type"])
+        Index(value = ["type"]),
+        Index(value = ["ledgerId"])
     ]
 )
 data class DailyTransactionEntity(
     // 主键ID
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
+
+    // 账本ID（可选，null表示默认账本）
+    val ledgerId: Long? = null,
 
     // 类型: INCOME(收入) 或 EXPENSE(支出)
     val type: String,
@@ -65,7 +75,10 @@ data class DailyTransactionEntity(
     val source: String = "MANUAL",
 
     // 创建时间
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+
+    // 更新时间
+    val updatedAt: Long = System.currentTimeMillis()
 )
 
 /**

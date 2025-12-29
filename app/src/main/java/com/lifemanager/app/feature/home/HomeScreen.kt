@@ -157,7 +157,7 @@ private fun QuickAccessSection(
             icon = Icons.Default.AccountBalance,
             label = "记账",
             color = AppColors.Primary,
-            route = Screen.DailyTransaction.route
+            route = Screen.AccountingMain.route
         ),
         QuickAccessItem(
             icon = Icons.Default.Assignment,
@@ -271,7 +271,7 @@ private fun MonthlyFinanceSection(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        onClick = { onNavigateToModule(Screen.MonthlyIncomeExpense.route) }
+        onClick = { onNavigateToModule(Screen.AccountingMain.route) }
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

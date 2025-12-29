@@ -37,6 +37,9 @@ import com.lifemanager.app.feature.ai.AIAssistantScreen
 import com.lifemanager.app.feature.ai.VoiceInputScreen
 import com.lifemanager.app.feature.budget.BudgetScreen
 import com.lifemanager.app.feature.finance.transaction.billimport.BillImportScreen
+import com.lifemanager.app.feature.finance.accounting.AccountingMainScreen
+import com.lifemanager.app.feature.finance.accounting.AccountingCalendarScreen
+import com.lifemanager.app.feature.finance.accounting.AccountingSearchScreen
 
 /**
  * 窗口尺寸类型
@@ -295,6 +298,49 @@ fun AppNavHost(
             BudgetScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
+        }
+
+        // 记账主界面
+        composable(Screen.AccountingMain.route) {
+            AccountingMainScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToCalendar = { navController.navigate(Screen.AccountingCalendar.route) },
+                onNavigateToSearch = { navController.navigate(Screen.AccountingSearch.route) },
+                onNavigateToStatistics = { navController.navigate(Screen.DataCenter.route) },
+                onNavigateToLedgerManagement = { navController.navigate(Screen.LedgerManagement.route) },
+                onNavigateToAssetManagement = { navController.navigate(Screen.MonthlyAsset.route) },
+                onNavigateToRecurringTransaction = { navController.navigate(Screen.RecurringTransaction.route) },
+                onNavigateToCategoryManagement = { navController.navigate("field_management") },
+                onNavigateToBudget = { navController.navigate(Screen.Budget.route) },
+                onNavigateToImport = { navController.navigate(Screen.BillImport.route) },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                onNavigateToDailyTransaction = { navController.navigate(Screen.DailyTransaction.route) }
+            )
+        }
+
+        // 记账日历
+        composable(Screen.AccountingCalendar.route) {
+            AccountingCalendarScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAddTransaction = { navController.navigate(Screen.DailyTransaction.route) }
+            )
+        }
+
+        // 记账搜索
+        composable(Screen.AccountingSearch.route) {
+            AccountingSearchScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 账本管理（占位）
+        composable(Screen.LedgerManagement.route) {
+            PlaceholderScreen(title = "账本管理")
+        }
+
+        // 周期记账（占位）
+        composable(Screen.RecurringTransaction.route) {
+            PlaceholderScreen(title = "周期记账")
         }
 
         // 目标管理

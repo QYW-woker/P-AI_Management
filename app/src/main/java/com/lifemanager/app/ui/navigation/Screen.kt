@@ -45,6 +45,21 @@ sealed class Screen(val route: String) {
     /** 预算管理 */
     object Budget : Screen("budget")
 
+    /** 记账主界面 */
+    object AccountingMain : Screen("accounting_main")
+
+    /** 记账日历 */
+    object AccountingCalendar : Screen("accounting_calendar")
+
+    /** 记账搜索 */
+    object AccountingSearch : Screen("accounting_search")
+
+    /** 账本管理 */
+    object LedgerManagement : Screen("ledger_management")
+
+    /** 周期记账 */
+    object RecurringTransaction : Screen("recurring_transaction")
+
     // ==================== 详情/编辑页面 ====================
 
     /** 添加收支记录 */
@@ -138,10 +153,10 @@ val bottomNavItems = listOf(
         label = "首页"
     ),
     NavigationItem(
-        route = Screen.MonthlyIncomeExpense.route,
+        route = Screen.AccountingMain.route,
         icon = Icons.Default.AccountBalance,
         selectedIcon = Icons.Filled.AccountBalance,
-        label = "收支"
+        label = "记账"
     ),
     NavigationItem(
         route = Screen.Goal.route,

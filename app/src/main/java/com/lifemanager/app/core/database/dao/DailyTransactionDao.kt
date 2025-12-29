@@ -129,7 +129,49 @@ interface DailyTransactionDao {
         WHERE date = :today AND type = 'EXPENSE'
     """)
     suspend fun getTodayExpense(today: Int): Double
+
+    /**
+     * 获取指定日期的交易记录（别名）
+     */
+    @Query("""
+        SELECT * FROM daily_transactions
+        WHERE date = :date
+        ORDER BY createdAt DESC
+    """)
+    fun getTransactionsByDate(date: Int): Flow<List<DailyTransactionEntity>>
+
+    /**
+     * 获取指定日期范围的交易记录（别名）
+     */
+    @Query("""
+        SELECT * FROM daily_transactions
+        WHERE date BETWEEN :startDate AND :endDate
+        ORDER BY date DESC, createdAt DESC
+    """)
+    fun getTransactionsInRange(startDate: Int, endDate: Int): Flow<List<DailyTransactionEntity>>
+
+    /**
+     * 获取各日期的收支汇总（用于日历视图）
+     */
+    @Query("""
+        SELECT date,
+               SUM(CASE WHEN type = 'INCOME' THEN amount ELSE 0 END) as income,
+               SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END) as expense
+        FROM daily_transactions
+        WHERE date BETWEEN :startDate AND :endDate
+        GROUP BY date
+    """)
+    fun getDailyIncomeExpenseTotals(startDate: Int, endDate: Int): Flow<List<DailyIncomeExpense>>
 }
+
+/**
+ * 日期收支数据类
+ */
+data class DailyIncomeExpense(
+    val date: Int,
+    val income: Double,
+    val expense: Double
+)
 
 /**
  * 日期总额数据类

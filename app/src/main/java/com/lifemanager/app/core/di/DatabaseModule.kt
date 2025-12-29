@@ -165,4 +165,22 @@ object DatabaseModule {
     fun provideBudgetDao(database: AppDatabase): BudgetDao {
         return database.budgetDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideLedgerDao(database: AppDatabase): LedgerDao {
+        return database.ledgerDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRecurringTransactionDao(database: AppDatabase): RecurringTransactionDao {
+        return database.recurringTransactionDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideGoalRecordDao(database: AppDatabase): GoalRecordDao {
+        return database.goalRecordDao()
+    }
 }
