@@ -344,24 +344,41 @@ private fun PaymentEditDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    FilterChip(
-                        selected = isExpense,
-                        onClick = { isExpense = true },
-                        label = { Text("支出") },
-                        leadingIcon = if (isExpense) {
-                            { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
-                        } else null,
-                        modifier = Modifier.weight(1f)
-                    )
-                    FilterChip(
-                        selected = !isExpense,
-                        onClick = { isExpense = false },
-                        label = { Text("收入") },
-                        leadingIcon = if (!isExpense) {
-                            { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
-                        } else null,
-                        modifier = Modifier.weight(1f)
-                    )
+                    if (isExpense) {
+                        Button(
+                            onClick = { },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Check, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("支出")
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { isExpense = true },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("支出")
+                        }
+                    }
+
+                    if (!isExpense) {
+                        Button(
+                            onClick = { },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(Icons.Default.Check, null, Modifier.size(18.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text("收入")
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { isExpense = false },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("收入")
+                        }
+                    }
                 }
             }
         },
