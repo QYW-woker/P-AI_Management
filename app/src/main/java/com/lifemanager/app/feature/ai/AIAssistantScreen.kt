@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -14,12 +15,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifemanager.app.core.ai.model.CommandIntent
 import com.lifemanager.app.core.ai.model.ExecutionResult
 import com.lifemanager.app.core.ai.model.PaymentInfo
+import com.lifemanager.app.core.ai.model.TransactionType
 import com.lifemanager.app.core.voice.CommandProcessState
 import com.lifemanager.app.core.voice.VoiceRecognitionState
 import com.lifemanager.app.feature.ai.component.*
@@ -50,7 +54,10 @@ fun AIAssistantScreen(
     var showImageRecognition by remember { mutableStateOf(false) }
     var isImageProcessing by remember { mutableStateOf(false) }
     var recognizedPayment by remember { mutableStateOf<PaymentInfo?>(null) }
+    var showPaymentEditDialog by remember { mutableStateOf(false) }
+    var editablePayment by remember { mutableStateOf<PaymentInfo?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
 
     // 显示结果消息
     LaunchedEffect(resultMessage) {
@@ -73,6 +80,22 @@ fun AIAssistantScreen(
                     }
                 },
                 actions = {
+                    // 悬浮球快捷开关
+                    IconButton(
+                        onClick = { viewModel.toggleFloatingBall(context) }
+                    ) {
+                        Icon(
+                            imageVector = if (featureConfig?.floatingBallEnabled == true)
+                                Icons.Default.Visibility
+                            else
+                                Icons.Default.VisibilityOff,
+                            contentDescription = "悬浮球",
+                            tint = if (featureConfig?.floatingBallEnabled == true)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "设置")
                     }
@@ -85,6 +108,7 @@ fun AIAssistantScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .imePadding()  // 让输入框随键盘上移
         ) {
             // 主内容区域
             Box(
@@ -126,18 +150,21 @@ fun AIAssistantScreen(
                                 recognizedPayment = recognizedPayment,
                                 onImageSelected = { uri ->
                                     isImageProcessing = true
-                                    // 这里应该调用AI服务进行识别
-                                    // 暂时模拟延迟
                                     viewModel.processImageForRecognition(uri) { payment ->
                                         recognizedPayment = payment
                                         isImageProcessing = false
+                                        // 识别完成后打开编辑对话框
+                                        if (payment != null) {
+                                            editablePayment = payment
+                                            showPaymentEditDialog = true
+                                        }
                                     }
                                 },
                                 onBitmapCaptured = { /* 处理bitmap */ },
                                 onConfirm = { payment ->
-                                    viewModel.confirmPaymentRecord(payment)
-                                    showImageRecognition = false
-                                    recognizedPayment = null
+                                    // 打开编辑对话框让用户确认/修改
+                                    editablePayment = payment
+                                    showPaymentEditDialog = true
                                 },
                                 onCancel = {
                                     recognizedPayment = null
@@ -245,6 +272,121 @@ fun AIAssistantScreen(
             onCancel = { viewModel.cancelExecution() }
         )
     }
+
+    // 支付信息编辑确认对话框
+    if (showPaymentEditDialog && editablePayment != null) {
+        PaymentEditDialog(
+            payment = editablePayment!!,
+            onConfirm = { updatedPayment ->
+                viewModel.confirmPaymentRecord(updatedPayment)
+                showPaymentEditDialog = false
+                editablePayment = null
+                showImageRecognition = false
+                recognizedPayment = null
+            },
+            onDismiss = {
+                showPaymentEditDialog = false
+                editablePayment = null
+            }
+        )
+    }
+}
+
+/**
+ * 支付信息编辑对话框
+ */
+@Composable
+private fun PaymentEditDialog(
+    payment: PaymentInfo,
+    onConfirm: (PaymentInfo) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var amount by remember { mutableStateOf(payment.amount.toString()) }
+    var payee by remember { mutableStateOf(payment.payee ?: "") }
+    var isExpense by remember { mutableStateOf(payment.type == TransactionType.EXPENSE) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("确认记账信息") },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "请核对并修改识别结果",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // 金额输入
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it },
+                    label = { Text("金额") },
+                    leadingIcon = { Text("¥") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // 商户/备注
+                OutlinedTextField(
+                    value = payee,
+                    onValueChange = { payee = it },
+                    label = { Text("商户/备注") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // 类型选择
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = isExpense,
+                        onClick = { isExpense = true },
+                        label = { Text("支出") },
+                        leadingIcon = if (isExpense) {
+                            { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
+                        } else null,
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = !isExpense,
+                        onClick = { isExpense = false },
+                        label = { Text("收入") },
+                        leadingIcon = if (!isExpense) {
+                            { Icon(Icons.Default.Check, null, Modifier.size(18.dp)) }
+                        } else null,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val parsedAmount = amount.toDoubleOrNull() ?: 0.0
+                    val updatedPayment = payment.copy(
+                        amount = parsedAmount,
+                        payee = payee.ifBlank { null },
+                        type = if (isExpense) TransactionType.EXPENSE else TransactionType.INCOME
+                    )
+                    onConfirm(updatedPayment)
+                },
+                enabled = amount.toDoubleOrNull() != null && amount.toDoubleOrNull()!! > 0
+            ) {
+                Text("确认记账")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
 
 /**

@@ -1,6 +1,9 @@
 package com.lifemanager.app.feature.ai
 
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifemanager.app.core.ai.model.CommandIntent
@@ -11,6 +14,7 @@ import com.lifemanager.app.core.ai.service.AIService
 import com.lifemanager.app.core.database.entity.CustomFieldEntity
 import com.lifemanager.app.core.database.entity.DailyTransactionEntity
 import com.lifemanager.app.core.database.entity.TransactionSource
+import com.lifemanager.app.core.floatingball.FloatingBallManager
 import com.lifemanager.app.core.voice.CommandProcessState
 import com.lifemanager.app.core.voice.VoiceCommandExecutor
 import com.lifemanager.app.core.voice.VoiceCommandProcessor
@@ -37,7 +41,8 @@ class VoiceInputViewModel @Inject constructor(
     private val voiceCommandExecutor: VoiceCommandExecutor,
     private val aiConfigRepository: AIConfigRepository,
     private val aiService: AIService,
-    private val transactionRepository: DailyTransactionRepository
+    private val transactionRepository: DailyTransactionRepository,
+    private val floatingBallManager: FloatingBallManager
 ) : ViewModel() {
 
     // 语音识别状态
@@ -311,6 +316,39 @@ class VoiceInputViewModel @Inject constructor(
                 )
             } catch (e: Exception) {
                 _resultMessage.value = Pair("记录失败: ${e.message}", false)
+            }
+        }
+    }
+
+    /**
+     * 切换悬浮球状态
+     */
+    fun toggleFloatingBall(context: Context) {
+        viewModelScope.launch {
+            val currentConfig = featureConfig.value
+            val isEnabled = currentConfig?.floatingBallEnabled ?: false
+
+            if (!isEnabled) {
+                // 检查悬浮窗权限
+                if (!Settings.canDrawOverlays(context)) {
+                    val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(intent)
+                    _resultMessage.value = Pair("请授予悬浮窗权限", false)
+                    return@launch
+                }
+
+                val success = floatingBallManager.enable()
+                if (success) {
+                    aiConfigRepository.setFloatingBallEnabled(true)
+                    _resultMessage.value = Pair("悬浮球已开启", true)
+                } else {
+                    _resultMessage.value = Pair("悬浮球启动失败", false)
+                }
+            } else {
+                floatingBallManager.disable()
+                aiConfigRepository.setFloatingBallEnabled(false)
+                _resultMessage.value = Pair("悬浮球已关闭", true)
             }
         }
     }
