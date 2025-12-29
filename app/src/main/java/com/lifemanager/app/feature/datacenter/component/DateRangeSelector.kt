@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -56,34 +55,50 @@ fun DateRangeSelector(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(horizontal = 4.dp)
     ) {
-        // 快速选择芯片
+        // 快速选择按钮
         items(quickOptions) { type ->
-            FilterChip(
-                selected = selectedType == type,
-                onClick = { onTypeChange(type) },
-                label = { Text(type.displayName) },
-                leadingIcon = if (selectedType == type) {
-                    { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
-                } else null
-            )
+            if (selectedType == type) {
+                Button(
+                    onClick = { onTypeChange(type) },
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(type.displayName)
+                }
+            } else {
+                OutlinedButton(
+                    onClick = { onTypeChange(type) },
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(type.displayName)
+                }
+            }
         }
 
         // 自定义日期按钮
         item {
-            FilterChip(
-                selected = selectedType == DateRangeType.CUSTOM,
-                onClick = { showDateRangePicker = true },
-                label = {
-                    if (selectedType == DateRangeType.CUSTOM && customStartDate != null && customEndDate != null) {
+            if (selectedType == DateRangeType.CUSTOM) {
+                Button(
+                    onClick = { showDateRangePicker = true },
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Icon(Icons.Default.DateRange, contentDescription = null, Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    if (customStartDate != null && customEndDate != null) {
                         Text("${customStartDate.format(dateFormatter)} - ${customEndDate.format(dateFormatter)}")
                     } else {
                         Text("自定义")
                     }
-                },
-                leadingIcon = {
-                    Icon(Icons.Default.DateRange, contentDescription = null, Modifier.size(18.dp))
                 }
-            )
+            } else {
+                OutlinedButton(
+                    onClick = { showDateRangePicker = true },
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Icon(Icons.Default.DateRange, contentDescription = null, Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("自定义")
+                }
+            }
         }
     }
 

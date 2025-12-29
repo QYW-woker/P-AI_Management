@@ -146,11 +146,21 @@ fun AddEditGoalDialog(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         goalTypeOptions.forEach { (value, label) ->
-                            FilterChip(
-                                selected = editState.goalType == value,
-                                onClick = { viewModel.updateEditGoalType(value) },
-                                label = { Text(label) }
-                            )
+                            if (editState.goalType == value) {
+                                Button(
+                                    onClick = { viewModel.updateEditGoalType(value) },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(label)
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = { viewModel.updateEditGoalType(value) },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(label)
+                                }
+                            }
                         }
                     }
 
@@ -170,11 +180,21 @@ fun AddEditGoalDialog(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         goalCategoryOptions.forEach { (value, label) ->
-                            FilterChip(
-                                selected = editState.category == value,
-                                onClick = { viewModel.updateEditCategory(value) },
-                                label = { Text(label) }
-                            )
+                            if (editState.category == value) {
+                                Button(
+                                    onClick = { viewModel.updateEditCategory(value) },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(label)
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = { viewModel.updateEditCategory(value) },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Text(label)
+                                }
+                            }
                         }
                     }
 
@@ -192,16 +212,36 @@ fun AddEditGoalDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        FilterChip(
-                            selected = editState.progressType == "PERCENTAGE",
-                            onClick = { viewModel.updateEditProgressType("PERCENTAGE") },
-                            label = { Text("百分比") }
-                        )
-                        FilterChip(
-                            selected = editState.progressType == "NUMERIC",
-                            onClick = { viewModel.updateEditProgressType("NUMERIC") },
-                            label = { Text("数值型") }
-                        )
+                        if (editState.progressType == "PERCENTAGE") {
+                            Button(
+                                onClick = { viewModel.updateEditProgressType("PERCENTAGE") },
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("百分比")
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = { viewModel.updateEditProgressType("PERCENTAGE") },
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("百分比")
+                            }
+                        }
+                        if (editState.progressType == "NUMERIC") {
+                            Button(
+                                onClick = { viewModel.updateEditProgressType("NUMERIC") },
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("数值型")
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = { viewModel.updateEditProgressType("NUMERIC") },
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text("数值型")
+                            }
+                        }
                     }
 
                     // 数值型目标设置

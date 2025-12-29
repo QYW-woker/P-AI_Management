@@ -3,8 +3,6 @@ package com.lifemanager.app.feature.todo
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +22,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.lifemanager.app.domain.model.priorityList
 import com.lifemanager.app.domain.model.quadrantList
+import com.lifemanager.app.ui.component.DatePickerButton
+import com.lifemanager.app.ui.component.DatePickerDialog
+import com.lifemanager.app.ui.component.TimePickerButton
+import com.lifemanager.app.ui.component.TimePickerDialog
+import java.time.LocalDate
+import java.time.LocalTime
 
 /**
  * 添加/编辑待办对话框
@@ -35,6 +39,19 @@ fun AddEditTodoDialog(
     onDismiss: () -> Unit
 ) {
     val editState by viewModel.editState.collectAsState()
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    // 将epochDay转换为LocalDate
+    val selectedDate = editState.dueDate?.let { LocalDate.ofEpochDay(it.toLong()) }
+    // 将时间字符串转换为LocalTime
+    val selectedTime = editState.dueTime?.let {
+        try {
+            val parts = it.split(":")
+            LocalTime.of(parts[0].toInt(), parts[1].toInt())
+        } catch (e: Exception) { null }
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -141,10 +158,11 @@ fun AddEditTodoDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        items(priorityList, key = { it.code }) { priority ->
+                        priorityList.forEach { priority ->
                             PriorityChip(
                                 name = priority.name,
                                 color = Color(priority.color),
@@ -221,22 +239,63 @@ fun AddEditTodoDialog(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        OutlinedTextField(
-                            value = editState.dueTime ?: "",
-                            onValueChange = { viewModel.updateEditDueTime(it.ifBlank { null }) },
+                        // 日期选择按钮
+                        DatePickerButton(
+                            selectedDate = selectedDate,
+                            onClick = { showDatePicker = true },
                             modifier = Modifier.weight(1f),
-                            label = { Text("时间") },
-                            placeholder = { Text("HH:mm") },
-                            singleLine = true
+                            placeholder = "选择日期"
                         )
+
+                        // 时间选择按钮
+                        TimePickerButton(
+                            selectedTime = selectedTime,
+                            onClick = { showTimePicker = true },
+                            modifier = Modifier.weight(1f),
+                            placeholder = "选择时间"
+                        )
+                    }
+
+                    // 清除日期时间按钮
+                    if (editState.dueDate != null || editState.dueTime != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(
+                            onClick = {
+                                viewModel.updateEditDueDate(null)
+                                viewModel.updateEditDueTime(null)
+                            }
+                        ) {
+                            Text("清除截止时间", color = MaterialTheme.colorScheme.error)
+                        }
                     }
                 }
             }
         }
     }
+
+    // 日期选择器对话框
+    if (showDatePicker) {
+        DatePickerDialog(
+            selectedDate = selectedDate,
+            onDateSelected = { date ->
+                viewModel.updateEditDueDate(date.toEpochDay().toInt())
+            },
+            onDismiss = { showDatePicker = false }
+        )
+    }
+
+    // 时间选择器对话框
+    if (showTimePicker) {
+        TimePickerDialog(
+            selectedTime = selectedTime,
+            onTimeSelected = { time ->
+                viewModel.updateEditDueTime(String.format("%02d:%02d", time.hour, time.minute))
+            },
+            onDismiss = { showTimePicker = false }
+        )
+    }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PriorityChip(
     name: String,
@@ -244,25 +303,35 @@ private fun PriorityChip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    FilterChip(
-        selected = selected,
+    val containerColor = if (selected) color.copy(alpha = 0.2f) else Color.Transparent
+    val contentColor = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant
+
+    Surface(
         onClick = onClick,
-        label = { Text(name) },
-        leadingIcon = if (selected) {
-            {
+        shape = RoundedCornerShape(8.dp),
+        color = containerColor,
+        border = ButtonDefaults.outlinedButtonBorder.takeIf { !selected }
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (selected) {
                 Icon(
                     imageVector = Icons.Filled.Check,
                     contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(16.dp),
+                    tint = contentColor
                 )
+                Spacer(modifier = Modifier.width(4.dp))
             }
-        } else null,
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = color.copy(alpha = 0.2f),
-            selectedLabelColor = color,
-            selectedLeadingIconColor = color
-        )
-    )
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelMedium,
+                color = contentColor
+            )
+        }
+    }
 }
 
 @Composable

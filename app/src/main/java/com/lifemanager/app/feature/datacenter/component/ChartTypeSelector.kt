@@ -16,14 +16,13 @@ import com.lifemanager.app.feature.datacenter.model.ChartType
 /**
  * 图表类型选择器组件
  *
- * 使用FilterChip形式切换不同图表类型
+ * 使用Button形式切换不同图表类型
  *
  * @param selected 当前选中的图表类型
  * @param options 可选图表类型列表
  * @param onSelect 选择变更回调
  * @param modifier 修饰符
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChartTypeSelector(
     selected: ChartType,
@@ -37,18 +36,33 @@ fun ChartTypeSelector(
         verticalAlignment = Alignment.CenterVertically
     ) {
         options.forEach { chartType ->
-            FilterChip(
-                selected = selected == chartType,
-                onClick = { onSelect(chartType) },
-                label = { Text(chartType.displayName) },
-                leadingIcon = {
+            if (selected == chartType) {
+                Button(
+                    onClick = { onSelect(chartType) },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
                     Icon(
                         imageVector = chartType.icon,
                         contentDescription = null,
                         modifier = Modifier.size(18.dp)
                     )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(chartType.displayName)
                 }
-            )
+            } else {
+                OutlinedButton(
+                    onClick = { onSelect(chartType) },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = chartType.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(chartType.displayName)
+                }
+            }
         }
     }
 }

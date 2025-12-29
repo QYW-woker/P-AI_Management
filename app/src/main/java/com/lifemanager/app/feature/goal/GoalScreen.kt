@@ -233,7 +233,6 @@ private fun StatItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterChips(
     currentFilter: String,
@@ -251,14 +250,21 @@ private fun FilterChips(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(filters) { (value, label) ->
-            FilterChip(
-                selected = currentFilter == value,
-                onClick = { onFilterChange(value) },
-                label = { Text(label) },
-                leadingIcon = if (currentFilter == value) {
-                    { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
-                } else null
-            )
+            if (currentFilter == value) {
+                Button(
+                    onClick = { onFilterChange(value) },
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(label)
+                }
+            } else {
+                OutlinedButton(
+                    onClick = { onFilterChange(value) },
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    Text(label)
+                }
+            }
         }
     }
 }

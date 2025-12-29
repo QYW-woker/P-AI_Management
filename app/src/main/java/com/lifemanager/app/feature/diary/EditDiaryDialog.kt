@@ -406,7 +406,6 @@ private fun MoodChip(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun WeatherChip(
     emoji: String,
@@ -414,15 +413,27 @@ private fun WeatherChip(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = {
+    if (selected) {
+        Button(
+            onClick = onClick,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+        ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(text = emoji)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(text = name)
             }
         }
-    )
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = emoji)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(text = name)
+            }
+        }
+    }
 }
