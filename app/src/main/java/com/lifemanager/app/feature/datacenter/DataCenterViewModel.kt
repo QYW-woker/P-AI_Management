@@ -734,7 +734,7 @@ class DataCenterViewModel @Inject constructor(
             val categoryMap = (_incomeCategories.value + _expenseCategories.value).associateBy { it.id }
 
             _billList.value = transactions.map { tx ->
-                val category = tx.fieldId?.let { categoryMap[it] }
+                val category = tx.categoryId?.let { categoryMap[it] }
                 BillQueryItem(
                     id = tx.id,
                     date = tx.date,
