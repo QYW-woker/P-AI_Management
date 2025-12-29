@@ -150,7 +150,7 @@ fun AIAssistantScreen(
                                 recognizedPayment = recognizedPayment,
                                 onImageSelected = { uri ->
                                     isImageProcessing = true
-                                    viewModel.processImageForRecognition(uri) { payment ->
+                                    viewModel.processImageForRecognition(context, uri) { payment ->
                                         recognizedPayment = payment
                                         isImageProcessing = false
                                         // 识别完成后打开编辑对话框
