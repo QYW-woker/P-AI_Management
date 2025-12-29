@@ -28,6 +28,7 @@ class TodoUseCase @Inject constructor(
         return when (filter) {
             TodoFilter.ALL -> getPendingTodoGroups(today)
             TodoFilter.TODAY -> getTodayTodoGroups(today)
+            TodoFilter.UPCOMING -> getUpcomingTodoGroups(today)
             TodoFilter.OVERDUE -> getOverdueTodoGroups(today)
             TodoFilter.COMPLETED -> getCompletedTodoGroups()
         }
@@ -72,6 +73,40 @@ class TodoUseCase @Inject constructor(
         return repository.getTodayTodos(today).map { todos ->
             if (todos.isEmpty()) emptyList()
             else listOf(TodoGroup("今天", todos))
+        }
+    }
+
+    /**
+     * 获取未来待办分组（按日期分组）
+     */
+    private fun getUpcomingTodoGroups(today: Int): Flow<List<TodoGroup>> {
+        return repository.getPendingTodos().map { allTodos ->
+            // 筛选未来的待办（dueDate > today 或 dueDate == null）
+            val futureTodos = allTodos.filter { todo ->
+                todo.dueDate?.let { it > today } ?: true
+            }
+
+            // 按日期分组
+            val groups = mutableListOf<TodoGroup>()
+            val tomorrow = today + 1
+            val dayAfterTomorrow = today + 2
+            val weekLater = today + 7
+
+            val tomorrowTodos = futureTodos.filter { it.dueDate == tomorrow }
+            val dayAfterTodos = futureTodos.filter { it.dueDate == dayAfterTomorrow }
+            val thisWeekTodos = futureTodos.filter {
+                it.dueDate != null && it.dueDate!! > dayAfterTomorrow && it.dueDate!! <= weekLater
+            }
+            val laterTodos = futureTodos.filter {
+                it.dueDate == null || it.dueDate!! > weekLater
+            }
+
+            if (tomorrowTodos.isNotEmpty()) groups.add(TodoGroup("明天", tomorrowTodos))
+            if (dayAfterTodos.isNotEmpty()) groups.add(TodoGroup("后天", dayAfterTodos))
+            if (thisWeekTodos.isNotEmpty()) groups.add(TodoGroup("本周", thisWeekTodos))
+            if (laterTodos.isNotEmpty()) groups.add(TodoGroup("以后", laterTodos))
+
+            groups
         }
     }
 

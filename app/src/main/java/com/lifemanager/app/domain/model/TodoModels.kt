@@ -65,6 +65,7 @@ data class TodoStatistics(
 enum class TodoFilter {
     ALL,        // 全部
     TODAY,      // 今日
+    UPCOMING,   // 未来/计划
     OVERDUE,    // 逾期
     COMPLETED   // 已完成
 }

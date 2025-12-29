@@ -427,19 +427,29 @@ $dataStr
         val type = if (typeStr.equals("income", ignoreCase = true))
             TransactionType.INCOME else TransactionType.EXPENSE
 
+        // 解析日期 - AI返回的是epochDay整数
+        val dateEpochDay = (data["date"] as? Number)?.toInt()
+
         return CommandIntent.Transaction(
             type = type,
             amount = (data["amount"] as? Number)?.toDouble(),
             categoryName = data["category"] as? String,
+            date = dateEpochDay,
+            time = data["time"] as? String,
             note = data["note"] as? String,
             payee = data["payee"] as? String
         )
     }
 
     private fun parseTodoIntent(data: Map<String, Any>): CommandIntent.Todo {
+        // 解析日期 - AI返回的是epochDay整数
+        val dueDateEpochDay = (data["dueDate"] as? Number)?.toInt()
+
         return CommandIntent.Todo(
             title = data["title"] as? String ?: "",
             description = data["description"] as? String,
+            dueDate = dueDateEpochDay,
+            dueTime = data["dueTime"] as? String,
             priority = data["priority"] as? String
         )
     }

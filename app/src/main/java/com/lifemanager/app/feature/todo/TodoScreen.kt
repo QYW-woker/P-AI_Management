@@ -212,7 +212,6 @@ private fun StatItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FilterBar(
     currentFilter: TodoFilter,
@@ -221,6 +220,7 @@ private fun FilterBar(
     val filters = listOf(
         TodoFilter.ALL to "全部",
         TodoFilter.TODAY to "今日",
+        TodoFilter.UPCOMING to "计划",
         TodoFilter.OVERDUE to "逾期",
         TodoFilter.COMPLETED to "已完成"
     )
@@ -229,14 +229,27 @@ private fun FilterBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         filters.forEach { (filter, label) ->
-            FilterChip(
-                selected = currentFilter == filter,
-                onClick = { onFilterChange(filter) },
-                label = { Text(label) }
-            )
+            val isSelected = currentFilter == filter
+            if (isSelected) {
+                Button(
+                    onClick = { },
+                    modifier = Modifier.height(32.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                ) {
+                    Text(label, style = MaterialTheme.typography.labelMedium)
+                }
+            } else {
+                OutlinedButton(
+                    onClick = { onFilterChange(filter) },
+                    modifier = Modifier.height(32.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
+                ) {
+                    Text(label, style = MaterialTheme.typography.labelMedium)
+                }
+            }
         }
     }
 }
