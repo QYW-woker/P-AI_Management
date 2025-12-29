@@ -11,12 +11,13 @@ plugins {
 
 android {
     namespace = "com.lifemanager.app"
-    compileSdk = 34
+    // 降级到 SDK 33 以避免 jlink.exe 兼容性问题
+    compileSdk = 33
 
     defaultConfig {
         applicationId = "com.lifemanager.app"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 33
         versionCode = 1
         versionName = "1.0.0"
 
