@@ -25,6 +25,9 @@ import com.lifemanager.app.domain.model.AssetUiState
 import com.lifemanager.app.domain.model.MonthlyAssetWithField
 import com.lifemanager.app.ui.component.charts.PieChartView
 import com.lifemanager.app.ui.component.charts.PieChartData
+import com.lifemanager.app.ui.component.charts.TrendLineChart
+import com.lifemanager.app.ui.component.charts.LineChartSeries
+import com.lifemanager.app.domain.model.NetWorthTrendPoint
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -48,6 +51,7 @@ fun MonthlyAssetScreen(
     val showEditDialog by viewModel.showEditDialog.collectAsState()
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val showCopyDialog by viewModel.showCopyDialog.collectAsState()
+    val netWorthTrend by viewModel.netWorthTrend.collectAsState()
 
     // 当前选中的标签页 (0: 资产, 1: 负债)
     var selectedTab by remember { mutableStateOf(0) }
@@ -129,6 +133,13 @@ fun MonthlyAssetScreen(
                         // 统计卡片
                         item {
                             AssetStatsCard(stats = assetStats)
+                        }
+
+                        // 净资产趋势图
+                        if (netWorthTrend.isNotEmpty()) {
+                            item {
+                                NetWorthTrendCard(trendData = netWorthTrend)
+                            }
                         }
 
                         // 标签页切换
@@ -381,6 +392,131 @@ private fun AssetStatsCard(stats: AssetStats) {
                             stats.debtRatio < 50 -> Color(0xFFFF9800)
                             else -> Color(0xFFF44336)
                         }
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 净资产趋势图卡片
+ */
+@Composable
+private fun NetWorthTrendCard(trendData: List<NetWorthTrendPoint>) {
+    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "净资产趋势",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "近${trendData.size}个月",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (trendData.size >= 2) {
+                // 计算趋势变化
+                val firstValue = trendData.firstOrNull()?.netWorth ?: 0.0
+                val lastValue = trendData.lastOrNull()?.netWorth ?: 0.0
+                val change = lastValue - firstValue
+                val changePercent = if (firstValue != 0.0) {
+                    (change / kotlin.math.abs(firstValue)) * 100
+                } else 0.0
+
+                // 趋势指示
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = when {
+                                change > 0 -> Icons.Default.TrendingUp
+                                change < 0 -> Icons.Default.TrendingDown
+                                else -> Icons.Default.TrendingFlat
+                            },
+                            contentDescription = null,
+                            tint = when {
+                                change > 0 -> Color(0xFF4CAF50)
+                                change < 0 -> Color(0xFFF44336)
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = when {
+                                change > 0 -> "+¥${numberFormat.format(change)}"
+                                change < 0 -> "-¥${numberFormat.format(-change)}"
+                                else -> "¥0"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = when {
+                                change > 0 -> Color(0xFF4CAF50)
+                                change < 0 -> Color(0xFFF44336)
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
+                    Text(
+                        text = String.format("%+.1f%%", changePercent),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = when {
+                            change > 0 -> Color(0xFF4CAF50)
+                            change < 0 -> Color(0xFFF44336)
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 折线图
+                TrendLineChart(
+                    series = listOf(
+                        LineChartSeries(
+                            label = "净资产",
+                            values = trendData.map { it.netWorth.toFloat() },
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    ),
+                    xLabels = trendData.map { it.formatMonth() },
+                    modifier = Modifier.height(180.dp),
+                    showLegend = false
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "数据不足，至少需要2个月的记录",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }

@@ -41,6 +41,7 @@ import com.lifemanager.app.feature.finance.accounting.AccountingMainScreen
 import com.lifemanager.app.feature.finance.accounting.AccountingCalendarScreen
 import com.lifemanager.app.feature.finance.accounting.AccountingSearchScreen
 import com.lifemanager.app.feature.finance.ledger.LedgerManagementScreen
+import com.lifemanager.app.feature.finance.recurring.RecurringTransactionScreen
 
 /**
  * 窗口尺寸类型
@@ -341,9 +342,11 @@ fun AppNavHost(
             )
         }
 
-        // 周期记账（占位）
+        // 周期记账
         composable(Screen.RecurringTransaction.route) {
-            PlaceholderScreen(title = "周期记账")
+            RecurringTransactionScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         // 目标管理
