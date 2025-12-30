@@ -1,6 +1,7 @@
 package com.lifemanager.app.feature.ai
 
 import android.content.Intent
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,10 +13,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 /**
  * AI设置页面
@@ -34,7 +38,28 @@ fun AISettingsScreen(
     val testResult by viewModel.testResult.collectAsState()
 
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val snackbarHostState = remember { SnackbarHostState() }
+
+    // 跟踪用户是否正在等待授予悬浮窗权限
+    var pendingFloatingBallEnable by remember { mutableStateOf(false) }
+
+    // 监听生命周期，当从设置页面返回时检查权限
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME && pendingFloatingBallEnable) {
+                // 用户从设置页面返回，检查权限是否已授予
+                if (Settings.canDrawOverlays(context)) {
+                    viewModel.setFloatingBallEnabled(true)
+                }
+                pendingFloatingBallEnable = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     // 处理状态消息
     LaunchedEffect(uiState) {
@@ -119,8 +144,12 @@ fun AISettingsScreen(
                         if (it) {
                             // 需要检查悬浮窗权限
                             if (!Settings.canDrawOverlays(context)) {
+                                // 标记为等待权限授予
+                                pendingFloatingBallEnable = true
+                                // 跳转到悬浮窗权限设置页面
                                 val intent = Intent(
-                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION
+                                    Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                    Uri.parse("package:${context.packageName}")
                                 )
                                 context.startActivity(intent)
                             } else {
