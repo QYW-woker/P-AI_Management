@@ -28,6 +28,7 @@ sealed class CommandIntent {
         val dueDate: Int? = null,        // epochDay
         val dueTime: String? = null,
         val priority: String? = null,
+        val quadrant: String? = null,    // 四象限：IMPORTANT_URGENT, IMPORTANT_NOT_URGENT, NOT_IMPORTANT_URGENT, NOT_IMPORTANT_NOT_URGENT
         val reminderAt: Long? = null
     ) : CommandIntent()
 

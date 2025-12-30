@@ -14,6 +14,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.lifemanager.app.core.ai.model.*
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 /**
  * 命令确认对话框
@@ -217,6 +219,18 @@ private fun TransactionDetail(intent: CommandIntent.Transaction) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
+        // 日期
+        intent.date?.let { epochDay ->
+            val date = LocalDate.ofEpochDay(epochDay.toLong())
+            val dateStr = date.format(DateTimeFormatter.ofPattern("yyyy年MM月dd日"))
+            DetailRow(label = "日期", value = dateStr)
+        }
+
+        // 时间
+        intent.time?.let { time ->
+            DetailRow(label = "时间", value = time)
+        }
+
         // 备注
         intent.note?.let { note ->
             DetailRow(label = "备注", value = note)
@@ -246,9 +260,13 @@ private fun TodoDetail(intent: CommandIntent.Todo) {
             textAlign = TextAlign.Center
         )
 
-        intent.dueDate?.let { date ->
-            Spacer(modifier = Modifier.height(8.dp))
-            DetailRow(label = "截止日期", value = date.toString())
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // 格式化日期显示
+        intent.dueDate?.let { epochDay ->
+            val date = LocalDate.ofEpochDay(epochDay.toLong())
+            val dateStr = date.format(DateTimeFormatter.ofPattern("yyyy年MM月dd日"))
+            DetailRow(label = "截止日期", value = dateStr)
         }
 
         intent.dueTime?.let { time ->
@@ -256,7 +274,25 @@ private fun TodoDetail(intent: CommandIntent.Todo) {
         }
 
         intent.priority?.let { priority ->
-            DetailRow(label = "优先级", value = priority)
+            val priorityText = when (priority.uppercase()) {
+                "HIGH", "高" -> "高"
+                "MEDIUM", "中" -> "中"
+                "LOW", "低" -> "低"
+                else -> priority
+            }
+            DetailRow(label = "优先级", value = priorityText)
+        }
+
+        // 四象限显示
+        intent.quadrant?.let { quadrant ->
+            val quadrantText = when (quadrant.uppercase()) {
+                "IMPORTANT_URGENT" -> "重要且紧急"
+                "IMPORTANT_NOT_URGENT" -> "重要不紧急"
+                "NOT_IMPORTANT_URGENT" -> "不重要但紧急"
+                "NOT_IMPORTANT_NOT_URGENT" -> "不重要不紧急"
+                else -> quadrant
+            }
+            DetailRow(label = "四象限", value = quadrantText)
         }
     }
 }

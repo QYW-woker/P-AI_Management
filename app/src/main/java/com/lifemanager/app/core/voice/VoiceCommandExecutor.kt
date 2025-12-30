@@ -99,11 +99,21 @@ class VoiceCommandExecutor @Inject constructor(
             else -> Priority.NONE
         }
 
+        // 验证四象限值
+        val quadrantValue = when (intent.quadrant?.uppercase()) {
+            "IMPORTANT_URGENT" -> "IMPORTANT_URGENT"
+            "IMPORTANT_NOT_URGENT" -> "IMPORTANT_NOT_URGENT"
+            "NOT_IMPORTANT_URGENT" -> "NOT_IMPORTANT_URGENT"
+            "NOT_IMPORTANT_NOT_URGENT" -> "NOT_IMPORTANT_NOT_URGENT"
+            else -> null
+        }
+
         val entity = TodoEntity(
             id = 0,
             title = intent.title,
             description = intent.description ?: "",
             priority = priorityEnum,
+            quadrant = quadrantValue,
             dueDate = intent.dueDate,
             dueTime = intent.dueTime
         )

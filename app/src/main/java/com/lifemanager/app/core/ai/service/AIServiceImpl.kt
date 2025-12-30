@@ -67,9 +67,12 @@ class AIServiceImpl @Inject constructor(
 
             val categoryNames = categories.map { it.name }.joinToString("、")
 
+            val today = java.time.LocalDate.now()
+            val todayEpochDay = today.toEpochDay()
+
             val systemPrompt = """
 你是一个智能生活助手，负责解析用户的语音命令。请将用户输入解析为JSON格式。
-今天的日期是：${java.time.LocalDate.now()}
+今天的日期是：$today（epochDay=$todayEpochDay）
 
 支持的命令类型：
 1. 记账（transaction）：包含金额的消费或收入记录
@@ -82,16 +85,26 @@ class AIServiceImpl @Inject constructor(
 
 【重要判断规则】：
 - 有金额数字 + 消费/购买行为 → transaction（必须解析日期！）
-- 涉及具体事件/活动/任务（开会、约会、去医院等）→ todo（事项），不管是过去还是将来
+- 涉及具体事件/活动/任务（开会、约会、去医院、出差等）→ todo（事项），不管是过去还是将来
 - 纯粹表达心情感受（开心、难过、累了）→ diary
 - "昨天XX"/"今天XX"/"明天XX" + 事件 → todo，需要正确计算epochDay日期
 
-【日期计算规则】：
-- "今天" = ${java.time.LocalDate.now().toEpochDay()}
-- "昨天" = ${java.time.LocalDate.now().minusDays(1).toEpochDay()}
-- "前天" = ${java.time.LocalDate.now().minusDays(2).toEpochDay()}
-- "明天" = ${java.time.LocalDate.now().plusDays(1).toEpochDay()}
-- "后天" = ${java.time.LocalDate.now().plusDays(2).toEpochDay()}
+【日期计算规则 - 请使用这些精确值】：
+- "今天" = $todayEpochDay
+- "昨天" = ${todayEpochDay - 1}
+- "前天" = ${todayEpochDay - 2}
+- "明天" = ${todayEpochDay + 1}
+- "后天" = ${todayEpochDay + 2}
+- "X月X号/日" = 需要计算对应日期的epochDay（从1970-01-01开始的天数）
+- 例如：12月1号 = ${java.time.LocalDate.of(today.year, 12, 1).toEpochDay()}
+- 例如：1月15号 = ${java.time.LocalDate.of(today.year + 1, 1, 15).toEpochDay()}
+
+【四象限分类规则 - 仅用于待办事项】：
+根据任务的紧急程度和重要程度，分为四个象限：
+- IMPORTANT_URGENT（重要且紧急）：截止日期在3天内、涉及工作/健康/重要会议
+- IMPORTANT_NOT_URGENT（重要不紧急）：长期目标、学习计划、健身计划
+- NOT_IMPORTANT_URGENT（不重要但紧急）：临时琐事、一般性约会
+- NOT_IMPORTANT_NOT_URGENT（不重要不紧急）：娱乐、购物、休闲活动
 
 可用的记账分类：$categoryNames
 
@@ -100,26 +113,23 @@ class AIServiceImpl @Inject constructor(
   "type": "transaction|todo|diary|habit|timetrack|navigate|query|unknown",
   "data": {
     // transaction: transactionType, amount, category, note, date(epochDay整数), time
-    // todo: title, description, dueDate(epochDay整数), dueTime
+    // todo: title, description, dueDate(epochDay整数), dueTime, quadrant(四象限), priority(HIGH/MEDIUM/LOW)
     // diary: content, mood(1-5)
   }
 }
 
 示例：
-输入："昨天吃饭10块"
-输出：{"type":"transaction","data":{"transactionType":"expense","amount":10,"category":"餐饮","note":"吃饭","date":${java.time.LocalDate.now().minusDays(1).toEpochDay()}}}
+输入："12月1号吃饭100元"
+输出：{"type":"transaction","data":{"transactionType":"expense","amount":100,"category":"餐饮","note":"吃饭","date":${java.time.LocalDate.of(today.year, 12, 1).toEpochDay()}}}
 
-输入："明天下午3点开会"
-输出：{"type":"todo","data":{"title":"开会","dueDate":${java.time.LocalDate.now().plusDays(1).toEpochDay()},"dueTime":"15:00"}}
+输入："明天要去北京出差"
+输出：{"type":"todo","data":{"title":"去北京出差","dueDate":${todayEpochDay + 1},"quadrant":"IMPORTANT_URGENT","priority":"HIGH"}}
 
-输入："昨天上午开会"
-输出：{"type":"todo","data":{"title":"开会","dueDate":${java.time.LocalDate.now().minusDays(1).toEpochDay()},"dueTime":"10:00"}}
+输入："下周开会"
+输出：{"type":"todo","data":{"title":"开会","dueDate":${todayEpochDay + 7},"quadrant":"IMPORTANT_NOT_URGENT","priority":"MEDIUM"}}
 
 输入："今天很开心"
 输出：{"type":"diary","data":{"content":"今天很开心","mood":5}}
-
-输入："中午吃饭5元"
-输出：{"type":"transaction","data":{"transactionType":"expense","amount":5,"category":"餐饮","note":"中午吃饭","date":${java.time.LocalDate.now().toEpochDay()}}}
 
 只返回JSON，不要其他文字。
 """.trimIndent()
@@ -527,7 +537,8 @@ $dataStr
             description = data["description"] as? String,
             dueDate = dueDateEpochDay,
             dueTime = data["dueTime"] as? String,
-            priority = data["priority"] as? String
+            priority = data["priority"] as? String,
+            quadrant = data["quadrant"] as? String
         )
     }
 

@@ -18,6 +18,7 @@ import com.lifemanager.app.core.database.entity.CustomFieldEntity
 import com.lifemanager.app.core.database.entity.DailyTransactionEntity
 import com.lifemanager.app.core.database.entity.TransactionSource
 import com.lifemanager.app.core.floatingball.FloatingBallManager
+import com.lifemanager.app.core.ocr.OcrManager
 import com.lifemanager.app.core.voice.CommandProcessState
 import com.lifemanager.app.core.voice.VoiceCommandExecutor
 import com.lifemanager.app.core.voice.VoiceCommandProcessor
@@ -48,7 +49,8 @@ class VoiceInputViewModel @Inject constructor(
     private val aiConfigRepository: AIConfigRepository,
     private val aiService: AIService,
     private val transactionRepository: DailyTransactionRepository,
-    private val floatingBallManager: FloatingBallManager
+    private val floatingBallManager: FloatingBallManager,
+    private val ocrManager: OcrManager
 ) : ViewModel() {
 
     // 语音识别状态
@@ -268,71 +270,47 @@ class VoiceInputViewModel @Inject constructor(
     }
 
     /**
-     * 处理图片进行识别 - 使用AI视觉模型
+     * 处理图片进行识别 - 使用ML Kit OCR + AI解析
      */
     fun processImageForRecognition(context: Context, uri: Uri, onResult: (PaymentInfo?) -> Unit) {
         viewModelScope.launch {
             try {
-                _resultMessage.value = Pair("正在识别图片...", true)
+                _resultMessage.value = Pair("正在识别图片文字...", true)
 
-                // 将图片转换为Base64
-                val base64Image = withContext(Dispatchers.IO) {
-                    try {
-                        val inputStream = context.contentResolver.openInputStream(uri)
-                        val bitmap = BitmapFactory.decodeStream(inputStream)
-                        inputStream?.close()
+                // 使用ML Kit OCR识别图片中的文字
+                val ocrResult = ocrManager.recognizeFromUri(uri)
 
-                        if (bitmap == null) {
-                            return@withContext null
-                        }
-
-                        // 压缩图片以减少传输大小
-                        val maxSize = 1024
-                        val scaledBitmap = if (bitmap.width > maxSize || bitmap.height > maxSize) {
-                            val scale = minOf(
-                                maxSize.toFloat() / bitmap.width,
-                                maxSize.toFloat() / bitmap.height
-                            )
-                            Bitmap.createScaledBitmap(
-                                bitmap,
-                                (bitmap.width * scale).toInt(),
-                                (bitmap.height * scale).toInt(),
-                                true
-                            )
-                        } else {
-                            bitmap
-                        }
-
-                        // 转换为Base64
-                        val outputStream = ByteArrayOutputStream()
-                        scaledBitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
-                        val byteArray = outputStream.toByteArray()
-                        Base64.encodeToString(byteArray, Base64.NO_WRAP)
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-
-                if (base64Image == null) {
-                    _resultMessage.value = Pair("无法读取图片", false)
-                    onResult(null)
-                    return@launch
-                }
-
-                // 使用AI视觉模型识别图片
-                val result = aiService.recognizeImagePayment(base64Image, _categories.value)
-                result.fold(
-                    onSuccess = { paymentInfo ->
-                        if (paymentInfo.amount > 0) {
-                            _resultMessage.value = Pair("识别成功！", true)
-                            onResult(paymentInfo)
-                        } else {
-                            _resultMessage.value = Pair("未能识别到有效的支付信息", false)
+                ocrResult.fold(
+                    onSuccess = { result ->
+                        val ocrText = result.rawText
+                        if (ocrText.isBlank()) {
+                            _resultMessage.value = Pair("未能识别到图片中的文字", false)
                             onResult(null)
+                            return@fold
                         }
+
+                        _resultMessage.value = Pair("正在分析支付信息...", true)
+
+                        // 使用AI解析OCR文本
+                        val parseResult = aiService.parsePaymentScreenshot(ocrText)
+                        parseResult.fold(
+                            onSuccess = { paymentInfo ->
+                                if (paymentInfo.amount > 0) {
+                                    _resultMessage.value = Pair("识别成功！", true)
+                                    onResult(paymentInfo)
+                                } else {
+                                    _resultMessage.value = Pair("未能识别到有效的支付信息", false)
+                                    onResult(null)
+                                }
+                            },
+                            onFailure = { e ->
+                                _resultMessage.value = Pair("解析支付信息失败: ${e.message}", false)
+                                onResult(null)
+                            }
+                        )
                     },
-                    onFailure = {
-                        _resultMessage.value = Pair("图片识别失败: ${it.message}", false)
+                    onFailure = { e ->
+                        _resultMessage.value = Pair("图片文字识别失败: ${e.message}", false)
                         onResult(null)
                     }
                 )
