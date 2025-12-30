@@ -64,6 +64,8 @@ fun AccountingMainScreen(
     val recentTransactions by viewModel.recentTransactions.collectAsState()
     val currentLedger by viewModel.currentLedger.collectAsState()
     val showQuickAddDialog by viewModel.showQuickAddDialog.collectAsState()
+    val showEditDialog by viewModel.showEditDialog.collectAsState()
+    val editingTransaction by viewModel.editingTransaction.collectAsState()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -183,7 +185,9 @@ fun AccountingMainScreen(
                     RecentTransactionsSection(
                         transactions = recentTransactions,
                         onViewAll = onNavigateToDailyTransaction,
-                        onTransactionClick = { /* TODO: 编辑交易 */ }
+                        onTransactionClick = { transactionId ->
+                            viewModel.showEditTransaction(transactionId)
+                        }
                     )
                 }
             }
@@ -196,6 +200,21 @@ fun AccountingMainScreen(
             onDismiss = { viewModel.hideQuickAdd() },
             onConfirm = { type, amount, categoryId, note, date, time ->
                 viewModel.quickAddTransaction(type, amount, categoryId, note, date, time)
+            },
+            categories = viewModel.categories.collectAsState().value
+        )
+    }
+
+    // 编辑交易对话框
+    if (showEditDialog && editingTransaction != null) {
+        EditTransactionDialog(
+            transaction = editingTransaction!!,
+            onDismiss = { viewModel.hideEditDialog() },
+            onConfirm = { id, type, amount, categoryId, note, date, time ->
+                viewModel.updateTransaction(id, type, amount, categoryId, note, date, time)
+            },
+            onDelete = { id ->
+                viewModel.deleteTransaction(id)
             },
             categories = viewModel.categories.collectAsState().value
         )
@@ -753,6 +772,15 @@ private fun RecentTransactionItem(
 ) {
     val isExpense = transaction.transaction.type == TransactionType.EXPENSE
 
+    // 获取卡通图标
+    val emoji = transaction.category?.let {
+        com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+            name = it.name,
+            iconName = it.iconName,
+            moduleType = it.moduleType
+        )
+    } ?: if (isExpense) "💸" else "💰"
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -760,10 +788,10 @@ private fun RecentTransactionItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 分类图标
+        // 分类图标 - 使用卡通emoji
         Box(
             modifier = Modifier
-                .size(40.dp)
+                .size(44.dp)
                 .clip(CircleShape)
                 .background(
                     transaction.category?.let { parseColor(it.color) }
@@ -771,11 +799,9 @@ private fun RecentTransactionItem(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Icon(
-                imageVector = if (isExpense) Icons.Filled.ShoppingCart else Icons.Filled.AccountBalanceWallet,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
+            Text(
+                text = emoji,
+                style = MaterialTheme.typography.titleLarge
             )
         }
 
@@ -976,19 +1002,24 @@ private fun QuickAddTransactionDialog(
                     ) {
                         items(filteredCategories) { category ->
                             val isSelected = selectedCategoryId == category.id
+                            val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                                name = category.name,
+                                iconName = category.iconName,
+                                moduleType = category.moduleType
+                            )
                             if (isSelected) {
                                 Button(
                                     onClick = { selectedCategoryId = category.id },
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                 ) {
-                                    Text(category.name, style = MaterialTheme.typography.bodySmall)
+                                    Text("$emoji ${category.name}", style = MaterialTheme.typography.bodySmall)
                                 }
                             } else {
                                 OutlinedButton(
                                     onClick = { selectedCategoryId = category.id },
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                 ) {
-                                    Text(category.name, style = MaterialTheme.typography.bodySmall)
+                                    Text("$emoji ${category.name}", style = MaterialTheme.typography.bodySmall)
                                 }
                             }
                         }
@@ -1111,6 +1142,305 @@ private fun parseColor(colorString: String): Color {
         Color(android.graphics.Color.parseColor(colorString))
     } catch (e: Exception) {
         Color.Gray
+    }
+}
+
+/**
+ * 编辑交易对话框
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditTransactionDialog(
+    transaction: DailyTransactionWithCategory,
+    onDismiss: () -> Unit,
+    onConfirm: (id: Long, type: String, amount: Double, categoryId: Long?, note: String, date: LocalDate, time: String?) -> Unit,
+    onDelete: (Long) -> Unit,
+    categories: List<com.lifemanager.app.core.database.entity.CustomFieldEntity>
+) {
+    val entity = transaction.transaction
+    var selectedType by remember { mutableStateOf(entity.type) }
+    var amount by remember { mutableStateOf(entity.amount.toString()) }
+    var selectedCategoryId by remember { mutableStateOf(entity.categoryId) }
+    var note by remember { mutableStateOf(entity.note) }
+    var selectedDate by remember { mutableStateOf(LocalDate.ofEpochDay(entity.date.toLong())) }
+    var selectedTime by remember { mutableStateOf(entity.time) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate.toEpochDay() * 24 * 60 * 60 * 1000
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("编辑记录")
+                IconButton(onClick = { showDeleteConfirm = true }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "删除",
+                        tint = Color(0xFFF44336)
+                    )
+                }
+            }
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // 类型选择
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (selectedType == "EXPENSE") {
+                        Button(
+                            onClick = { selectedType = "EXPENSE" },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("支出")
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { selectedType = "EXPENSE" },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("支出")
+                        }
+                    }
+
+                    if (selectedType == "INCOME") {
+                        Button(
+                            onClick = { selectedType = "INCOME" },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("收入")
+                        }
+                    } else {
+                        OutlinedButton(
+                            onClick = { selectedType = "INCOME" },
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("收入")
+                        }
+                    }
+                }
+
+                // 金额输入
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { amount = it.filter { c -> c.isDigit() || c == '.' } },
+                    label = { Text("金额") },
+                    leadingIcon = { Text("¥") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                // 日期和时间选择
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedCard(
+                        onClick = { showDatePicker = true },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "日期",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "${selectedDate.monthValue}月${selectedDate.dayOfMonth}日",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.CalendarToday,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    OutlinedCard(
+                        onClick = { showTimePicker = true },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "时间",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = selectedTime ?: "未设置",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+                }
+
+                // 分类选择
+                val filteredCategories = categories.filter {
+                    it.moduleType == if (selectedType == "EXPENSE") "EXPENSE_CATEGORY" else "INCOME_CATEGORY"
+                }
+
+                if (filteredCategories.isNotEmpty()) {
+                    Text(
+                        text = "分类",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(filteredCategories) { category ->
+                            val isSelected = selectedCategoryId == category.id
+                            val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                                name = category.name,
+                                iconName = category.iconName,
+                                moduleType = category.moduleType
+                            )
+                            if (isSelected) {
+                                Button(
+                                    onClick = { selectedCategoryId = category.id },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Text("$emoji ${category.name}", style = MaterialTheme.typography.bodySmall)
+                                }
+                            } else {
+                                OutlinedButton(
+                                    onClick = { selectedCategoryId = category.id },
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Text("$emoji ${category.name}", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 备注
+                OutlinedTextField(
+                    value = note,
+                    onValueChange = { note = it },
+                    label = { Text("备注（选填）") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    val amountValue = amount.toDoubleOrNull()
+                    if (amountValue != null && amountValue > 0) {
+                        onConfirm(entity.id, selectedType, amountValue, selectedCategoryId, note, selectedDate, selectedTime)
+                    }
+                }
+            ) {
+                Text("保存")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+
+    // 日期选择器对话框
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            selectedDate = LocalDate.ofEpochDay(millis / (24 * 60 * 60 * 1000))
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("取消")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    // 时间选择器
+    if (showTimePicker) {
+        TimePickerDialog(
+            onDismiss = { showTimePicker = false },
+            onConfirm = { hour, minute ->
+                selectedTime = String.format("%02d:%02d", hour, minute)
+                showTimePicker = false
+            }
+        )
+    }
+
+    // 删除确认对话框
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("确认删除") },
+            text = { Text("确定要删除这条记录吗？此操作不可恢复。") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDelete(entity.id)
+                        showDeleteConfirm = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF44336))
+                ) {
+                    Text("删除")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 }
 

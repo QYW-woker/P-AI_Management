@@ -67,6 +67,13 @@ class AccountingMainViewModel @Inject constructor(
     private val _showQuickAddDialog = MutableStateFlow(false)
     val showQuickAddDialog: StateFlow<Boolean> = _showQuickAddDialog.asStateFlow()
 
+    // 编辑交易对话框状态
+    private val _showEditDialog = MutableStateFlow(false)
+    val showEditDialog: StateFlow<Boolean> = _showEditDialog.asStateFlow()
+
+    private val _editingTransaction = MutableStateFlow<DailyTransactionWithCategory?>(null)
+    val editingTransaction: StateFlow<DailyTransactionWithCategory?> = _editingTransaction.asStateFlow()
+
     init {
         loadData()
         loadCategories()
@@ -209,5 +216,77 @@ class AccountingMainViewModel @Inject constructor(
      */
     fun refresh() {
         loadData()
+    }
+
+    /**
+     * 显示编辑交易对话框
+     */
+    fun showEditTransaction(transactionId: Long) {
+        viewModelScope.launch {
+            val transaction = _recentTransactions.value.find { it.transaction.id == transactionId }
+            if (transaction != null) {
+                _editingTransaction.value = transaction
+                _showEditDialog.value = true
+            }
+        }
+    }
+
+    /**
+     * 隐藏编辑交易对话框
+     */
+    fun hideEditDialog() {
+        _showEditDialog.value = false
+        _editingTransaction.value = null
+    }
+
+    /**
+     * 更新交易
+     */
+    fun updateTransaction(
+        id: Long,
+        type: String,
+        amount: Double,
+        categoryId: Long?,
+        note: String,
+        date: LocalDate,
+        time: String?
+    ) {
+        val now = System.currentTimeMillis()
+        val transactionTime = time ?: String.format("%02d:%02d", java.time.LocalTime.now().hour, java.time.LocalTime.now().minute)
+
+        viewModelScope.launch {
+            try {
+                val existingTransaction = transactionDao.getById(id)
+                if (existingTransaction != null) {
+                    val updated = existingTransaction.copy(
+                        date = date.toEpochDay().toInt(),
+                        time = transactionTime,
+                        type = type,
+                        amount = amount,
+                        categoryId = categoryId,
+                        note = note,
+                        updatedAt = now
+                    )
+                    transactionDao.update(updated)
+                    hideEditDialog()
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
+    }
+
+    /**
+     * 删除交易
+     */
+    fun deleteTransaction(id: Long) {
+        viewModelScope.launch {
+            try {
+                transactionDao.deleteById(id)
+                hideEditDialog()
+            } catch (e: Exception) {
+                // Handle error
+            }
+        }
     }
 }
