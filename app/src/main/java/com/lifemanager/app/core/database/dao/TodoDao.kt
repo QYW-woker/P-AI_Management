@@ -152,6 +152,12 @@ interface TodoDao {
     suspend fun deleteWithSubTodos(id: Long)
 
     /**
+     * 批量删除待办
+     */
+    @Query("DELETE FROM todos WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
+
+    /**
      * 统计今日待办完成情况
      */
     @Query("""

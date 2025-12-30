@@ -76,6 +76,10 @@ class TodoRepositoryImpl @Inject constructor(
         dao.deleteWithSubTodos(id)
     }
 
+    override suspend fun deleteByIds(ids: List<Long>) {
+        dao.deleteByIds(ids)
+    }
+
     override suspend fun getTodayStats(today: Int): TodoStats {
         return dao.getTodayStats(today)
     }

@@ -113,6 +113,12 @@ interface DailyTransactionDao {
     suspend fun deleteById(id: Long)
 
     /**
+     * 批量删除交易
+     */
+    @Query("DELETE FROM daily_transactions WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
+
+    /**
      * 统计指定日期范围的交易数量
      */
     @Query("""

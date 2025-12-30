@@ -258,6 +258,13 @@ class DailyTransactionUseCase @Inject constructor(
     }
 
     /**
+     * 批量删除交易
+     */
+    suspend fun deleteTransactions(ids: List<Long>) {
+        transactionRepository.deleteByIds(ids)
+    }
+
+    /**
      * 获取交易详情
      */
     suspend fun getTransactionById(id: Long): DailyTransactionWithCategory? {

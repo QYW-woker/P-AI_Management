@@ -85,6 +85,11 @@ interface TodoRepository {
     suspend fun deleteWithSubTodos(id: Long)
 
     /**
+     * 批量删除待办
+     */
+    suspend fun deleteByIds(ids: List<Long>)
+
+    /**
      * 获取今日统计
      */
     suspend fun getTodayStats(today: Int): TodoStats

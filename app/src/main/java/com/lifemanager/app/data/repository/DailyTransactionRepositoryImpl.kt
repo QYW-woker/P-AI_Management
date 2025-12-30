@@ -65,6 +65,10 @@ class DailyTransactionRepositoryImpl @Inject constructor(
         dao.deleteById(id)
     }
 
+    override suspend fun deleteByIds(ids: List<Long>) {
+        dao.deleteByIds(ids)
+    }
+
     override suspend fun getTodayExpense(today: Int): Double {
         return dao.getTodayExpense(today)
     }

@@ -253,6 +253,13 @@ class TodoUseCase @Inject constructor(
     }
 
     /**
+     * 批量删除待办
+     */
+    suspend fun deleteTodos(ids: List<Long>) {
+        repository.deleteByIds(ids)
+    }
+
+    /**
      * 获取待办详情
      */
     suspend fun getTodoById(id: Long): TodoEntity? {

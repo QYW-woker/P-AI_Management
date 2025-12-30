@@ -1,9 +1,12 @@
 package com.lifemanager.app.feature.todo
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -55,39 +58,96 @@ fun TodoScreen(
     val selectedDate by viewModel.selectedDate.collectAsState()
     val calendarTodoCount by viewModel.calendarTodoCount.collectAsState()
     val selectedDateTodos by viewModel.selectedDateTodos.collectAsState()
+    val isSelectionMode by viewModel.isSelectionMode.collectAsState()
+    val selectedIds by viewModel.selectedIds.collectAsState()
+    val showBatchDeleteDialog by viewModel.showBatchDeleteDialog.collectAsState()
+
+    // 处理返回键
+    if (isSelectionMode) {
+        BackHandler {
+            viewModel.exitSelectionMode()
+        }
+    }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("待办记事") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.toggleViewMode() }) {
-                        Icon(
-                            imageVector = when (viewMode) {
-                                "LIST" -> Icons.Filled.GridView
-                                "QUADRANT" -> Icons.Filled.CalendarMonth
-                                else -> Icons.Filled.List
-                            },
-                            contentDescription = when (viewMode) {
-                                "LIST" -> "四象限视图"
-                                "QUADRANT" -> "日历视图"
-                                else -> "列表视图"
+            if (isSelectionMode) {
+                // 选择模式的顶部栏
+                TopAppBar(
+                    title = { Text("已选择 ${selectedIds.size} 项") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.exitSelectionMode() }) {
+                            Icon(Icons.Default.Close, contentDescription = "退出选择")
+                        }
+                    },
+                    actions = {
+                        // 全选/取消全选
+                        val allCount = todoGroups.sumOf { it.todos.size }
+                        if (selectedIds.size < allCount) {
+                            IconButton(onClick = { viewModel.selectAll() }) {
+                                Icon(Icons.Default.SelectAll, contentDescription = "全选")
                             }
-                        )
+                        } else {
+                            IconButton(onClick = { viewModel.deselectAll() }) {
+                                Icon(Icons.Default.Deselect, contentDescription = "取消全选")
+                            }
+                        }
+                        // 删除按钮
+                        IconButton(
+                            onClick = { viewModel.showBatchDeleteConfirm() },
+                            enabled = selectedIds.isNotEmpty()
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "删除选中",
+                                tint = if (selectedIds.isNotEmpty()) MaterialTheme.colorScheme.error
+                                       else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            } else {
+                // 正常模式的顶部栏
+                TopAppBar(
+                    title = { Text("待办记事") },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        }
+                    },
+                    actions = {
+                        // 批量选择按钮
+                        IconButton(onClick = { viewModel.enterSelectionMode() }) {
+                            Icon(Icons.Default.Checklist, contentDescription = "批量选择")
+                        }
+                        IconButton(onClick = { viewModel.toggleViewMode() }) {
+                            Icon(
+                                imageVector = when (viewMode) {
+                                    "LIST" -> Icons.Filled.GridView
+                                    "QUADRANT" -> Icons.Filled.CalendarMonth
+                                    else -> Icons.Filled.List
+                                },
+                                contentDescription = when (viewMode) {
+                                    "LIST" -> "四象限视图"
+                                    "QUADRANT" -> "日历视图"
+                                    else -> "列表视图"
+                                }
+                            )
+                        }
                     }
-                }
-            )
+                )
+            }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.showAddDialog() }
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "添加待办")
+            if (!isSelectionMode) {
+                FloatingActionButton(
+                    onClick = { viewModel.showAddDialog() }
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "添加待办")
+                }
             }
         }
     ) { paddingValues ->
@@ -137,7 +197,9 @@ fun TodoScreen(
                     when (viewMode) {
                         "LIST" -> TodoListView(
                             groups = todoGroups,
-                            viewModel = viewModel
+                            viewModel = viewModel,
+                            isSelectionMode = isSelectionMode,
+                            selectedIds = selectedIds
                         )
                         "QUADRANT" -> QuadrantView(
                             data = quadrantData,
@@ -171,7 +233,7 @@ fun TodoScreen(
         AlertDialog(
             onDismissRequest = { viewModel.hideDeleteConfirm() },
             title = { Text("确认删除") },
-            text = { Text("确定要删除这条待办吗？") },
+            text = { Text("确定要删除这条待办吗？此操作不可恢复。") },
             confirmButton = {
                 TextButton(
                     onClick = { viewModel.confirmDelete() },
@@ -184,6 +246,37 @@ fun TodoScreen(
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.hideDeleteConfirm() }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    // 批量删除确认对话框
+    if (showBatchDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.hideBatchDeleteConfirm() },
+            icon = {
+                Icon(
+                    Icons.Default.DeleteSweep,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text("确认批量删除") },
+            text = { Text("确定要删除选中的 ${selectedIds.size} 条待办吗？此操作不可恢复。") },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.confirmBatchDelete() },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("删除")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.hideBatchDeleteConfirm() }) {
                     Text("取消")
                 }
             }
@@ -392,7 +485,9 @@ private fun FilterBar(
 @Composable
 private fun TodoListView(
     groups: List<TodoGroup>,
-    viewModel: TodoViewModel
+    viewModel: TodoViewModel,
+    isSelectionMode: Boolean = false,
+    selectedIds: Set<Long> = emptySet()
 ) {
     if (groups.isEmpty()) {
         EmptyState()
@@ -416,9 +511,23 @@ private fun TodoListView(
                     TodoItem(
                         todo = todo,
                         isOverdue = viewModel.isOverdue(todo),
+                        isSelectionMode = isSelectionMode,
+                        isSelected = selectedIds.contains(todo.id),
                         onToggleComplete = { viewModel.toggleComplete(todo.id) },
-                        onClick = { viewModel.showEditDialog(todo.id) },
+                        onClick = {
+                            if (isSelectionMode) {
+                                viewModel.toggleSelection(todo.id)
+                            } else {
+                                viewModel.showEditDialog(todo.id)
+                            }
+                        },
                         onDelete = { viewModel.showDeleteConfirm(todo.id) },
+                        onLongClick = {
+                            if (!isSelectionMode) {
+                                viewModel.enterSelectionMode()
+                                viewModel.toggleSelection(todo.id)
+                            }
+                        },
                         formatDueDate = { viewModel.formatDueDate(it) }
                     )
                 }
@@ -582,13 +691,17 @@ private fun QuadrantTodoItem(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TodoItem(
     todo: TodoEntity,
     isOverdue: Boolean,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
     onToggleComplete: () -> Unit,
     onClick: () -> Unit,
     onDelete: () -> Unit,
+    onLongClick: () -> Unit = {},
     formatDueDate: (Int?) -> String
 ) {
     val isCompleted = todo.status == TodoStatus.COMPLETED
@@ -600,9 +713,11 @@ private fun TodoItem(
     }
 
     val cardBackground by animateColorAsState(
-        targetValue = if (isCompleted)
-            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        else MaterialTheme.colorScheme.surface,
+        targetValue = when {
+            isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+            isCompleted -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            else -> MaterialTheme.colorScheme.surface
+        },
         label = "cardBg"
     )
 
@@ -614,7 +729,10 @@ private fun TodoItem(
                 shape = RoundedCornerShape(16.dp),
                 spotColor = priorityColor.copy(alpha = 0.15f)
             )
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = cardBackground)
     ) {
@@ -624,7 +742,17 @@ private fun TodoItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 自定义复选框
+            // 选择模式下显示复选框
+            if (isSelectionMode) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onClick() },
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // 自定义复选框（任务状态）
             Box(
                 modifier = Modifier
                     .size(28.dp)
@@ -708,17 +836,19 @@ private fun TodoItem(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            // 删除按钮
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.DeleteOutline,
-                    contentDescription = "删除",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
-                    modifier = Modifier.size(20.dp)
-                )
+            // 非选择模式下显示删除按钮
+            if (!isSelectionMode) {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeleteOutline,
+                        contentDescription = "删除",
+                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

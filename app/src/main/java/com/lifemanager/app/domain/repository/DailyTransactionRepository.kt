@@ -71,6 +71,11 @@ interface DailyTransactionRepository {
     suspend fun deleteById(id: Long)
 
     /**
+     * 批量删除交易
+     */
+    suspend fun deleteByIds(ids: List<Long>)
+
+    /**
      * 获取今日支出总额
      */
     suspend fun getTodayExpense(today: Int): Double

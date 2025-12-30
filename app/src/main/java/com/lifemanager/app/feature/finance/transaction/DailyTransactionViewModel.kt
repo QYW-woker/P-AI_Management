@@ -75,6 +75,100 @@ class DailyTransactionViewModel @Inject constructor(
     private val _viewMode = MutableStateFlow("LIST")
     val viewMode: StateFlow<String> = _viewMode.asStateFlow()
 
+    // ============ 批量删除功能 ============
+    // 选择模式
+    private val _isSelectionMode = MutableStateFlow(false)
+    val isSelectionMode: StateFlow<Boolean> = _isSelectionMode.asStateFlow()
+
+    // 已选中的交易ID
+    private val _selectedIds = MutableStateFlow<Set<Long>>(emptySet())
+    val selectedIds: StateFlow<Set<Long>> = _selectedIds.asStateFlow()
+
+    // 显示批量删除确认对话框
+    private val _showBatchDeleteDialog = MutableStateFlow(false)
+    val showBatchDeleteDialog: StateFlow<Boolean> = _showBatchDeleteDialog.asStateFlow()
+
+    /**
+     * 进入选择模式
+     */
+    fun enterSelectionMode() {
+        _isSelectionMode.value = true
+        _selectedIds.value = emptySet()
+    }
+
+    /**
+     * 退出选择模式
+     */
+    fun exitSelectionMode() {
+        _isSelectionMode.value = false
+        _selectedIds.value = emptySet()
+    }
+
+    /**
+     * 切换选中状态
+     */
+    fun toggleSelection(id: Long) {
+        val currentSet = _selectedIds.value.toMutableSet()
+        if (currentSet.contains(id)) {
+            currentSet.remove(id)
+        } else {
+            currentSet.add(id)
+        }
+        _selectedIds.value = currentSet
+    }
+
+    /**
+     * 全选当前列表
+     */
+    fun selectAll() {
+        val allIds = _transactionGroups.value.flatMap { group ->
+            group.transactions.map { it.transaction.id }
+        }.toSet()
+        _selectedIds.value = allIds
+    }
+
+    /**
+     * 取消全选
+     */
+    fun deselectAll() {
+        _selectedIds.value = emptySet()
+    }
+
+    /**
+     * 显示批量删除确认
+     */
+    fun showBatchDeleteConfirm() {
+        if (_selectedIds.value.isNotEmpty()) {
+            _showBatchDeleteDialog.value = true
+        }
+    }
+
+    /**
+     * 隐藏批量删除确认
+     */
+    fun hideBatchDeleteConfirm() {
+        _showBatchDeleteDialog.value = false
+    }
+
+    /**
+     * 确认批量删除
+     */
+    fun confirmBatchDelete() {
+        val idsToDelete = _selectedIds.value.toList()
+        if (idsToDelete.isEmpty()) return
+
+        viewModelScope.launch {
+            try {
+                transactionUseCase.deleteTransactions(idsToDelete)
+                hideBatchDeleteConfirm()
+                exitSelectionMode()
+                refresh()
+            } catch (e: Exception) {
+                // 处理错误
+            }
+        }
+    }
+
     init {
         loadData()
         observeCategories()

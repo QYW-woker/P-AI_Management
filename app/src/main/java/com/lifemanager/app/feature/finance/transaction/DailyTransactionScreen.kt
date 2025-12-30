@@ -1,8 +1,10 @@
 package com.lifemanager.app.feature.finance.transaction
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -48,38 +50,98 @@ fun DailyTransactionScreen(
     val viewMode by viewModel.viewMode.collectAsState()
     val showEditDialog by viewModel.showEditDialog.collectAsState()
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
+    val isSelectionMode by viewModel.isSelectionMode.collectAsState()
+    val selectedIds by viewModel.selectedIds.collectAsState()
+    val showBatchDeleteDialog by viewModel.showBatchDeleteDialog.collectAsState()
+
+    // 使用 BackHandler 处理返回键
+    if (isSelectionMode) {
+        androidx.activity.compose.BackHandler {
+            viewModel.exitSelectionMode()
+        }
+    }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("日常记账") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+            if (isSelectionMode) {
+                // 选择模式的顶部栏
+                TopAppBar(
+                    title = { Text("已选择 ${selectedIds.size} 项") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.exitSelectionMode() }) {
+                            Icon(Icons.Default.Close, contentDescription = "退出选择")
+                        }
+                    },
+                    actions = {
+                        // 全选/取消全选
+                        val allCount = transactionGroups.sumOf { it.transactions.size }
+                        if (selectedIds.size < allCount) {
+                            IconButton(onClick = { viewModel.selectAll() }) {
+                                Icon(Icons.Default.SelectAll, contentDescription = "全选")
+                            }
+                        } else {
+                            IconButton(onClick = { viewModel.deselectAll() }) {
+                                Icon(Icons.Default.Deselect, contentDescription = "取消全选")
+                            }
+                        }
+                        // 删除按钮
+                        IconButton(
+                            onClick = { viewModel.showBatchDeleteConfirm() },
+                            enabled = selectedIds.isNotEmpty()
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "删除选中",
+                                tint = if (selectedIds.isNotEmpty()) MaterialTheme.colorScheme.error
+                                       else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
+            } else {
+                // 正常模式的顶部栏
+                TopAppBar(
+                    title = { Text("日常记账") },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        }
+                    },
+                    actions = {
+                        // 批量选择按钮
+                        IconButton(onClick = { viewModel.enterSelectionMode() }) {
+                            Icon(
+                                imageVector = Icons.Default.Checklist,
+                                contentDescription = "批量选择"
+                            )
+                        }
+                        // 导入账单按钮
+                        IconButton(onClick = onNavigateToImport) {
+                            Icon(
+                                imageVector = Icons.Filled.FileUpload,
+                                contentDescription = "导入账单"
+                            )
+                        }
+                        IconButton(onClick = { viewModel.toggleViewMode() }) {
+                            Icon(
+                                imageVector = if (viewMode == "LIST") Icons.Filled.CalendarMonth else Icons.Filled.List,
+                                contentDescription = if (viewMode == "LIST") "日历视图" else "列表视图"
+                            )
+                        }
                     }
-                },
-                actions = {
-                    // 导入账单按钮
-                    IconButton(onClick = onNavigateToImport) {
-                        Icon(
-                            imageVector = Icons.Filled.FileUpload,
-                            contentDescription = "导入账单"
-                        )
-                    }
-                    IconButton(onClick = { viewModel.toggleViewMode() }) {
-                        Icon(
-                            imageVector = if (viewMode == "LIST") Icons.Filled.CalendarMonth else Icons.Filled.List,
-                            contentDescription = if (viewMode == "LIST") "日历视图" else "列表视图"
-                        )
-                    }
-                }
-            )
+                )
+            }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.showAddDialog() }
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = "记一笔")
+            if (!isSelectionMode) {
+                FloatingActionButton(
+                    onClick = { viewModel.showAddDialog() }
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = "记一笔")
+                }
             }
         }
     ) { paddingValues ->
@@ -152,8 +214,22 @@ fun DailyTransactionScreen(
                                     ) { transaction ->
                                         TransactionItem(
                                             transaction = transaction,
-                                            onClick = { viewModel.showEditDialog(transaction.transaction.id) },
-                                            onDelete = { viewModel.showDeleteConfirm(transaction.transaction.id) }
+                                            isSelectionMode = isSelectionMode,
+                                            isSelected = selectedIds.contains(transaction.transaction.id),
+                                            onClick = {
+                                                if (isSelectionMode) {
+                                                    viewModel.toggleSelection(transaction.transaction.id)
+                                                } else {
+                                                    viewModel.showEditDialog(transaction.transaction.id)
+                                                }
+                                            },
+                                            onDelete = { viewModel.showDeleteConfirm(transaction.transaction.id) },
+                                            onLongClick = {
+                                                if (!isSelectionMode) {
+                                                    viewModel.enterSelectionMode()
+                                                    viewModel.toggleSelection(transaction.transaction.id)
+                                                }
+                                            }
                                         )
                                     }
                                 }
@@ -182,7 +258,7 @@ fun DailyTransactionScreen(
         AlertDialog(
             onDismissRequest = { viewModel.hideDeleteConfirm() },
             title = { Text("确认删除") },
-            text = { Text("确定要删除这条记录吗？") },
+            text = { Text("确定要删除这条记录吗？此操作不可恢复。") },
             confirmButton = {
                 TextButton(
                     onClick = { viewModel.confirmDelete() },
@@ -195,6 +271,37 @@ fun DailyTransactionScreen(
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.hideDeleteConfirm() }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
+    // 批量删除确认对话框
+    if (showBatchDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { viewModel.hideBatchDeleteConfirm() },
+            icon = {
+                Icon(
+                    Icons.Default.DeleteSweep,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = { Text("确认批量删除") },
+            text = { Text("确定要删除选中的 ${selectedIds.size} 条记录吗？此操作不可恢复。") },
+            confirmButton = {
+                TextButton(
+                    onClick = { viewModel.confirmBatchDelete() },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("删除")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.hideBatchDeleteConfirm() }) {
                     Text("取消")
                 }
             }
@@ -318,11 +425,15 @@ private fun DayHeader(group: DailyTransactionGroup) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TransactionItem(
     transaction: DailyTransactionWithCategory,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onLongClick: () -> Unit = {}
 ) {
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
     val isExpense = transaction.transaction.type == TransactionType.EXPENSE
@@ -330,8 +441,16 @@ private fun TransactionItem(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+            else MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier
@@ -339,6 +458,16 @@ private fun TransactionItem(
                 .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // 选择模式下显示复选框
+            if (isSelectionMode) {
+                Checkbox(
+                    checked = isSelected,
+                    onCheckedChange = { onClick() },
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
             // 分类图标
             Box(
                 modifier = Modifier
@@ -395,17 +524,19 @@ private fun TransactionItem(
                 }
             }
 
-            // 删除按钮
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.size(32.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Delete,
-                    contentDescription = "删除",
-                    tint = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.size(18.dp)
-                )
+            // 非选择模式下显示删除按钮
+            if (!isSelectionMode) {
+                IconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "删除",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             }
         }
     }
