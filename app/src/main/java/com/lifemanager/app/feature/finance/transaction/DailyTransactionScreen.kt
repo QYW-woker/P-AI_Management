@@ -27,10 +27,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifemanager.app.domain.model.*
-import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.YearMonth
-import java.util.Locale
+import kotlin.math.abs
 
 /**
  * 日常记账主界面
@@ -314,8 +313,6 @@ private fun StatsCards(
     todayStats: DailyStats,
     monthStats: PeriodStats
 ) {
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -343,10 +340,13 @@ private fun StatsCards(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "¥${numberFormat.format(todayStats.totalExpense)}",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = formatAmount(todayStats.totalExpense),
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFE65100)
+                    color = Color(0xFFE65100),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -372,10 +372,13 @@ private fun StatsCards(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "¥${numberFormat.format(monthStats.totalExpense)}",
-                    style = MaterialTheme.typography.titleLarge,
+                    text = formatAmount(monthStats.totalExpense),
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1565C0)
+                    color = Color(0xFF1565C0),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
                 )
             }
         }
@@ -384,14 +387,15 @@ private fun StatsCards(
 
 @Composable
 private fun DayHeader(group: DailyTransactionGroup) {
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
-
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f, fill = false)
+        ) {
             Text(
                 text = group.dateText,
                 style = MaterialTheme.typography.titleMedium,
@@ -405,20 +409,21 @@ private fun DayHeader(group: DailyTransactionGroup) {
             )
         }
 
-        Row {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (group.totalIncome > 0) {
                 Text(
-                    text = "+${numberFormat.format(group.totalIncome)}",
+                    text = "+${formatAmountShort(group.totalIncome)}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFF4CAF50)
+                    color = Color(0xFF4CAF50),
+                    maxLines = 1
                 )
-                Spacer(modifier = Modifier.width(12.dp))
             }
             if (group.totalExpense > 0) {
                 Text(
-                    text = "-${numberFormat.format(group.totalExpense)}",
+                    text = "-${formatAmountShort(group.totalExpense)}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color(0xFFF44336)
+                    color = Color(0xFFF44336),
+                    maxLines = 1
                 )
             }
         }
@@ -435,7 +440,6 @@ private fun TransactionItem(
     onDelete: () -> Unit,
     onLongClick: () -> Unit = {}
 ) {
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
     val isExpense = transaction.transaction.type == TransactionType.EXPENSE
 
     Card(
@@ -513,13 +517,16 @@ private fun TransactionItem(
                 }
             }
 
+            Spacer(modifier = Modifier.width(8.dp))
+
             // 金额和时间
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = "${if (isExpense) "-" else "+"}¥${numberFormat.format(transaction.transaction.amount)}",
+                    text = "${if (isExpense) "-" else "+"}${formatAmount(transaction.transaction.amount)}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isExpense) Color(0xFFF44336) else Color(0xFF4CAF50)
+                    color = if (isExpense) Color(0xFFF44336) else Color(0xFF4CAF50),
+                    maxLines = 1
                 )
                 if (transaction.transaction.time.isNotBlank()) {
                     Text(
@@ -588,6 +595,49 @@ private fun parseColor(colorString: String): Color {
 }
 
 /**
+ * 智能格式化金额
+ * - 小于1万：显示完整金额（如 ¥1,234.56）
+ * - 1万-1亿：显示万为单位（如 ¥1.23万）
+ * - 大于1亿：显示亿为单位（如 ¥1.23亿）
+ */
+private fun formatAmount(amount: Double): String {
+    val absAmount = abs(amount)
+    return when {
+        absAmount >= 100_000_000 -> {
+            val value = absAmount / 100_000_000
+            "¥${String.format("%.2f", value)}亿"
+        }
+        absAmount >= 10_000 -> {
+            val value = absAmount / 10_000
+            "¥${String.format("%.2f", value)}万"
+        }
+        else -> {
+            "¥${String.format("%,.2f", absAmount)}"
+        }
+    }
+}
+
+/**
+ * 简短格式化金额（不带¥符号）
+ */
+private fun formatAmountShort(amount: Double): String {
+    val absAmount = abs(amount)
+    return when {
+        absAmount >= 100_000_000 -> {
+            val value = absAmount / 100_000_000
+            "${String.format("%.1f", value)}亿"
+        }
+        absAmount >= 10_000 -> {
+            val value = absAmount / 10_000
+            "${String.format("%.1f", value)}万"
+        }
+        else -> {
+            String.format("%,.0f", absAmount)
+        }
+    }
+}
+
+/**
  * 日历视图
  */
 @Composable
@@ -600,7 +650,6 @@ private fun CalendarView(
     val currentYearMonth by viewModel.currentYearMonth.collectAsState()
     val selectedDate by viewModel.selectedDate.collectAsState()
     val calendarData by viewModel.calendarData.collectAsState()
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         // 月份导航
@@ -734,7 +783,6 @@ private fun CalendarDayCell(
 ) {
     val today = remember { LocalDate.now().toEpochDay().toInt() }
     val isToday = day.epochDay == today
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
 
     Box(
         modifier = Modifier

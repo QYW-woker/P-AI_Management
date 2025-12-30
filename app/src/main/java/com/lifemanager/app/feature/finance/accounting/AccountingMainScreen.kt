@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.time.LocalDate
 import java.util.Locale
+import kotlin.math.abs
 
 /**
  * 记账主界面
@@ -424,7 +425,6 @@ private fun MonthlyStatisticsCard(
     monthStats: PeriodStats,
     onClick: () -> Unit
 ) {
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
     val today = remember { LocalDate.now() }
 
     Card(
@@ -459,58 +459,66 @@ private fun MonthlyStatisticsCard(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // 收入
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "收入",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "¥${numberFormat.format(monthStats.totalIncome)}",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color(0xFF4CAF50),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                MonthStatItem(
+                    modifier = Modifier.weight(1f),
+                    label = "收入",
+                    amount = monthStats.totalIncome,
+                    color = Color(0xFF4CAF50)
+                )
 
                 // 支出
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "支出",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "¥${numberFormat.format(monthStats.totalExpense)}",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = Color(0xFFF44336),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                MonthStatItem(
+                    modifier = Modifier.weight(1f),
+                    label = "支出",
+                    amount = monthStats.totalExpense,
+                    color = Color(0xFFF44336)
+                )
 
                 // 结余
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "结余",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    val balance = monthStats.totalIncome - monthStats.totalExpense
-                    Text(
-                        text = "¥${numberFormat.format(balance)}",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = if (balance >= 0) MaterialTheme.colorScheme.primary else Color(0xFFF44336),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                val balance = monthStats.totalIncome - monthStats.totalExpense
+                MonthStatItem(
+                    modifier = Modifier.weight(1f),
+                    label = "结余",
+                    amount = balance,
+                    color = if (balance >= 0) MaterialTheme.colorScheme.primary else Color(0xFFF44336)
+                )
             }
         }
+    }
+}
+
+/**
+ * 月度统计项
+ */
+@Composable
+private fun MonthStatItem(
+    modifier: Modifier = Modifier,
+    label: String,
+    amount: Double,
+    color: Color
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = formatAmount(amount),
+            style = MaterialTheme.typography.titleMedium,
+            color = color,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
@@ -519,8 +527,6 @@ private fun MonthlyStatisticsCard(
  */
 @Composable
 private fun TodayStatisticsCard(todayStats: DailyStats) {
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp)
@@ -529,12 +535,14 @@ private fun TodayStatisticsCard(todayStats: DailyStats) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
             // 今日支出
             StatItem(
+                modifier = Modifier.weight(1f),
                 label = "今日支出",
-                value = "¥${numberFormat.format(todayStats.totalExpense)}",
+                amount = todayStats.totalExpense,
                 valueColor = Color(0xFFF44336)
             )
 
@@ -547,8 +555,9 @@ private fun TodayStatisticsCard(todayStats: DailyStats) {
 
             // 今日收入
             StatItem(
+                modifier = Modifier.weight(1f),
                 label = "今日收入",
-                value = "¥${numberFormat.format(todayStats.totalIncome)}",
+                amount = todayStats.totalIncome,
                 valueColor = Color(0xFF4CAF50)
             )
 
@@ -561,6 +570,7 @@ private fun TodayStatisticsCard(todayStats: DailyStats) {
 
             // 今日笔数
             StatItem(
+                modifier = Modifier.weight(1f),
                 label = "今日笔数",
                 value = "${todayStats.transactionCount}笔",
                 valueColor = MaterialTheme.colorScheme.primary
@@ -571,22 +581,31 @@ private fun TodayStatisticsCard(todayStats: DailyStats) {
 
 @Composable
 private fun StatItem(
+    modifier: Modifier = Modifier,
     label: String,
-    value: String,
+    amount: Double? = null,
+    value: String? = null,
     valueColor: Color
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = value,
+            text = value ?: formatAmount(amount ?: 0.0),
             style = MaterialTheme.typography.titleMedium,
             color = valueColor,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
         )
     }
 }
@@ -687,8 +706,6 @@ private fun RecentTransactionsSection(
     onViewAll: () -> Unit,
     onTransactionClick: (Long) -> Unit
 ) {
-    val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
-
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -748,7 +765,6 @@ private fun RecentTransactionsSection(
                     transactions.forEachIndexed { index, transaction ->
                         RecentTransactionItem(
                             transaction = transaction,
-                            numberFormat = numberFormat,
                             onClick = { onTransactionClick(transaction.transaction.id) }
                         )
                         if (index < transactions.size - 1) {
@@ -767,7 +783,6 @@ private fun RecentTransactionsSection(
 @Composable
 private fun RecentTransactionItem(
     transaction: DailyTransactionWithCategory,
-    numberFormat: NumberFormat,
     onClick: () -> Unit
 ) {
     val isExpense = transaction.transaction.type == TransactionType.EXPENSE
@@ -812,7 +827,9 @@ private fun RecentTransactionItem(
             Text(
                 text = transaction.category?.name ?: if (isExpense) "支出" else "收入",
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
             if (transaction.transaction.note.isNotBlank()) {
                 Text(
@@ -825,12 +842,15 @@ private fun RecentTransactionItem(
             }
         }
 
-        // 金额
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // 金额 - 使用智能格式化
         Text(
-            text = "${if (isExpense) "-" else "+"}¥${numberFormat.format(transaction.transaction.amount)}",
+            text = "${if (isExpense) "-" else "+"}${formatAmount(transaction.transaction.amount)}",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = if (isExpense) Color(0xFFF44336) else Color(0xFF4CAF50)
+            color = if (isExpense) Color(0xFFF44336) else Color(0xFF4CAF50),
+            maxLines = 1
         )
     }
 }
@@ -1142,6 +1162,29 @@ private fun parseColor(colorString: String): Color {
         Color(android.graphics.Color.parseColor(colorString))
     } catch (e: Exception) {
         Color.Gray
+    }
+}
+
+/**
+ * 智能格式化金额
+ * - 小于1万：显示完整金额（如 ¥1,234.56）
+ * - 1万-1亿：显示万为单位（如 ¥1.23万）
+ * - 大于1亿：显示亿为单位（如 ¥1.23亿）
+ */
+private fun formatAmount(amount: Double): String {
+    val absAmount = abs(amount)
+    return when {
+        absAmount >= 100_000_000 -> {
+            val value = absAmount / 100_000_000
+            "¥${String.format("%.2f", value)}亿"
+        }
+        absAmount >= 10_000 -> {
+            val value = absAmount / 10_000
+            "¥${String.format("%.2f", value)}万"
+        }
+        else -> {
+            "¥${String.format("%,.2f", absAmount)}"
+        }
     }
 }
 
