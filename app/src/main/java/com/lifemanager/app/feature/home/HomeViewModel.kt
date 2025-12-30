@@ -1,5 +1,6 @@
 package com.lifemanager.app.feature.home
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifemanager.app.core.database.dao.DailyTransactionDao
@@ -234,6 +235,7 @@ class HomeViewModel @Inject constructor(
 /**
  * 今日统计数据
  */
+@Stable
 data class TodayStatsData(
     val completedTodos: Int = 0,
     val totalTodos: Int = 0,
@@ -247,6 +249,7 @@ data class TodayStatsData(
 /**
  * 本月财务数据
  */
+@Stable
 data class MonthlyFinanceData(
     val totalIncome: Double = 0.0,
     val totalExpense: Double = 0.0,
@@ -256,6 +259,7 @@ data class MonthlyFinanceData(
 /**
  * 目标进度数据
  */
+@Stable
 data class GoalProgressData(
     val id: Long,
     val title: String,

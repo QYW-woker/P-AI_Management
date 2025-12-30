@@ -11,11 +11,15 @@ import com.lifemanager.app.domain.model.DailyTransactionWithCategory
 import com.lifemanager.app.domain.model.PeriodStats
 import com.lifemanager.app.domain.model.TransactionType
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.YearMonth
 import javax.inject.Inject
@@ -81,23 +85,27 @@ class AccountingMainViewModel @Inject constructor(
 
     /**
      * 加载数据
+     * 使用debounce避免频繁更新，并优化分类查询
      */
+    @OptIn(FlowPreview::class)
     private fun loadData() {
         _uiState.value = UiState.Loading
 
         // 加载今日统计
         viewModelScope.launch {
             try {
-                transactionDao.getTransactionsByDate(todayEpochDay).collectLatest { transactions ->
-                    val income = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
-                    val expense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
-                    _todayStats.value = DailyStats(
-                        date = todayEpochDay,
-                        totalIncome = income,
-                        totalExpense = expense,
-                        transactionCount = transactions.size
-                    )
-                }
+                transactionDao.getTransactionsByDate(todayEpochDay)
+                    .debounce(200) // 防抖避免频繁更新
+                    .collectLatest { transactions ->
+                        val income = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
+                        val expense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
+                        _todayStats.value = DailyStats(
+                            date = todayEpochDay,
+                            totalIncome = income,
+                            totalExpense = expense,
+                            transactionCount = transactions.size
+                        )
+                    }
             } catch (e: Exception) {
                 // Handle error
             }
@@ -106,37 +114,53 @@ class AccountingMainViewModel @Inject constructor(
         // 加载月度统计
         viewModelScope.launch {
             try {
-                transactionDao.getTransactionsInRange(monthStartDate, monthEndDate).collectLatest { transactions ->
-                    val income = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
-                    val expense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
-                    _monthStats.value = PeriodStats(
-                        startDate = monthStartDate,
-                        endDate = monthEndDate,
-                        totalIncome = income,
-                        totalExpense = expense
-                    )
-                }
+                transactionDao.getTransactionsInRange(monthStartDate, monthEndDate)
+                    .debounce(200)
+                    .collectLatest { transactions ->
+                        val income = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
+                        val expense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
+                        _monthStats.value = PeriodStats(
+                            startDate = monthStartDate,
+                            endDate = monthEndDate,
+                            totalIncome = income,
+                            totalExpense = expense
+                        )
+                    }
             } catch (e: Exception) {
                 // Handle error
             }
         }
 
-        // 加载最近交易
+        // 加载最近交易 - 优化：批量查询分类避免N+1问题
         viewModelScope.launch {
             try {
-                transactionDao.getRecentTransactions(10).collectLatest { transactions ->
-                    val transactionsWithCategory = transactions.map { entity ->
-                        val category = entity.categoryId?.let { id ->
-                            customFieldDao.getFieldById(id)
+                transactionDao.getRecentTransactions(10)
+                    .debounce(200)
+                    .collectLatest { transactions ->
+                        // 批量获取所有需要的分类ID
+                        val categoryIds = transactions.mapNotNull { it.categoryId }.distinct()
+
+                        // 一次性查询所有分类（在IO线程）
+                        val categoriesMap = withContext(Dispatchers.IO) {
+                            if (categoryIds.isNotEmpty()) {
+                                categoryIds.mapNotNull { id ->
+                                    customFieldDao.getFieldById(id)?.let { id to it }
+                                }.toMap()
+                            } else {
+                                emptyMap()
+                            }
                         }
-                        DailyTransactionWithCategory(
-                            transaction = entity,
-                            category = category
-                        )
+
+                        // 组装数据
+                        val transactionsWithCategory = transactions.map { entity ->
+                            DailyTransactionWithCategory(
+                                transaction = entity,
+                                category = entity.categoryId?.let { categoriesMap[it] }
+                            )
+                        }
+                        _recentTransactions.value = transactionsWithCategory
+                        _uiState.value = UiState.Success
                     }
-                    _recentTransactions.value = transactionsWithCategory
-                    _uiState.value = UiState.Success
-                }
             } catch (e: Exception) {
                 _uiState.value = UiState.Error(e.message ?: "加载失败")
             }

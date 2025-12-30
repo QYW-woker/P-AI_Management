@@ -3,6 +3,8 @@ package com.lifemanager.app.feature.finance.transaction.billimport
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.apache.poi.hssf.usermodel.HSSFWorkbook
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
@@ -54,9 +56,10 @@ class BillParser(private val context: Context) {
 
     /**
      * 解析账单文件（支持CSV、Excel、Word）
+     * 使用IO线程处理，避免阻塞主线程
      */
-    fun parseFile(uri: Uri): BillParseResult {
-        return try {
+    suspend fun parseFile(uri: Uri): BillParseResult = withContext(Dispatchers.IO) {
+        try {
             val fileName = getFileName(uri)
             val extension = fileName.substringAfterLast('.', "").lowercase()
 
@@ -170,23 +173,30 @@ class BillParser(private val context: Context) {
 
     /**
      * 将Excel工作表转换为CSV格式字符串
+     * 限制最大行数防止处理过大的文件
      */
     private fun excelSheetToCSV(sheet: Sheet): String {
-        val sb = StringBuilder()
+        val maxRows = 10000 // 限制最大处理行数
+        val sb = StringBuilder(1024 * 16) // 预分配16KB
         val formatter = DataFormatter()
+        var rowCount = 0
 
         for (row in sheet) {
-            val cells = mutableListOf<String>()
+            if (rowCount++ >= maxRows) break
+
             val lastCellNum = row.lastCellNum.toInt().coerceAtLeast(0)
-            for (i in 0 until lastCellNum) {
+            if (lastCellNum == 0) continue
+
+            val cells = Array(lastCellNum) { i ->
                 val cell = row.getCell(i, Row.MissingCellPolicy.CREATE_NULL_AS_BLANK)
                 var cellValue = formatter.formatCellValue(cell)
                 // 处理包含逗号或换行的单元格
                 if (cellValue.contains(",") || cellValue.contains("\n") || cellValue.contains("\"")) {
                     cellValue = "\"${cellValue.replace("\"", "\"\"")}\""
                 }
-                cells.add(cellValue)
+                cellValue
             }
+
             if (cells.any { it.isNotBlank() }) {
                 sb.append(cells.joinToString(",")).append("\n")
             }
@@ -255,8 +265,11 @@ class BillParser(private val context: Context) {
 
     /**
      * 读取文件内容，自动检测编码
+     * 限制最大文件大小为10MB防止OOM
      */
     private fun readFileContent(uri: Uri): String {
+        val maxFileSize = 10 * 1024 * 1024 // 10MB
+
         val inputStream = context.contentResolver.openInputStream(uri)
             ?: throw Exception("无法打开文件")
 
@@ -268,8 +281,20 @@ class BillParser(private val context: Context) {
             Charset.forName("GB18030")
         )
 
-        val bytes = inputStream.readBytes()
-        inputStream.close()
+        val bytes = inputStream.use { stream ->
+            val buffer = ByteArray(maxFileSize)
+            var totalRead = 0
+            var bytesRead: Int
+
+            while (stream.read(buffer, totalRead, buffer.size - totalRead).also { bytesRead = it } != -1) {
+                totalRead += bytesRead
+                if (totalRead >= maxFileSize) {
+                    break // 达到最大限制
+                }
+            }
+
+            buffer.copyOf(totalRead)
+        }
 
         // 优先尝试UTF-8
         for (charset in charsets) {
