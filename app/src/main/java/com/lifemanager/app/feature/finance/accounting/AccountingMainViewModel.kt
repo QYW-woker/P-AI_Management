@@ -241,10 +241,12 @@ class AccountingMainViewModel @Inject constructor(
         note: String,
         date: LocalDate = LocalDate.now(),
         time: String? = null,
-        accountId: Long? = null
+        accountId: Long? = null,
+        attachments: List<String> = emptyList()
     ) {
         val now = System.currentTimeMillis()
         val transactionTime = time ?: String.format("%02d:%02d", java.time.LocalTime.now().hour, java.time.LocalTime.now().minute)
+        val attachmentsJson = com.lifemanager.app.core.util.AttachmentManager.toAttachmentsJson(attachments)
 
         viewModelScope.launch {
             try {
@@ -256,6 +258,7 @@ class AccountingMainViewModel @Inject constructor(
                     categoryId = categoryId,
                     accountId = accountId,
                     note = note,
+                    attachments = attachmentsJson,
                     createdAt = now,
                     updatedAt = now
                 )
@@ -317,10 +320,12 @@ class AccountingMainViewModel @Inject constructor(
         categoryId: Long?,
         note: String,
         date: LocalDate,
-        time: String?
+        time: String?,
+        attachments: List<String> = emptyList()
     ) {
         val now = System.currentTimeMillis()
         val transactionTime = time ?: String.format("%02d:%02d", java.time.LocalTime.now().hour, java.time.LocalTime.now().minute)
+        val attachmentsJson = com.lifemanager.app.core.util.AttachmentManager.toAttachmentsJson(attachments)
 
         viewModelScope.launch {
             try {
@@ -333,6 +338,7 @@ class AccountingMainViewModel @Inject constructor(
                         amount = amount,
                         categoryId = categoryId,
                         note = note,
+                        attachments = attachmentsJson,
                         updatedAt = now
                     )
                     transactionDao.update(updated)

@@ -212,8 +212,8 @@ fun AccountingMainScreen(
     if (showQuickAddDialog) {
         QuickAddTransactionDialog(
             onDismiss = { viewModel.hideQuickAdd() },
-            onConfirm = { type, amount, categoryId, note, date, time, accountId ->
-                viewModel.quickAddTransaction(type, amount, categoryId, note, date, time, accountId)
+            onConfirm = { type, amount, categoryId, note, date, time, accountId, attachments ->
+                viewModel.quickAddTransaction(type, amount, categoryId, note, date, time, accountId, attachments)
             },
             categories = viewModel.categories.collectAsState().value,
             accounts = viewModel.accounts.collectAsState().value
@@ -225,8 +225,8 @@ fun AccountingMainScreen(
         EditTransactionDialog(
             transaction = editingTransaction!!,
             onDismiss = { viewModel.hideEditDialog() },
-            onConfirm = { id, type, amount, categoryId, note, date, time ->
-                viewModel.updateTransaction(id, type, amount, categoryId, note, date, time)
+            onConfirm = { id, type, amount, categoryId, note, date, time, attachments ->
+                viewModel.updateTransaction(id, type, amount, categoryId, note, date, time, attachments)
             },
             onDelete = { id ->
                 viewModel.deleteTransaction(id)
@@ -842,6 +842,8 @@ private fun RecentTransactionItem(
     onClick: () -> Unit
 ) {
     val isExpense = transaction.transaction.type == TransactionType.EXPENSE
+    val hasAttachments = transaction.transaction.attachments.isNotBlank() &&
+            transaction.transaction.attachments != "[]"
 
     // 获取卡通图标
     val emoji = transaction.category?.let {
@@ -880,13 +882,25 @@ private fun RecentTransactionItem(
 
         // 信息
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = transaction.category?.name ?: if (isExpense) "支出" else "收入",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = transaction.category?.name ?: if (isExpense) "支出" else "收入",
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                // 附件指示器
+                if (hasAttachments) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Icon(
+                        imageVector = Icons.Default.AttachFile,
+                        contentDescription = "有附件",
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
             if (transaction.transaction.note.isNotBlank()) {
                 Text(
                     text = transaction.transaction.note,
@@ -918,7 +932,7 @@ private fun RecentTransactionItem(
 @Composable
 private fun QuickAddTransactionDialog(
     onDismiss: () -> Unit,
-    onConfirm: (type: String, amount: Double, categoryId: Long?, note: String, date: LocalDate, time: String?, accountId: Long?) -> Unit,
+    onConfirm: (type: String, amount: Double, categoryId: Long?, note: String, date: LocalDate, time: String?, accountId: Long?, attachments: List<String>) -> Unit,
     categories: List<com.lifemanager.app.core.database.entity.CustomFieldEntity>,
     accounts: List<com.lifemanager.app.core.database.entity.FundAccountEntity> = emptyList()
 ) {
@@ -927,6 +941,7 @@ private fun QuickAddTransactionDialog(
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
     var selectedAccountId by remember { mutableStateOf<Long?>(null) }
     var note by remember { mutableStateOf("") }
+    var attachments by remember { mutableStateOf<List<String>>(emptyList()) }
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     var selectedTime by remember { mutableStateOf<String?>(null) }
     var showDatePicker by remember { mutableStateOf(false) }
@@ -1144,6 +1159,13 @@ private fun QuickAddTransactionDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+
+                // 附件
+                com.lifemanager.app.ui.component.AttachmentPicker(
+                    attachments = attachments,
+                    onAttachmentsChanged = { attachments = it },
+                    maxAttachments = 3
+                )
             }
         },
         confirmButton = {
@@ -1151,7 +1173,7 @@ private fun QuickAddTransactionDialog(
                 onClick = {
                     val amountValue = amount.toDoubleOrNull()
                     if (amountValue != null && amountValue > 0) {
-                        onConfirm(selectedType, amountValue, selectedCategoryId, note, selectedDate, selectedTime, selectedAccountId)
+                        onConfirm(selectedType, amountValue, selectedCategoryId, note, selectedDate, selectedTime, selectedAccountId, attachments)
                         onDismiss()
                     }
                 }
@@ -1286,7 +1308,7 @@ private fun formatAmount(amount: Double): String {
 private fun EditTransactionDialog(
     transaction: DailyTransactionWithCategory,
     onDismiss: () -> Unit,
-    onConfirm: (id: Long, type: String, amount: Double, categoryId: Long?, note: String, date: LocalDate, time: String?) -> Unit,
+    onConfirm: (id: Long, type: String, amount: Double, categoryId: Long?, note: String, date: LocalDate, time: String?, attachments: List<String>) -> Unit,
     onDelete: (Long) -> Unit,
     categories: List<com.lifemanager.app.core.database.entity.CustomFieldEntity>
 ) {
@@ -1300,6 +1322,9 @@ private fun EditTransactionDialog(
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var attachments by remember {
+        mutableStateOf(com.lifemanager.app.core.util.AttachmentManager.parseAttachments(entity.attachments))
+    }
 
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate.toEpochDay() * 24 * 60 * 60 * 1000
@@ -1493,6 +1518,13 @@ private fun EditTransactionDialog(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
+
+                // 附件
+                com.lifemanager.app.ui.component.AttachmentPicker(
+                    attachments = attachments,
+                    onAttachmentsChanged = { attachments = it },
+                    maxAttachments = 5
+                )
             }
         },
         confirmButton = {
@@ -1500,7 +1532,7 @@ private fun EditTransactionDialog(
                 onClick = {
                     val amountValue = amount.toDoubleOrNull()
                     if (amountValue != null && amountValue > 0) {
-                        onConfirm(entity.id, selectedType, amountValue, selectedCategoryId, note, selectedDate, selectedTime)
+                        onConfirm(entity.id, selectedType, amountValue, selectedCategoryId, note, selectedDate, selectedTime, attachments)
                     }
                 }
             ) {
