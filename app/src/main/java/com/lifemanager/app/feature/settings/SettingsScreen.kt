@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.lifemanager.app.BuildConfig
 
 /**
  * 设置页面
@@ -30,11 +31,31 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val settings by viewModel.settings.collectAsState()
+    val uiState by viewModel.uiState.collectAsState()
     val showTimePicker by viewModel.showTimePicker.collectAsState()
     val showLanguagePicker by viewModel.showLanguagePicker.collectAsState()
     val showClearDataDialog by viewModel.showClearDataDialog.collectAsState()
+    val showBackupSuccessDialog by viewModel.showBackupSuccessDialog.collectAsState()
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // 处理UI状态变化
+    LaunchedEffect(uiState) {
+        when (val state = uiState) {
+            is SettingsUiState.Success -> {
+                snackbarHostState.showSnackbar(state.message)
+                viewModel.clearUiState()
+            }
+            is SettingsUiState.Error -> {
+                snackbarHostState.showSnackbar(state.message)
+                viewModel.clearUiState()
+            }
+            else -> {}
+        }
+    }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("设置") },
@@ -121,14 +142,14 @@ fun SettingsScreen(
                         icon = Icons.Outlined.CloudUpload,
                         title = "立即备份",
                         value = "",
-                        onClick = { /* TODO */ }
+                        onClick = { viewModel.backupNow() }
                     )
                     Divider(modifier = Modifier.padding(start = 56.dp))
                     ClickableSettingItem(
                         icon = Icons.Outlined.CloudDownload,
                         title = "恢复数据",
                         value = "",
-                        onClick = { /* TODO */ }
+                        onClick = { viewModel.restoreData() }
                     )
                     Divider(modifier = Modifier.padding(start = 56.dp))
                     ClickableSettingItem(
@@ -147,7 +168,7 @@ fun SettingsScreen(
                     ClickableSettingItem(
                         icon = Icons.Outlined.Info,
                         title = "版本",
-                        value = "1.0.0",
+                        value = BuildConfig.VERSION_NAME,
                         onClick = { }
                     )
                     Divider(modifier = Modifier.padding(start = 56.dp))
@@ -221,6 +242,38 @@ fun SettingsScreen(
                     Text("取消")
                 }
             }
+        )
+    }
+
+    // 备份成功对话框
+    showBackupSuccessDialog?.let { backupPath ->
+        AlertDialog(
+            onDismissRequest = { viewModel.hideBackupSuccessDialog() },
+            icon = { Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            title = { Text("备份成功") },
+            text = { Text("数据已备份到:\n$backupPath") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.hideBackupSuccessDialog() }) {
+                    Text("确定")
+                }
+            }
+        )
+    }
+
+    // 加载指示器
+    if (uiState is SettingsUiState.Loading) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text((uiState as SettingsUiState.Loading).message) },
+            text = {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            },
+            confirmButton = { }
         )
     }
 }

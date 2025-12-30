@@ -7,13 +7,17 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.rememberNavController
+import com.lifemanager.app.core.theme.ThemeManager
 import com.lifemanager.app.ui.navigation.AdaptiveNavigation
 import com.lifemanager.app.ui.navigation.Screen
 import com.lifemanager.app.ui.navigation.rememberWindowSizeClass
 import com.lifemanager.app.ui.theme.LifeManagerTheme
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * 主Activity
@@ -25,6 +29,9 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
+    @Inject
+    lateinit var themeManager: ThemeManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -32,8 +39,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         setContent {
+            // 获取深色模式设置
+            val isDarkMode by themeManager.isDarkMode.collectAsState(initial = false)
+
             // 应用主题
-            LifeManagerTheme {
+            LifeManagerTheme(darkTheme = isDarkMode) {
                 // 导航控制器
                 val navController = rememberNavController()
                 // 窗口尺寸类型
