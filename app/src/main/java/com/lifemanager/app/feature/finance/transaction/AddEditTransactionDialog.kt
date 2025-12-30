@@ -375,6 +375,13 @@ private fun CategoryChip(
         MaterialTheme.colorScheme.primary
     }
 
+    // 获取卡通图标
+    val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+        name = category.name,
+        iconName = category.iconName,
+        moduleType = category.moduleType
+    )
+
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
@@ -388,17 +395,24 @@ private fun CategoryChip(
     ) {
         Box(
             modifier = Modifier
-                .size(36.dp)
+                .size(40.dp)
                 .clip(CircleShape)
                 .background(if (selected) categoryColor else categoryColor.copy(alpha = 0.6f)),
             contentAlignment = Alignment.Center
         ) {
             if (selected) {
+                // 选中时显示勾选图标
                 Icon(
                     imageVector = Icons.Filled.Check,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(20.dp)
+                )
+            } else {
+                // 未选中时显示emoji图标
+                Text(
+                    text = emoji,
+                    style = MaterialTheme.typography.titleMedium
                 )
             }
         }

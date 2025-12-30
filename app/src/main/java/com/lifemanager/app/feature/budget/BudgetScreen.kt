@@ -493,12 +493,20 @@ private fun CategoryBudgetProgressItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // 获取卡通图标
+                val emoji = com.lifemanager.app.ui.component.CategoryIcons.getExpenseIcon(budget.categoryName)
                 Box(
                     modifier = Modifier
-                        .size(8.dp)
+                        .size(24.dp)
                         .clip(CircleShape)
-                        .background(parseColor(budget.categoryColor))
-                )
+                        .background(parseColor(budget.categoryColor)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = emoji,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                }
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = budget.categoryName,
@@ -854,16 +862,25 @@ private fun CategoryBudgetEditItem(
     onAmountChange: (String) -> Unit,
     onRemove: () -> Unit
 ) {
+    // 获取卡通图标
+    val emoji = com.lifemanager.app.ui.component.CategoryIcons.getExpenseIcon(categoryBudget.categoryName)
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(8.dp)
+                .size(24.dp)
                 .clip(CircleShape)
-                .background(parseColor(categoryBudget.categoryColor))
-        )
+                .background(parseColor(categoryBudget.categoryColor)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = emoji,
+                style = MaterialTheme.typography.labelSmall
+            )
+        }
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = categoryBudget.categoryName,
@@ -914,19 +931,24 @@ private fun AddCategoryBudgetDialog(
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(availableCategories) { category ->
                         val isSelected = selectedCategory?.id == category.id
+                        val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                            name = category.name,
+                            iconName = category.iconName,
+                            moduleType = category.moduleType
+                        )
                         if (isSelected) {
                             Button(
                                 onClick = { selectedCategory = category },
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                             ) {
-                                Text(category.name)
+                                Text("$emoji ${category.name}")
                             }
                         } else {
                             OutlinedButton(
                                 onClick = { selectedCategory = category },
                                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                             ) {
-                                Text(category.name)
+                                Text("$emoji ${category.name}")
                             }
                         }
                     }

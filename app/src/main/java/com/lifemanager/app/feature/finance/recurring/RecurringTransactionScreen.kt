@@ -343,12 +343,14 @@ private fun RecurringTransactionCard(
             ) {
                 val categoryName = viewModel.getCategoryName(transaction.categoryId, transaction.type)
                 if (categoryName.isNotEmpty()) {
+                    val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                        name = categoryName,
+                        moduleType = if (transaction.type == com.lifemanager.app.domain.model.TransactionType.EXPENSE) "EXPENSE" else "INCOME"
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            Icons.Default.Label,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        Text(
+                            text = emoji,
+                            style = MaterialTheme.typography.bodyMedium
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
@@ -501,10 +503,15 @@ private fun EditRecurringDialog(
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(categories) { category ->
                                 val isSelected = editState.categoryId == category.id
+                                val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                                    name = category.name,
+                                    iconName = category.iconName,
+                                    moduleType = category.moduleType
+                                )
                                 FilterChip(
                                     selected = isSelected,
                                     onClick = { viewModel.updateCategory(category.id) },
-                                    label = { Text(category.name) }
+                                    label = { Text("$emoji ${category.name}") }
                                 )
                             }
                         }

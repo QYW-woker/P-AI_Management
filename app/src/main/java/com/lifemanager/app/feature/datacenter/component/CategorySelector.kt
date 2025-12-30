@@ -184,6 +184,13 @@ private fun CategoryCheckItem(
     isSelected: Boolean,
     onToggle: () -> Unit
 ) {
+    // 获取卡通图标
+    val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+        name = category.name,
+        iconName = category.iconName,
+        moduleType = category.moduleType
+    )
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -196,13 +203,19 @@ private fun CategoryCheckItem(
         )
         Spacer(modifier = Modifier.width(8.dp))
 
-        // 颜色标记
+        // 卡通图标 + 颜色标记
         Box(
             modifier = Modifier
-                .size(16.dp)
+                .size(28.dp)
                 .clip(CircleShape)
-                .background(parseHexColor(category.color))
-        )
+                .background(parseHexColor(category.color)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = emoji,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
 
         Spacer(modifier = Modifier.width(12.dp))
 

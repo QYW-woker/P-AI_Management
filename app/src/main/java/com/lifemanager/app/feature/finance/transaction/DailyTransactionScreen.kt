@@ -468,10 +468,18 @@ private fun TransactionItem(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            // 分类图标
+            // 分类图标 - 使用卡通emoji
+            val emoji = transaction.category?.let {
+                com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                    name = it.name,
+                    iconName = it.iconName,
+                    moduleType = it.moduleType
+                )
+            } ?: if (isExpense) "💸" else "💰"
+
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .background(
                         transaction.category?.let { parseColor(it.color) }
@@ -479,11 +487,9 @@ private fun TransactionItem(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = if (isExpense) Icons.Filled.ShoppingCart else Icons.Filled.AccountBalanceWallet,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(20.dp)
+                Text(
+                    text = emoji,
+                    style = MaterialTheme.typography.titleLarge
                 )
             }
 

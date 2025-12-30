@@ -708,12 +708,19 @@ private fun BillListCard(bills: List<BillQueryItem>) {
                         .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // 分类颜色
+                    // 分类卡通图标
+                    val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                        name = bill.categoryName,
+                        moduleType = bill.type
+                    )
                     Box(
                         modifier = Modifier
-                            .size(8.dp)
-                            .background(parseColor(bill.categoryColor), RoundedCornerShape(2.dp))
-                    )
+                            .size(32.dp)
+                            .background(parseColor(bill.categoryColor), RoundedCornerShape(16.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = emoji, style = MaterialTheme.typography.bodyLarge)
+                    }
 
                     Spacer(modifier = Modifier.width(8.dp))
 

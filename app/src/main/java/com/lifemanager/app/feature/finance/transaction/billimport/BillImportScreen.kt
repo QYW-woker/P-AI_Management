@@ -531,6 +531,12 @@ private fun CategorySelectDialog(
                     } catch (e: Exception) {
                         primaryColor
                     }
+                    // 获取卡通图标
+                    val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                        name = category.name,
+                        iconName = category.iconName,
+                        moduleType = category.moduleType
+                    )
 
                     Row(
                         modifier = Modifier
@@ -541,10 +547,16 @@ private fun CategorySelectDialog(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(12.dp)
+                                .size(28.dp)
                                 .clip(CircleShape)
-                                .background(color)
-                        )
+                                .background(color),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = emoji,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = category.name,

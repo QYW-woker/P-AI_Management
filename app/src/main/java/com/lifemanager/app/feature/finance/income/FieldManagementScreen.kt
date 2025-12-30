@@ -202,21 +202,24 @@ private fun FieldItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // 颜色图标
+            // 卡通图标
+            val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                name = field.name,
+                iconName = field.iconName,
+                moduleType = field.moduleType
+            )
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .background(
                         if (field.isEnabled) fieldColor else fieldColor.copy(alpha = 0.3f)
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Category,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                Text(
+                    text = emoji,
+                    style = MaterialTheme.typography.titleLarge
                 )
             }
 
