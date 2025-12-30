@@ -307,6 +307,11 @@ fun AppNavHost(
         composable(Screen.AccountingMain.route) {
             AccountingMainScreen(
                 onNavigateBack = { navController.popBackStack() },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                },
                 onNavigateToCalendar = { navController.navigate(Screen.AccountingCalendar.route) },
                 onNavigateToSearch = { navController.navigate(Screen.AccountingSearch.route) },
                 onNavigateToStatistics = { navController.navigate(Screen.DataCenter.route) },

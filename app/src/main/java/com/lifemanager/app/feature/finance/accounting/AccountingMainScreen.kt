@@ -43,6 +43,7 @@ import kotlin.math.abs
 @Composable
 fun AccountingMainScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToHome: () -> Unit,
     onNavigateToCalendar: () -> Unit,
     onNavigateToSearch: () -> Unit,
     onNavigateToStatistics: () -> Unit,
@@ -79,6 +80,10 @@ fun AccountingMainScreen(
         drawerContent = {
             AccountingSidebar(
                 currentLedger = currentLedger,
+                onNavigateToHome = {
+                    scope.launch { drawerState.close() }
+                    onNavigateToHome()
+                },
                 onNavigateToCalendar = {
                     scope.launch { drawerState.close() }
                     onNavigateToCalendar()
@@ -272,6 +277,7 @@ fun AccountingMainScreen(
 @Composable
 private fun AccountingSidebar(
     currentLedger: LedgerInfo?,
+    onNavigateToHome: () -> Unit,
     onNavigateToCalendar: () -> Unit,
     onNavigateToSearch: () -> Unit,
     onNavigateToStatistics: () -> Unit,
@@ -319,6 +325,16 @@ private fun AccountingSidebar(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+
+        // 首页入口
+        SidebarItem(
+            icon = Icons.Outlined.Home,
+            label = "返回首页",
+            description = "回到应用主页",
+            onClick = onNavigateToHome
+        )
+
+        Divider(modifier = Modifier.padding(vertical = 8.dp))
 
         // 功能模块
         Text(

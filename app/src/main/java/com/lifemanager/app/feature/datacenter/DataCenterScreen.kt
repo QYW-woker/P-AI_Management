@@ -60,6 +60,13 @@ fun DataCenterScreen(
     // 支出排名
     val expenseRanking by viewModel.expenseRanking.collectAsState()
 
+    // AI分析数据
+    val overallHealthScore by viewModel.overallHealthScore.collectAsState()
+    val isAIAnalyzing by viewModel.isAIAnalyzing.collectAsState()
+    val financeAIAnalysis by viewModel.financeAnalysis.collectAsState()
+    val goalAIAnalysis by viewModel.goalAnalysis.collectAsState()
+    val habitAIAnalysis by viewModel.habitAnalysis.collectAsState()
+
     // Tab配置
     val tabs = listOf("总览", "财务", "效率", "生活")
 
@@ -145,7 +152,13 @@ fun DataCenterScreen(
                             financeData = financeChartData,
                             productivityData = productivityChartData,
                             lifestyleData = lifestyleChartData,
-                            assetTrendData = assetTrendData
+                            assetTrendData = assetTrendData,
+                            overallHealthScore = overallHealthScore,
+                            isAIAnalyzing = isAIAnalyzing,
+                            financeAnalysis = financeAIAnalysis,
+                            goalAnalysis = goalAIAnalysis,
+                            habitAnalysis = habitAIAnalysis,
+                            onRefreshAI = { viewModel.refreshAIAnalysis() }
                         )
 
                         1 -> FinanceTab(

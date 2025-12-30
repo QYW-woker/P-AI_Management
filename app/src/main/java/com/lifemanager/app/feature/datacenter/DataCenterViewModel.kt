@@ -3,6 +3,8 @@ package com.lifemanager.app.feature.datacenter
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifemanager.app.core.ai.service.AIDataAnalysisService
+import com.lifemanager.app.core.database.entity.AIAnalysisEntity
 import com.lifemanager.app.core.database.entity.CustomFieldEntity
 import com.lifemanager.app.core.database.entity.ModuleType
 import com.lifemanager.app.domain.model.MonthlyBudgetAnalysis
@@ -10,6 +12,8 @@ import com.lifemanager.app.domain.repository.*
 import com.lifemanager.app.domain.usecase.BudgetUseCase
 import com.lifemanager.app.feature.datacenter.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -67,8 +71,13 @@ class DataCenterViewModel @Inject constructor(
     private val dailyTransactionRepository: DailyTransactionRepository,
     private val customFieldRepository: CustomFieldRepository,
     private val budgetUseCase: BudgetUseCase,
-    private val monthlyAssetRepository: MonthlyAssetRepository
+    private val monthlyAssetRepository: MonthlyAssetRepository,
+    private val aiDataAnalysisService: AIDataAnalysisService
 ) : ViewModel() {
+
+    // 数据加载防抖任务
+    private var loadDataJob: Job? = null
+    private val DEBOUNCE_DELAY = 300L // 防抖延迟毫秒
 
     // UI状态
     private val _uiState = MutableStateFlow<DataCenterUiState>(DataCenterUiState.Loading)
@@ -134,9 +143,28 @@ class DataCenterViewModel @Inject constructor(
     private val _expenseRanking = MutableStateFlow<List<CategoryRankingItem>>(emptyList())
     val expenseRanking: StateFlow<List<CategoryRankingItem>> = _expenseRanking.asStateFlow()
 
+    // AI综合健康评分
+    private val _overallHealthScore = MutableStateFlow<AIAnalysisEntity?>(null)
+    val overallHealthScore: StateFlow<AIAnalysisEntity?> = _overallHealthScore.asStateFlow()
+
+    // AI分析加载状态
+    private val _isAIAnalyzing = MutableStateFlow(false)
+    val isAIAnalyzing: StateFlow<Boolean> = _isAIAnalyzing.asStateFlow()
+
+    // 各模块AI分析
+    private val _financeAnalysis = MutableStateFlow<AIAnalysisEntity?>(null)
+    val financeAnalysis: StateFlow<AIAnalysisEntity?> = _financeAnalysis.asStateFlow()
+
+    private val _goalAnalysis = MutableStateFlow<AIAnalysisEntity?>(null)
+    val goalAnalysis: StateFlow<AIAnalysisEntity?> = _goalAnalysis.asStateFlow()
+
+    private val _habitAnalysis = MutableStateFlow<AIAnalysisEntity?>(null)
+    val habitAnalysis: StateFlow<AIAnalysisEntity?> = _habitAnalysis.asStateFlow()
+
     init {
         loadCategories()
         loadData()
+        loadAIAnalysis()
     }
 
     /**
@@ -155,7 +183,7 @@ class DataCenterViewModel @Inject constructor(
             customStartDate = null,
             customEndDate = null
         )
-        loadData()
+        loadDataDebounced()
     }
 
     /**
@@ -167,7 +195,7 @@ class DataCenterViewModel @Inject constructor(
             customStartDate = startDate,
             customEndDate = endDate
         )
-        loadData()
+        loadDataDebounced()
     }
 
     /**
@@ -175,7 +203,7 @@ class DataCenterViewModel @Inject constructor(
      */
     fun updateIncomeSelection(ids: Set<Long>) {
         _selectedIncomeIds.value = ids
-        loadFinanceData()
+        loadFinanceDataDebounced()
     }
 
     /**
@@ -183,7 +211,21 @@ class DataCenterViewModel @Inject constructor(
      */
     fun updateExpenseSelection(ids: Set<Long>) {
         _selectedExpenseIds.value = ids
-        loadFinanceData()
+        loadFinanceDataDebounced()
+    }
+
+    // 财务数据加载防抖任务
+    private var loadFinanceJob: Job? = null
+
+    /**
+     * 防抖加载财务数据
+     */
+    private fun loadFinanceDataDebounced() {
+        loadFinanceJob?.cancel()
+        loadFinanceJob = viewModelScope.launch {
+            delay(DEBOUNCE_DELAY)
+            loadFinanceData()
+        }
     }
 
     /**
@@ -197,7 +239,66 @@ class DataCenterViewModel @Inject constructor(
      * 刷新数据
      */
     fun refresh() {
-        loadData()
+        loadDataDebounced()
+    }
+
+    /**
+     * 防抖加载数据
+     */
+    private fun loadDataDebounced() {
+        loadDataJob?.cancel()
+        loadDataJob = viewModelScope.launch {
+            delay(DEBOUNCE_DELAY)
+            loadData()
+        }
+    }
+
+    /**
+     * 加载AI分析数据
+     */
+    private fun loadAIAnalysis() {
+        viewModelScope.launch {
+            // 收集综合健康评分
+            aiDataAnalysisService.getOverallHealthScore().collect { analysis ->
+                _overallHealthScore.value = analysis
+            }
+        }
+        viewModelScope.launch {
+            aiDataAnalysisService.getFinanceAnalysis().collect { analyses ->
+                _financeAnalysis.value = analyses.firstOrNull()
+            }
+        }
+        viewModelScope.launch {
+            aiDataAnalysisService.getGoalAnalysis().collect { analyses ->
+                _goalAnalysis.value = analyses.firstOrNull()
+            }
+        }
+        viewModelScope.launch {
+            aiDataAnalysisService.getHabitAnalysis().collect { analyses ->
+                _habitAnalysis.value = analyses.firstOrNull()
+            }
+        }
+    }
+
+    /**
+     * 刷新AI分析
+     */
+    fun refreshAIAnalysis() {
+        viewModelScope.launch {
+            _isAIAnalyzing.value = true
+            try {
+                // 先分析各模块
+                aiDataAnalysisService.analyzeFinanceData(forceRefresh = true)
+                aiDataAnalysisService.analyzeGoalData(forceRefresh = true)
+                aiDataAnalysisService.analyzeHabitData(forceRefresh = true)
+                // 然后生成综合评分
+                aiDataAnalysisService.generateOverallHealthScore(forceRefresh = true)
+            } catch (e: Exception) {
+                // 静默失败
+            } finally {
+                _isAIAnalyzing.value = false
+            }
+        }
     }
 
     /**

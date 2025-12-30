@@ -16,12 +16,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.lifemanager.app.feature.datacenter.DataCenterViewModel
+import com.lifemanager.app.core.database.entity.AIAnalysisEntity
 import com.lifemanager.app.feature.datacenter.OverviewStats
 import com.lifemanager.app.feature.datacenter.model.AssetTrendData
 import com.lifemanager.app.feature.datacenter.model.FinanceChartData
 import com.lifemanager.app.feature.datacenter.model.LifestyleChartData
 import com.lifemanager.app.feature.datacenter.model.ProductivityChartData
+import com.lifemanager.app.ui.component.AIInsightMiniCard
+import com.lifemanager.app.ui.component.OverallHealthCard
 import com.lifemanager.app.ui.component.charts.IncomeExpenseComparisonBar
 import com.lifemanager.app.ui.component.charts.ProgressRingWithLabel
 import com.lifemanager.app.ui.component.charts.TrendLineChart
@@ -39,6 +41,12 @@ fun OverviewTab(
     productivityData: ProductivityChartData?,
     lifestyleData: LifestyleChartData?,
     assetTrendData: AssetTrendData? = null,
+    overallHealthScore: AIAnalysisEntity? = null,
+    isAIAnalyzing: Boolean = false,
+    financeAnalysis: AIAnalysisEntity? = null,
+    goalAnalysis: AIAnalysisEntity? = null,
+    habitAnalysis: AIAnalysisEntity? = null,
+    onRefreshAI: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -46,9 +54,27 @@ fun OverviewTab(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // AI综合健康评分卡片
+        item {
+            OverallHealthCard(
+                analysis = overallHealthScore,
+                isLoading = isAIAnalyzing,
+                onRefresh = onRefreshAI
+            )
+        }
+
         // 数据总览卡片
         item {
             OverviewSummaryCard(stats = overviewStats)
+        }
+
+        // AI模块洞察
+        item {
+            AIModuleInsightsSection(
+                financeAnalysis = financeAnalysis,
+                goalAnalysis = goalAnalysis,
+                habitAnalysis = habitAnalysis
+            )
         }
 
         // 资产趋势图
@@ -92,6 +118,71 @@ fun OverviewTab(
                         totalSavings = data.savingsStats.totalCurrent
                     )
                 } ?: EmptyDataHint()
+            }
+        }
+    }
+}
+
+/**
+ * AI模块洞察区域
+ */
+@Composable
+private fun AIModuleInsightsSection(
+    financeAnalysis: AIAnalysisEntity?,
+    goalAnalysis: AIAnalysisEntity?,
+    habitAnalysis: AIAnalysisEntity?
+) {
+    val hasAnyAnalysis = financeAnalysis != null || goalAnalysis != null || habitAnalysis != null
+    if (!hasAnyAnalysis) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "AI 模块洞察",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            // 财务洞察
+            financeAnalysis?.let { analysis ->
+                AIInsightMiniCard(
+                    analysis = analysis,
+                    onClick = { /* 可扩展为跳转到详情 */ }
+                )
+            }
+
+            // 目标洞察
+            goalAnalysis?.let { analysis ->
+                AIInsightMiniCard(
+                    analysis = analysis,
+                    onClick = { /* 可扩展为跳转到详情 */ }
+                )
+            }
+
+            // 习惯洞察
+            habitAnalysis?.let { analysis ->
+                AIInsightMiniCard(
+                    analysis = analysis,
+                    onClick = { /* 可扩展为跳转到详情 */ }
+                )
             }
         }
     }
