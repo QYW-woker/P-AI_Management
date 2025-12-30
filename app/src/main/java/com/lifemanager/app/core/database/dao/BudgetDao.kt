@@ -81,4 +81,10 @@ interface BudgetDao {
      */
     @Query("SELECT * FROM budgets ORDER BY yearMonth DESC LIMIT 1")
     suspend fun getLatestBudget(): BudgetEntity?
+
+    /**
+     * 获取所有预算记录（同步版本，用于AI分析）
+     */
+    @Query("SELECT * FROM budgets ORDER BY yearMonth DESC")
+    suspend fun getAllSync(): List<BudgetEntity>
 }

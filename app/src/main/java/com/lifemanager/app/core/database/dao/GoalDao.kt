@@ -207,4 +207,14 @@ interface GoalDao {
      */
     @Query("SELECT COUNT(*) FROM goals WHERE parentId = :parentId AND status = 'COMPLETED'")
     suspend fun countCompletedChildGoals(parentId: Long): Int
+
+    /**
+     * 获取所有活跃目标（同步版本，用于AI分析）
+     */
+    @Query("""
+        SELECT * FROM goals
+        WHERE status = 'ACTIVE'
+        ORDER BY updatedAt DESC
+    """)
+    suspend fun getActiveGoalsSync(): List<GoalEntity>
 }

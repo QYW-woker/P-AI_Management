@@ -71,6 +71,8 @@ fun AccountingMainScreen(
     val showTransferDialog by viewModel.showTransferDialog.collectAsState()
     val showExportDialog by viewModel.showExportDialog.collectAsState()
     val accounts by viewModel.accounts.collectAsState()
+    val financeAnalysis by viewModel.financeAnalysis.collectAsState()
+    val isAnalyzing by viewModel.isAnalyzing.collectAsState()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -181,6 +183,15 @@ fun AccountingMainScreen(
                 // 今日统计
                 item {
                     TodayStatisticsCard(todayStats = todayStats)
+                }
+
+                // AI智能洞察
+                item {
+                    com.lifemanager.app.ui.component.AIInsightCard(
+                        analysis = financeAnalysis,
+                        isLoading = isAnalyzing,
+                        onRefresh = { viewModel.refreshAIAnalysis() }
+                    )
                 }
 
                 // 快捷功能入口

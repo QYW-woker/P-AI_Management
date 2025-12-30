@@ -50,6 +50,8 @@ fun GoalScreen(
     val showEditDialog by viewModel.showEditDialog.collectAsState()
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
     val showProgressDialog by viewModel.showProgressDialog.collectAsState()
+    val goalAnalysis by viewModel.goalAnalysis.collectAsState()
+    val isAnalyzing by viewModel.isAnalyzing.collectAsState()
 
     Scaffold(
         topBar = {
@@ -85,6 +87,16 @@ fun GoalScreen(
             // 统计卡片区域
             item {
                 EnhancedStatsSection(statistics = statistics)
+            }
+
+            // AI智能洞察
+            item {
+                com.lifemanager.app.ui.component.AIInsightCard(
+                    analysis = goalAnalysis,
+                    isLoading = isAnalyzing,
+                    onRefresh = { viewModel.refreshAIAnalysis() },
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
             }
 
             // 筛选标签

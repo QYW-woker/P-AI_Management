@@ -2,6 +2,8 @@ package com.lifemanager.app.feature.habit
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifemanager.app.core.ai.service.AIDataAnalysisService
+import com.lifemanager.app.core.database.entity.AIAnalysisEntity
 import com.lifemanager.app.core.database.entity.HabitEntity
 import com.lifemanager.app.domain.model.HabitEditState
 import com.lifemanager.app.domain.model.HabitStats
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,7 +24,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class HabitViewModel @Inject constructor(
-    private val habitUseCase: HabitUseCase
+    private val habitUseCase: HabitUseCase,
+    private val aiAnalysisService: AIDataAnalysisService
 ) : ViewModel() {
 
     // UI状态
@@ -49,8 +53,16 @@ class HabitViewModel @Inject constructor(
 
     private var habitToDelete: Long? = null
 
+    // AI分析状态
+    private val _habitAnalysis = MutableStateFlow<AIAnalysisEntity?>(null)
+    val habitAnalysis: StateFlow<AIAnalysisEntity?> = _habitAnalysis.asStateFlow()
+
+    private val _isAnalyzing = MutableStateFlow(false)
+    val isAnalyzing: StateFlow<Boolean> = _isAnalyzing.asStateFlow()
+
     init {
         loadHabits()
+        loadAIAnalysis()
     }
 
     /**
@@ -311,6 +323,36 @@ class HabitViewModel @Inject constructor(
                 habitUseCase.archiveHabit(habitId)
             } catch (e: Exception) {
                 _uiState.value = HabitUiState.Error(e.message ?: "操作失败")
+            }
+        }
+    }
+
+    /**
+     * 加载AI分析结果
+     */
+    private fun loadAIAnalysis() {
+        viewModelScope.launch {
+            aiAnalysisService.getHabitAnalysis().collectLatest { analyses ->
+                _habitAnalysis.value = analyses.firstOrNull()
+            }
+        }
+    }
+
+    /**
+     * 刷新AI分析
+     */
+    fun refreshAIAnalysis() {
+        if (_isAnalyzing.value) return
+
+        viewModelScope.launch {
+            _isAnalyzing.value = true
+            try {
+                val result = aiAnalysisService.analyzeHabitData(forceRefresh = true)
+                result.onSuccess { analysis ->
+                    _habitAnalysis.value = analysis
+                }
+            } finally {
+                _isAnalyzing.value = false
             }
         }
     }

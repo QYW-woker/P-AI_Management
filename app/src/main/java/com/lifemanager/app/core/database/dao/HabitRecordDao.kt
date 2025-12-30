@@ -109,6 +109,16 @@ interface HabitRecordDao {
      */
     @Query("SELECT COUNT(DISTINCT habitId) FROM habit_records WHERE date = :today AND isCompleted = 1")
     suspend fun countTodayCheckins(today: Int): Int
+
+    /**
+     * 获取指定日期范围内的所有打卡记录（同步版本，用于AI分析）
+     */
+    @Query("""
+        SELECT * FROM habit_records
+        WHERE date BETWEEN :startDate AND :endDate
+        ORDER BY date DESC
+    """)
+    suspend fun getRecordsInRangeSync(startDate: Int, endDate: Int): List<HabitRecordEntity>
 }
 
 /**

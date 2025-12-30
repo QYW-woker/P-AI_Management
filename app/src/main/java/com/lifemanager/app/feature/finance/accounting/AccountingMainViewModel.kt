@@ -2,10 +2,12 @@ package com.lifemanager.app.feature.finance.accounting
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifemanager.app.core.ai.service.AIDataAnalysisService
 import com.lifemanager.app.core.database.dao.CustomFieldDao
 import com.lifemanager.app.core.database.dao.DailyTransactionDao
 import com.lifemanager.app.core.database.dao.FundAccountDao
 import com.lifemanager.app.core.database.dao.TransferDao
+import com.lifemanager.app.core.database.entity.AIAnalysisEntity
 import com.lifemanager.app.core.database.entity.CustomFieldEntity
 import com.lifemanager.app.core.database.entity.DailyTransactionEntity
 import com.lifemanager.app.core.database.entity.FundAccountEntity
@@ -36,7 +38,8 @@ class AccountingMainViewModel @Inject constructor(
     private val transactionDao: DailyTransactionDao,
     private val customFieldDao: CustomFieldDao,
     private val fundAccountDao: FundAccountDao,
-    private val transferDao: TransferDao
+    private val transferDao: TransferDao,
+    private val aiAnalysisService: AIDataAnalysisService
 ) : ViewModel() {
 
     // UI状态
@@ -96,10 +99,18 @@ class AccountingMainViewModel @Inject constructor(
     private val _showExportDialog = MutableStateFlow(false)
     val showExportDialog: StateFlow<Boolean> = _showExportDialog.asStateFlow()
 
+    // AI分析状态
+    private val _financeAnalysis = MutableStateFlow<AIAnalysisEntity?>(null)
+    val financeAnalysis: StateFlow<AIAnalysisEntity?> = _financeAnalysis.asStateFlow()
+
+    private val _isAnalyzing = MutableStateFlow(false)
+    val isAnalyzing: StateFlow<Boolean> = _isAnalyzing.asStateFlow()
+
     init {
         loadData()
         loadCategories()
         loadAccounts()
+        loadAIAnalysis()
     }
 
     /**
@@ -459,5 +470,35 @@ class AccountingMainViewModel @Inject constructor(
      */
     fun getAccountMap(): Map<Long, String> {
         return _accounts.value.associate { it.id to it.name }
+    }
+
+    /**
+     * 加载AI分析结果
+     */
+    private fun loadAIAnalysis() {
+        viewModelScope.launch {
+            aiAnalysisService.getFinanceAnalysis().collectLatest { analyses ->
+                _financeAnalysis.value = analyses.firstOrNull()
+            }
+        }
+    }
+
+    /**
+     * 刷新AI分析
+     */
+    fun refreshAIAnalysis() {
+        if (_isAnalyzing.value) return
+
+        viewModelScope.launch {
+            _isAnalyzing.value = true
+            try {
+                val result = aiAnalysisService.analyzeFinanceData(forceRefresh = true)
+                result.onSuccess { analysis ->
+                    _financeAnalysis.value = analysis
+                }
+            } finally {
+                _isAnalyzing.value = false
+            }
+        }
     }
 }

@@ -2,6 +2,8 @@ package com.lifemanager.app.feature.goal
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifemanager.app.core.ai.service.AIDataAnalysisService
+import com.lifemanager.app.core.database.entity.AIAnalysisEntity
 import com.lifemanager.app.core.database.entity.GoalEntity
 import com.lifemanager.app.core.database.entity.GoalStatus
 import com.lifemanager.app.domain.model.GoalEditState
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -21,7 +24,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class GoalViewModel @Inject constructor(
-    private val useCase: GoalUseCase
+    private val useCase: GoalUseCase,
+    private val aiAnalysisService: AIDataAnalysisService
 ) : ViewModel() {
 
     // UI状态
@@ -57,8 +61,16 @@ class GoalViewModel @Inject constructor(
     private var goalToDelete: Long? = null
     private var goalToUpdateProgress: GoalEntity? = null
 
+    // AI分析状态
+    private val _goalAnalysis = MutableStateFlow<AIAnalysisEntity?>(null)
+    val goalAnalysis: StateFlow<AIAnalysisEntity?> = _goalAnalysis.asStateFlow()
+
+    private val _isAnalyzing = MutableStateFlow(false)
+    val isAnalyzing: StateFlow<Boolean> = _isAnalyzing.asStateFlow()
+
     init {
         loadGoals()
+        loadAIAnalysis()
     }
 
     /**
@@ -361,4 +373,34 @@ class GoalViewModel @Inject constructor(
      * 获取进度更新目标
      */
     fun getProgressGoal(): GoalEntity? = goalToUpdateProgress
+
+    /**
+     * 加载AI分析结果
+     */
+    private fun loadAIAnalysis() {
+        viewModelScope.launch {
+            aiAnalysisService.getGoalAnalysis().collectLatest { analyses ->
+                _goalAnalysis.value = analyses.firstOrNull()
+            }
+        }
+    }
+
+    /**
+     * 刷新AI分析
+     */
+    fun refreshAIAnalysis() {
+        if (_isAnalyzing.value) return
+
+        viewModelScope.launch {
+            _isAnalyzing.value = true
+            try {
+                val result = aiAnalysisService.analyzeGoalData(forceRefresh = true)
+                result.onSuccess { analysis ->
+                    _goalAnalysis.value = analysis
+                }
+            } finally {
+                _isAnalyzing.value = false
+            }
+        }
+    }
 }

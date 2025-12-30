@@ -133,4 +133,10 @@ interface CustomFieldDao {
         ORDER BY moduleType, sortOrder ASC
     """)
     fun getFieldsByModuleTypes(moduleTypes: List<String>): Flow<List<CustomFieldEntity>>
+
+    /**
+     * 获取所有字段（同步版本，用于AI分析）
+     */
+    @Query("SELECT * FROM custom_fields ORDER BY moduleType, sortOrder ASC")
+    suspend fun getAllFieldsSync(): List<CustomFieldEntity>
 }

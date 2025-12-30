@@ -195,4 +195,10 @@ object DatabaseModule {
     fun provideTransferDao(database: AppDatabase): TransferDao {
         return database.transferDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideAIAnalysisDao(database: AppDatabase): AIAnalysisDao {
+        return database.aiAnalysisDao()
+    }
 }

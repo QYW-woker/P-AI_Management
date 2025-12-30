@@ -47,6 +47,8 @@ fun HabitScreen(
     val stats by viewModel.stats.collectAsState()
     val showEditDialog by viewModel.showEditDialog.collectAsState()
     val showDeleteDialog by viewModel.showDeleteDialog.collectAsState()
+    val habitAnalysis by viewModel.habitAnalysis.collectAsState()
+    val isAnalyzing by viewModel.isAnalyzing.collectAsState()
 
     Scaffold(
         topBar = {
@@ -108,6 +110,15 @@ fun HabitScreen(
                     // 统计卡片
                     item {
                         HabitStatsCard(stats = stats)
+                    }
+
+                    // AI智能洞察
+                    item {
+                        com.lifemanager.app.ui.component.AIInsightCard(
+                            analysis = habitAnalysis,
+                            isLoading = isAnalyzing,
+                            onRefresh = { viewModel.refreshAIAnalysis() }
+                        )
                     }
 
                     // 习惯列表标题
