@@ -66,6 +66,67 @@ object AppColors {
     val GradientForest = listOf(Color(0xFF7DD3C0), Color(0xFF98FB98))      // 森林渐变
     val GradientCandy = listOf(Color(0xFFDDA0DD), Color(0xFF87CEEB))       // 糖果渐变
 
+    // ==================== 高级渐变色组 - Premium ====================
+    val GradientAurora = listOf(
+        Color(0xFF667eea), Color(0xFF764ba2), Color(0xFFf093fb)
+    )  // 极光渐变
+    val GradientCosmic = listOf(
+        Color(0xFF6366f1), Color(0xFF8b5cf6), Color(0xFFd946ef)
+    )  // 宇宙渐变
+    val GradientNeonCity = listOf(
+        Color(0xFFfc466b), Color(0xFF3f5efb)
+    )  // 霓虹渐变
+    val GradientMidnight = listOf(
+        Color(0xFF0f0c29), Color(0xFF302b63), Color(0xFF24243e)
+    )  // 午夜渐变
+    val GradientGold = listOf(
+        Color(0xFFf7971e), Color(0xFFffd200)
+    )  // 金色渐变
+    val GradientEmerald = listOf(
+        Color(0xFF11998e), Color(0xFF38ef7d)
+    )  // 翡翠渐变
+    val GradientRose = listOf(
+        Color(0xFFff9a9e), Color(0xFFfecfef), Color(0xFFfecfef)
+    )  // 玫瑰渐变
+    val GradientSky = listOf(
+        Color(0xFF2193b0), Color(0xFF6dd5ed)
+    )  // 天空渐变
+    val GradientFire = listOf(
+        Color(0xFFf83600), Color(0xFFf9d423)
+    )  // 火焰渐变
+    val GradientPurpleHaze = listOf(
+        Color(0xFF7028e4), Color(0xFFe5b2ca)
+    )  // 紫雾渐变
+    val GradientMango = listOf(
+        Color(0xFFffe259), Color(0xFFffa751)
+    )  // 芒果渐变
+    val GradientMint = listOf(
+        Color(0xFF00b09b), Color(0xFF96c93d)
+    )  // 薄荷渐变
+
+    // 首页英雄区域渐变
+    val GradientHero = listOf(
+        Color(0xFF667eea).copy(alpha = 0.9f),
+        Color(0xFF764ba2).copy(alpha = 0.85f),
+        Color(0xFFec4899).copy(alpha = 0.8f)
+    )
+
+    // 高级卡片渐变
+    val GradientPremiumCard = listOf(
+        Color(0xFFfdfbfb),
+        Color(0xFFebedee)
+    )
+
+    // 玻璃态背景
+    val GlassWhite = Color.White.copy(alpha = 0.85f)
+    val GlassDark = Color(0xFF1a1a2e).copy(alpha = 0.85f)
+
+    // 高亮色
+    val Shimmer = Color(0xFFFFFFFF).copy(alpha = 0.4f)
+    val GlowPurple = Color(0xFF9B7EDE).copy(alpha = 0.6f)
+    val GlowBlue = Color(0xFF667eea).copy(alpha = 0.5f)
+    val GlowPink = Color(0xFFec4899).copy(alpha = 0.5f)
+
     // ==================== 收入/支出颜色 - 可爱版 ====================
     val Income = Color(0xFF7DD3C0)             // 薄荷绿（收入）
     val IncomeLight = Color(0xFFD7F5EE)

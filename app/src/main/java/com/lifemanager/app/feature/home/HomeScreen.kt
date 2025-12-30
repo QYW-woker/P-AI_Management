@@ -3,6 +3,7 @@ package com.lifemanager.app.feature.home
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -11,24 +12,22 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.lifemanager.app.ui.component.*
 import com.lifemanager.app.ui.navigation.Screen
 import com.lifemanager.app.ui.theme.AppColors
 import com.lifemanager.app.ui.theme.CartoonShape
@@ -36,9 +35,13 @@ import java.text.NumberFormat
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
- * 首页屏幕 - 卡通可爱风格
+ * 首页屏幕 - Premium Design
+ *
+ * 采用现代化玻璃态设计、流畅动画和精美渐变
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,131 +57,101 @@ fun HomeScreen(
     val today = remember { LocalDate.now() }
     val greeting = remember {
         when (java.time.LocalTime.now().hour) {
-            in 5..11 -> "早上好 ☀️"
-            in 12..13 -> "中午好 🌤️"
-            in 14..17 -> "下午好 🌸"
-            else -> "晚上好 🌙"
+            in 5..11 -> "早安"
+            in 12..13 -> "午安"
+            in 14..17 -> "下午好"
+            else -> "晚安"
         }
     }
 
-    // 动画背景的偏移
+    val greetingEmoji = remember {
+        when (java.time.LocalTime.now().hour) {
+            in 5..11 -> "☀️"
+            in 12..13 -> "🌤️"
+            in 14..17 -> "🌸"
+            else -> "🌙"
+        }
+    }
+
+    // 动画时间
     val infiniteTransition = rememberInfiniteTransition(label = "background")
-    val animatedOffset by infiniteTransition.animateFloat(
+    val animatedTime by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
-            animation = tween(20000, easing = LinearEasing),
+            animation = tween(30000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "offset"
+        label = "time"
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // 可爱背景装饰
-        CuteBackground(animatedOffset)
+        // 高级动态背景
+        PremiumBackground(animatedTime)
 
         Scaffold(
             containerColor = Color.Transparent,
             topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text(
-                                text = greeting,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = "${today.monthValue}月${today.dayOfMonth}日 ${today.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.CHINA)}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    actions = {
-                        // AI助手按钮 - 卡通样式
-                        CuteIconButton(
-                            onClick = { onNavigateToModule(Screen.AIAssistant.route) },
-                            emoji = "🤖",
-                            backgroundColor = AppColors.CandyLavender
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        // 设置按钮
-                        CuteIconButton(
-                            onClick = { onNavigateToModule(Screen.Settings.route) },
-                            emoji = "⚙️",
-                            backgroundColor = AppColors.CandyMint.copy(alpha = 0.5f)
-                        )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = Color.Transparent
-                    )
+                // 透明顶部栏
+                PremiumTopBar(
+                    greeting = greeting,
+                    greetingEmoji = greetingEmoji,
+                    today = today,
+                    onAIClick = { onNavigateToModule(Screen.AIAssistant.route) },
+                    onSettingsClick = { onNavigateToModule(Screen.Settings.route) }
                 )
             }
         ) { paddingValues ->
             if (isLoading) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // 可爱加载动画
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("🌀", fontSize = 48.sp)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            "加载中...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+                // 高级加载动画
+                PremiumLoadingScreen(modifier = Modifier.padding(paddingValues))
             } else {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(paddingValues),
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    // 今日概览卡片 - 卡通版
-                    item(key = "today_overview") {
-                        CuteTodayCard(todayStats = todayStats)
+                    // 英雄区域 - 今日概览
+                    item(key = "hero") {
+                        HeroSection(
+                            todayStats = todayStats,
+                            onNavigateToModule = onNavigateToModule
+                        )
                     }
 
-                    // 快捷功能入口 - 卡通版
+                    // 快捷功能入口
                     item(key = "quick_access") {
-                        CuteQuickAccessSection(onNavigateToModule = onNavigateToModule)
+                        QuickAccessSection(onNavigateToModule = onNavigateToModule)
                     }
 
-                    // 本月财务概览 - 卡通版
+                    // 本月财务卡片
                     item(key = "monthly_finance") {
-                        CuteFinanceCard(
+                        FinanceCard(
                             finance = monthlyFinance,
                             onClick = { onNavigateToModule(Screen.AccountingMain.route) }
                         )
                     }
 
-                    // 目标进度 - 卡通版
+                    // 目标进度
                     if (topGoals.isNotEmpty()) {
                         item(key = "goals") {
-                            CuteGoalSection(
+                            GoalsSection(
                                 goals = topGoals,
                                 onClick = { onNavigateToModule(Screen.Goal.route) }
                             )
                         }
                     }
 
-                    // AI建议卡片 - 卡通版
+                    // AI 助手卡片
                     item(key = "ai_card") {
-                        CuteAICard(onClick = { onNavigateToModule(Screen.AIAssistant.route) })
+                        AIAssistantCard(onClick = { onNavigateToModule(Screen.AIAssistant.route) })
                     }
 
-                    // 底部间距
+                    // 底部安全间距
                     item {
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
                 }
             }
@@ -187,68 +160,137 @@ fun HomeScreen(
 }
 
 /**
- * 可爱背景装饰 - 浮动的圆点和星星
+ * 高级动态背景 - 浮动粒子和渐变
  */
 @Composable
-private fun CuteBackground(animatedOffset: Float) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val width = size.width
-        val height = size.height
+private fun PremiumBackground(animatedTime: Float) {
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-        // 绘制浮动的装饰圆点
-        drawFloatingCircle(
-            center = Offset(width * 0.1f, height * 0.15f + animatedOffset % 50),
-            radius = 30f,
-            color = AppColors.CandyPink.copy(alpha = 0.3f)
-        )
-        drawFloatingCircle(
-            center = Offset(width * 0.85f, height * 0.1f - animatedOffset % 40),
-            radius = 25f,
-            color = AppColors.CandyBlue.copy(alpha = 0.3f)
-        )
-        drawFloatingCircle(
-            center = Offset(width * 0.7f, height * 0.3f + animatedOffset % 60),
-            radius = 20f,
-            color = AppColors.CandyMint.copy(alpha = 0.3f)
-        )
-        drawFloatingCircle(
-            center = Offset(width * 0.15f, height * 0.5f - animatedOffset % 45),
-            radius = 35f,
-            color = AppColors.CandyLavender.copy(alpha = 0.25f)
-        )
-        drawFloatingCircle(
-            center = Offset(width * 0.9f, height * 0.6f + animatedOffset % 55),
-            radius = 28f,
-            color = AppColors.CandyPeach.copy(alpha = 0.3f)
-        )
-        drawFloatingCircle(
-            center = Offset(width * 0.3f, height * 0.8f - animatedOffset % 35),
-            radius = 22f,
-            color = AppColors.CandyYellow.copy(alpha = 0.35f)
-        )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = if (isDarkTheme) {
+                        listOf(
+                            Color(0xFF0f0c29),
+                            Color(0xFF302b63),
+                            Color(0xFF24243e)
+                        )
+                    } else {
+                        listOf(
+                            Color(0xFFF8F5FF),
+                            Color(0xFFFFF9F5),
+                            Color(0xFFF5F9FF)
+                        )
+                    }
+                )
+            )
+    ) {
+        // 浮动粒子
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val width = size.width
+            val height = size.height
+
+            val particles = listOf(
+                ParticleData(0.1f, 0.15f, 35f, AppColors.GlowPurple),
+                ParticleData(0.85f, 0.08f, 28f, AppColors.GlowBlue),
+                ParticleData(0.72f, 0.25f, 22f, AppColors.GlowPink),
+                ParticleData(0.15f, 0.45f, 40f, AppColors.CandyLavender.copy(alpha = 0.4f)),
+                ParticleData(0.88f, 0.55f, 32f, AppColors.CandyMint.copy(alpha = 0.4f)),
+                ParticleData(0.25f, 0.75f, 25f, AppColors.CandyPeach.copy(alpha = 0.4f)),
+                ParticleData(0.65f, 0.85f, 30f, AppColors.CandyBlue.copy(alpha = 0.35f)),
+                ParticleData(0.45f, 0.35f, 18f, AppColors.GlowPurple.copy(alpha = 0.3f))
+            )
+
+            particles.forEachIndexed { index, particle ->
+                val offsetX = sin((animatedTime + index * 45) * 0.02f) * 30f
+                val offsetY = cos((animatedTime + index * 60) * 0.015f) * 25f
+
+                drawCircle(
+                    color = particle.color,
+                    radius = particle.radius,
+                    center = Offset(
+                        width * particle.x + offsetX,
+                        height * particle.y + offsetY
+                    )
+                )
+            }
+        }
     }
 }
 
-private fun DrawScope.drawFloatingCircle(
-    center: Offset,
-    radius: Float,
-    color: Color
+private data class ParticleData(
+    val x: Float,
+    val y: Float,
+    val radius: Float,
+    val color: Color
+)
+
+/**
+ * 高级顶部栏
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PremiumTopBar(
+    greeting: String,
+    greetingEmoji: String,
+    today: LocalDate,
+    onAIClick: () -> Unit,
+    onSettingsClick: () -> Unit
 ) {
-    drawCircle(
-        color = color,
-        radius = radius,
-        center = center
+    TopAppBar(
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = greetingEmoji,
+                    fontSize = 28.sp
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = greeting,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = "${today.monthValue}月${today.dayOfMonth}日 ${today.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.CHINA)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        },
+        actions = {
+            // AI 按钮
+            PremiumIconButton(
+                onClick = onAIClick,
+                icon = "🤖",
+                gradientColors = AppColors.GradientCosmic
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            // 设置按钮
+            PremiumIconButton(
+                onClick = onSettingsClick,
+                icon = "⚙️",
+                gradientColors = AppColors.GradientEmerald
+            )
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent
+        )
     )
 }
 
 /**
- * 可爱图标按钮
+ * 高级图标按钮
  */
 @Composable
-private fun CuteIconButton(
+private fun PremiumIconButton(
     onClick: () -> Unit,
-    emoji: String,
-    backgroundColor: Color
+    icon: String,
+    gradientColors: List<Color>
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -258,152 +300,219 @@ private fun CuteIconButton(
         label = "scale"
     )
 
-    Surface(
+    // 发光动画
+    val infiniteTransition = rememberInfiniteTransition(label = "glow")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+
+    Box(
         modifier = Modifier
-            .size(40.dp)
+            .size(44.dp)
             .scale(scale)
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(14.dp),
+                spotColor = gradientColors.first().copy(alpha = glowAlpha)
+            )
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = gradientColors.map { it.copy(alpha = 0.9f) }
+                )
+            )
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
             ),
-        shape = CartoonShape.Circle,
-        color = backgroundColor
+        contentAlignment = Alignment.Center
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(emoji, fontSize = 20.sp)
+        Text(icon, fontSize = 20.sp)
+    }
+}
+
+/**
+ * 高级加载屏幕
+ */
+@Composable
+private fun PremiumLoadingScreen(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // 脉冲加载动画
+            PulsingCircle(
+                color = AppColors.Primary,
+                size = 60.dp
+            ) {
+                Text("✨", fontSize = 28.sp)
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text(
+                text = "加载中...",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
 
 /**
- * 今日概览卡片 - 卡通版
+ * 英雄区域 - 今日概览
  */
 @Composable
-private fun CuteTodayCard(todayStats: TodayStatsData) {
+private fun HeroSection(
+    todayStats: TodayStatsData,
+    onNavigateToModule: (String) -> Unit
+) {
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 12.dp,
-                shape = CartoonShape.CuteCard,
-                spotColor = AppColors.Primary.copy(alpha = 0.3f)
-            ),
-        shape = CartoonShape.CuteCard,
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+    PremiumGradientCard(
+        gradientColors = AppColors.GradientHero,
+        onClick = null
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = AppColors.GradientDream
-                    )
-                )
-                .padding(24.dp)
-        ) {
-            Column {
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("📊", fontSize = 24.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("📊", fontSize = 26.sp)
+                    Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = "今日概览",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                GradientChip(
+                    text = "查看详情 →",
+                    gradientColors = listOf(
+                        Color.White.copy(alpha = 0.3f),
+                        Color.White.copy(alpha = 0.1f)
+                    ),
+                    onClick = { onNavigateToModule(Screen.DataCenter.route) }
+                )
+            }
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    CuteTodayStatItem(
-                        emoji = "✅",
-                        label = "待办",
-                        value = "${todayStats.completedTodos}/${todayStats.totalTodos}",
-                        backgroundColor = AppColors.CandyMint.copy(alpha = 0.9f)
-                    )
-                    CuteTodayStatItem(
-                        emoji = "💰",
-                        label = "消费",
-                        value = "¥${numberFormat.format(todayStats.todayExpense.toInt())}",
-                        backgroundColor = AppColors.CandyYellow.copy(alpha = 0.9f)
-                    )
-                    CuteTodayStatItem(
-                        emoji = "🎯",
-                        label = "习惯",
-                        value = "${todayStats.completedHabits}/${todayStats.totalHabits}",
-                        backgroundColor = AppColors.CandyBlue.copy(alpha = 0.9f)
-                    )
-                }
+            Spacer(modifier = Modifier.height(28.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                HeroStatItem(
+                    emoji = "✅",
+                    label = "待办完成",
+                    value = "${todayStats.completedTodos}/${todayStats.totalTodos}",
+                    progress = if (todayStats.totalTodos > 0)
+                        todayStats.completedTodos.toFloat() / todayStats.totalTodos
+                    else 0f,
+                    progressColors = AppColors.GradientEmerald
+                )
+
+                HeroStatItem(
+                    emoji = "💰",
+                    label = "今日消费",
+                    value = "¥${numberFormat.format(todayStats.todayExpense.toInt())}",
+                    progress = 0.7f, // 预算进度示例
+                    progressColors = AppColors.GradientGold
+                )
+
+                HeroStatItem(
+                    emoji = "🎯",
+                    label = "习惯打卡",
+                    value = "${todayStats.completedHabits}/${todayStats.totalHabits}",
+                    progress = if (todayStats.totalHabits > 0)
+                        todayStats.completedHabits.toFloat() / todayStats.totalHabits
+                    else 0f,
+                    progressColors = AppColors.GradientRose
+                )
             }
         }
     }
 }
 
 /**
- * 可爱今日统计项
+ * 英雄区域统计项
  */
 @Composable
-private fun CuteTodayStatItem(
+private fun HeroStatItem(
     emoji: String,
     label: String,
     value: String,
-    backgroundColor: Color
+    progress: Float,
+    progressColors: List<Color>
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Surface(
-            modifier = Modifier.size(52.dp),
-            shape = CartoonShape.Circle,
-            color = backgroundColor,
-            shadowElevation = 4.dp
+        // 圆形进度指示器
+        Box(
+            modifier = Modifier.size(72.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(emoji, fontSize = 24.sp)
+            PremiumCircularProgress(
+                progress = progress,
+                size = 72.dp,
+                strokeWidth = 6.dp,
+                trackColor = Color.White.copy(alpha = 0.2f),
+                gradientColors = progressColors
+            ) {
+                Text(emoji, fontSize = 28.sp)
             }
         }
-        Spacer(modifier = Modifier.height(10.dp))
+
+        Spacer(modifier = Modifier.height(12.dp))
+
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
+
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = Color.White.copy(alpha = 0.9f)
+            color = Color.White.copy(alpha = 0.85f)
         )
     }
 }
 
 /**
- * 可爱快捷功能入口
+ * 快捷功能入口
  */
 @Composable
-private fun CuteQuickAccessSection(onNavigateToModule: (String) -> Unit) {
+private fun QuickAccessSection(onNavigateToModule: (String) -> Unit) {
     val quickAccessItems = remember {
         listOf(
-            CuteQuickItem("🤖", "AI助手", AppColors.CandyBlue, Screen.AIAssistant.route),
-            CuteQuickItem("💵", "记账", AppColors.CandyMint, Screen.AccountingMain.route),
-            CuteQuickItem("📝", "待办", AppColors.CandyYellow, Screen.Todo.route),
-            CuteQuickItem("🎯", "目标", AppColors.CandyLavender, Screen.Goal.route),
-            CuteQuickItem("⭐", "打卡", AppColors.CandyPink, Screen.Habit.route),
-            CuteQuickItem("📔", "日记", AppColors.CandyCoral, Screen.Diary.route),
-            CuteQuickItem("🐷", "存钱", AppColors.CandyPeach, Screen.SavingsPlan.route),
-            CuteQuickItem("📊", "预算", AppColors.CandyLilac, Screen.Budget.route)
+            QuickItem("🤖", "AI助手", AppColors.GradientCosmic, Screen.AIAssistant.route),
+            QuickItem("💵", "记账", AppColors.GradientEmerald, Screen.AccountingMain.route),
+            QuickItem("📝", "待办", AppColors.GradientGold, Screen.Todo.route),
+            QuickItem("🎯", "目标", AppColors.GradientAurora, Screen.Goal.route),
+            QuickItem("⭐", "打卡", AppColors.GradientRose, Screen.Habit.route),
+            QuickItem("📔", "日记", AppColors.GradientNeonCity, Screen.Diary.route),
+            QuickItem("🐷", "存钱", AppColors.GradientMango, Screen.SavingsPlan.route),
+            QuickItem("📊", "预算", AppColors.GradientPurpleHaze, Screen.Budget.route)
         )
     }
 
     Column {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("⚡", fontSize = 20.sp)
-            Spacer(modifier = Modifier.width(6.dp))
+            Text("⚡", fontSize = 22.sp)
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "快捷入口",
                 style = MaterialTheme.typography.titleMedium,
@@ -411,13 +520,13 @@ private fun CuteQuickAccessSection(onNavigateToModule: (String) -> Unit) {
             )
         }
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(14.dp)
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(quickAccessItems, key = { it.route }) { item ->
-                CuteQuickButton(
+                QuickAccessButton(
                     item = item,
                     onClick = { onNavigateToModule(item.route) }
                 )
@@ -427,11 +536,11 @@ private fun CuteQuickAccessSection(onNavigateToModule: (String) -> Unit) {
 }
 
 /**
- * 可爱快捷入口按钮
+ * 快捷入口按钮
  */
 @Composable
-private fun CuteQuickButton(
-    item: CuteQuickItem,
+private fun QuickAccessButton(
+    item: QuickItem,
     onClick: () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -446,30 +555,42 @@ private fun CuteQuickButton(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .scale(scale)
-            .clip(CartoonShape.CuteButton)
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,
                 onClick = onClick
             )
-            .padding(8.dp)
     ) {
-        Surface(
-            shape = CartoonShape.QuickIcon,
-            color = item.color.copy(alpha = 0.25f),
+        Box(
             modifier = Modifier
-                .size(60.dp)
-                .shadow(6.dp, CartoonShape.QuickIcon, spotColor = item.color.copy(alpha = 0.3f))
+                .size(64.dp)
+                .shadow(
+                    elevation = 12.dp,
+                    shape = RoundedCornerShape(20.dp),
+                    spotColor = item.gradientColors.first().copy(alpha = 0.4f)
+                )
+                .clip(RoundedCornerShape(20.dp))
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = item.gradientColors.map { it.copy(alpha = 0.85f) }
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.5f),
+                            Color.White.copy(alpha = 0.1f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Text(item.emoji, fontSize = 28.sp)
-            }
+            Text(item.emoji, fontSize = 28.sp)
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Text(
             text = item.label,
@@ -481,80 +602,91 @@ private fun CuteQuickButton(
 }
 
 /**
- * 可爱本月财务卡片
+ * 本月财务卡片
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CuteFinanceCard(
+private fun FinanceCard(
     finance: MonthlyFinanceData,
     onClick: () -> Unit
 ) {
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
     val today = remember { LocalDate.now() }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(8.dp, CartoonShape.CuteCard, spotColor = AppColors.Secondary.copy(alpha = 0.2f)),
+    GlassCard(
         onClick = onClick,
-        shape = CartoonShape.CuteCard,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+        gradientColors = listOf(
+            AppColors.GlassWhite,
+            Color.White.copy(alpha = 0.95f)
         )
     ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
+        Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("💳", fontSize = 24.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "${today.monthValue}月财务",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(
+                                brush = Brush.linearGradient(AppColors.GradientEmerald),
+                                shape = RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("💳", fontSize = 22.sp)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "${today.monthValue}月财务",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "点击查看详情",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
-                Surface(
-                    shape = CartoonShape.Capsule,
-                    color = AppColors.CandyMint.copy(alpha = 0.3f)
-                ) {
-                    Text(
-                        "查看 →",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.Secondary
-                    )
-                }
+
+                Icon(
+                    imageVector = Icons.Outlined.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                CuteFinanceItem(
-                    emoji = "📈",
+                FinanceStatItem(
+                    icon = "📈",
                     label = "收入",
                     value = "¥${numberFormat.format(finance.totalIncome.toLong())}",
-                    color = AppColors.Income
+                    color = AppColors.Income,
+                    gradientColors = AppColors.GradientEmerald
                 )
-                CuteFinanceItem(
-                    emoji = "📉",
+
+                FinanceStatItem(
+                    icon = "📉",
                     label = "支出",
                     value = "¥${numberFormat.format(finance.totalExpense.toLong())}",
-                    color = AppColors.Expense
+                    color = AppColors.Expense,
+                    gradientColors = AppColors.GradientNeonCity
                 )
-                CuteFinanceItem(
-                    emoji = "💎",
+
+                FinanceStatItem(
+                    icon = "💎",
                     label = "结余",
                     value = "¥${numberFormat.format(finance.balance.toLong())}",
-                    color = if (finance.balance >= 0) AppColors.Primary else AppColors.Expense
+                    color = if (finance.balance >= 0) AppColors.Primary else AppColors.Expense,
+                    gradientColors = if (finance.balance >= 0) AppColors.GradientAurora else AppColors.GradientNeonCity
                 )
             }
         }
@@ -562,21 +694,36 @@ private fun CuteFinanceCard(
 }
 
 @Composable
-private fun CuteFinanceItem(
-    emoji: String,
+private fun FinanceStatItem(
+    icon: String,
     label: String,
     value: String,
-    color: Color
+    color: Color,
+    gradientColors: List<Color>
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(emoji, fontSize = 20.sp)
-        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(
+                    brush = Brush.linearGradient(gradientColors.map { it.copy(alpha = 0.15f) }),
+                    shape = CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(icon, fontSize = 20.sp)
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(2.dp))
+
+        Spacer(modifier = Modifier.height(4.dp))
+
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
@@ -587,65 +734,67 @@ private fun CuteFinanceItem(
 }
 
 /**
- * 可爱目标进度部分
+ * 目标进度区域
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CuteGoalSection(
+private fun GoalsSection(
     goals: List<GoalProgressData>,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(8.dp, CartoonShape.CuteCard, spotColor = AppColors.CandyLavender.copy(alpha = 0.3f)),
-        onClick = onClick,
-        shape = CartoonShape.CuteCard
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
+    GlassCard(onClick = onClick) {
+        Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🚀", fontSize = 24.sp)
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(
+                                brush = Brush.linearGradient(AppColors.GradientAurora),
+                                shape = RoundedCornerShape(12.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("🚀", fontSize = 22.sp)
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = "目标进度",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                 }
-                Surface(
-                    shape = CartoonShape.Capsule,
-                    color = AppColors.CandyLavender.copy(alpha = 0.3f)
-                ) {
-                    Text(
-                        "查看 →",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = AppColors.Primary
-                    )
-                }
+
+                Icon(
+                    imageVector = Icons.Outlined.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             goals.forEachIndexed { index, goal ->
                 if (index > 0) {
-                    Spacer(modifier = Modifier.height(14.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-                CuteGoalItem(
+
+                GoalProgressItem(
                     title = goal.title,
                     progress = goal.progress,
                     progressText = goal.progressText,
-                    emoji = when (index) {
+                    medal = when (index) {
                         0 -> "🥇"
                         1 -> "🥈"
                         else -> "🥉"
+                    },
+                    gradientColors = when (index) {
+                        0 -> AppColors.GradientGold
+                        1 -> AppColors.GradientSky
+                        else -> AppColors.GradientRose
                     }
                 )
             }
@@ -654,21 +803,16 @@ private fun CuteGoalSection(
 }
 
 /**
- * 可爱目标进度项
+ * 目标进度项
  */
 @Composable
-private fun CuteGoalItem(
+private fun GoalProgressItem(
     title: String,
     progress: Float,
     progressText: String,
-    emoji: String
+    medal: String,
+    gradientColors: List<Color>
 ) {
-    val animatedProgress by animateFloatAsState(
-        targetValue = progress,
-        animationSpec = tween(durationMillis = 800, easing = FastOutSlowInEasing),
-        label = "progress"
-    )
-
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -676,150 +820,141 @@ private fun CuteGoalItem(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(emoji, fontSize = 16.sp)
-                Spacer(modifier = Modifier.width(6.dp))
+                Text(medal, fontSize = 18.sp)
+                Spacer(modifier = Modifier.width(8.dp))
                 Text(
                     text = title,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1
                 )
             }
             Text(
                 text = progressText,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(12.dp)
-                .clip(CartoonShape.Capsule)
-                .background(AppColors.CandyLavender.copy(alpha = 0.3f))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(animatedProgress)
-                    .background(
-                        brush = Brush.horizontalGradient(colors = AppColors.GradientDream),
-                        shape = CartoonShape.Capsule
-                    )
-            )
-        }
+        PremiumLinearProgress(
+            progress = progress,
+            height = 10.dp,
+            trackColor = gradientColors.first().copy(alpha = 0.15f),
+            gradientColors = gradientColors,
+            showShimmer = progress > 0.5f
+        )
     }
 }
 
 /**
- * 可爱AI助手卡片
+ * AI 助手卡片
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CuteAICard(onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.98f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "scale"
+private fun AIAssistantCard(onClick: () -> Unit) {
+    val infiniteTransition = rememberInfiniteTransition(label = "ai_glow")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 0.8f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
     )
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .scale(scale)
-            .shadow(
-                elevation = 10.dp,
-                shape = CartoonShape.CuteCard,
-                spotColor = AppColors.CandyBlue.copy(alpha = 0.3f)
-            ),
+    TiltCard(
         onClick = onClick,
-        shape = CartoonShape.CuteCard,
-        colors = CardDefaults.cardColors(
-            containerColor = Color.Transparent
-        ),
-        interactionSource = interactionSource
+        gradientColors = AppColors.GradientCosmic.map { it.copy(alpha = 0.9f) }
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            AppColors.CandyBlue.copy(alpha = 0.2f),
-                            AppColors.CandyLavender.copy(alpha = 0.2f)
-                        )
-                    )
-                )
-                .padding(20.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // 可爱的AI图标
-                Surface(
-                    modifier = Modifier.size(56.dp),
-                    shape = CartoonShape.QuickIcon,
-                    color = Color.Transparent
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                brush = Brush.linearGradient(colors = AppColors.GradientCandy)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("🤖", fontSize = 28.sp)
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "AI智能助手",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
+            // AI 图标容器
+            Box(
+                modifier = Modifier
+                    .size(60.dp)
+                    .shadow(
+                        elevation = 12.dp,
+                        shape = RoundedCornerShape(18.dp),
+                        spotColor = AppColors.GlowPink.copy(alpha = glowAlpha)
+                    )
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.3f),
+                                Color.White.copy(alpha = 0.1f)
+                            )
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("✨", fontSize = 14.sp)
-                    }
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "语音或文字命令，快速记账、添加待办",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
+                    .border(
+                        width = 1.dp,
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                Color.White.copy(alpha = 0.5f),
+                                Color.White.copy(alpha = 0.2f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(18.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("🤖", fontSize = 30.sp)
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "AI 智能助手",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("✨", fontSize = 16.sp)
                 }
 
-                Surface(
-                    shape = CartoonShape.Capsule,
-                    color = AppColors.Primary.copy(alpha = 0.2f)
-                ) {
-                    Text(
-                        "开始 →",
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = AppColors.Primary
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "语音记账、智能分析、快捷操作",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.85f)
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.White.copy(alpha = 0.2f))
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(12.dp)
                     )
-                }
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    text = "开始 →",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White
+                )
             }
         }
     }
 }
 
 /**
- * 可爱快捷入口数据类
+ * 快捷入口数据类
  */
-private data class CuteQuickItem(
+private data class QuickItem(
     val emoji: String,
     val label: String,
-    val color: Color,
+    val gradientColors: List<Color>,
     val route: String
 )
