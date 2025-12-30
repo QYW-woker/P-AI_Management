@@ -2,6 +2,7 @@ package com.lifemanager.app.core.voice
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
@@ -38,49 +39,77 @@ class VoiceRecognitionManager @Inject constructor(
     private val _state = MutableStateFlow<VoiceRecognitionState>(VoiceRecognitionState.Idle)
     val state: StateFlow<VoiceRecognitionState> = _state.asStateFlow()
 
-    private val _isAvailable = MutableStateFlow(false)
+    // 默认设为true，尝试启动时才判断
+    private val _isAvailable = MutableStateFlow(true)
     val isAvailable: StateFlow<Boolean> = _isAvailable.asStateFlow()
 
     private val _volumeLevel = MutableStateFlow(0f)
     val volumeLevel: StateFlow<Float> = _volumeLevel.asStateFlow()
 
     init {
+        // 使用更宽松的检查方式
         checkAvailability()
     }
 
     /**
      * 检查语音识别是否可用
+     * 使用多种方式检查，避免误判
      */
     fun checkAvailability(): Boolean {
-        val available = SpeechRecognizer.isRecognitionAvailable(context)
+        // 方式1: 系统API检查
+        val systemAvailable = SpeechRecognizer.isRecognitionAvailable(context)
+
+        // 方式2: 检查是否有可响应语音识别Intent的应用
+        val intentAvailable = checkVoiceRecognitionIntent()
+
+        // 任一方式可用即认为可用
+        val available = systemAvailable || intentAvailable
         _isAvailable.value = available
         return available
     }
 
     /**
+     * 检查是否有应用可以处理语音识别Intent
+     */
+    private fun checkVoiceRecognitionIntent(): Boolean {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        val activities = context.packageManager.queryIntentActivities(
+            intent,
+            PackageManager.MATCH_DEFAULT_ONLY
+        )
+        return activities.isNotEmpty()
+    }
+
+    /**
      * 初始化语音识别器
      */
-    private fun initRecognizer() {
+    private fun initRecognizer(): Boolean {
         if (speechRecognizer == null) {
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
-                setRecognitionListener(createRecognitionListener())
+            try {
+                speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context)?.apply {
+                    setRecognitionListener(createRecognitionListener())
+                }
+                return speechRecognizer != null
+            } catch (e: Exception) {
+                return false
             }
         }
+        return true
     }
 
     /**
      * 开始语音识别
      */
     fun startListening() {
-        if (!checkAvailability()) {
+        // 尝试初始化，即使checkAvailability返回false也尝试
+        if (!initRecognizer()) {
+            _isAvailable.value = false
             _state.value = VoiceRecognitionState.Error(
                 code = -1,
-                message = "语音识别服务不可用"
+                message = "语音识别服务初始化失败，请检查是否安装了语音输入法"
             )
             return
         }
-
-        initRecognizer()
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
@@ -97,6 +126,7 @@ class VoiceRecognitionManager @Inject constructor(
             speechRecognizer?.startListening(intent)
             _state.value = VoiceRecognitionState.Listening
         } catch (e: Exception) {
+            _isAvailable.value = false
             _state.value = VoiceRecognitionState.Error(
                 code = -2,
                 message = "启动语音识别失败: ${e.message}"

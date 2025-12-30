@@ -439,6 +439,31 @@ private fun VoiceUnavailableContent(
             textAlign = TextAlign.Center
         )
 
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // 提示解决方案
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
+                Text(
+                    text = "如何启用语音识别:",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "1. 安装讯飞输入法或搜狗输入法\n2. 在系统设置中启用语音输入\n3. 授予APP麦克风权限",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
         // 拍照识别按钮
         if (imageRecognitionEnabled) {
             Spacer(modifier = Modifier.height(24.dp))
