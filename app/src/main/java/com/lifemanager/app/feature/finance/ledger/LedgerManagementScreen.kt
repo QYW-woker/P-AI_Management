@@ -473,31 +473,67 @@ private fun EditLedgerDialog(
                     maxLines = 2
                 )
 
-                // 账本类型
+                // 账本类型 - 使用网格布局支持更多类型
                 Text(
                     text = "账本类型",
                     style = MaterialTheme.typography.labelMedium
                 )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    listOf(
-                        LedgerType.PERSONAL to "个人",
-                        LedgerType.FAMILY to "家庭",
-                        LedgerType.BUSINESS to "生意"
-                    ).forEach { (type, label) ->
-                        val isSelected = editState.ledgerType == type
-                        if (isSelected) {
-                            Button(
-                                onClick = { viewModel.updateLedgerType(type) },
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                            ) {
-                                Text(label)
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = { viewModel.updateLedgerType(type) },
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                            ) {
-                                Text(label)
+                val allTypes = listOf(
+                    LedgerType.PERSONAL to Pair("👤", "个人"),
+                    LedgerType.FAMILY to Pair("👨‍👩‍👧", "家庭"),
+                    LedgerType.BUSINESS to Pair("💼", "生意"),
+                    LedgerType.TRAVEL to Pair("✈️", "旅行"),
+                    LedgerType.PROJECT to Pair("📋", "项目"),
+                    LedgerType.INVESTMENT to Pair("📈", "投资")
+                )
+                // 使用3列网格
+                val columns = 3
+                val typeRows = (allTypes.size + columns - 1) / columns
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (row in 0 until typeRows) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            for (col in 0 until columns) {
+                                val index = row * columns + col
+                                if (index < allTypes.size) {
+                                    val (type, iconLabel) = allTypes[index]
+                                    val (icon, label) = iconLabel
+                                    val isSelected = editState.ledgerType == type
+                                    Surface(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .height(48.dp)
+                                            .clickable { viewModel.updateLedgerType(type) },
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = if (isSelected)
+                                            MaterialTheme.colorScheme.primaryContainer
+                                        else
+                                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                        border = if (isSelected)
+                                            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+                                        else null
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                                            horizontalArrangement = Arrangement.Center,
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(icon, modifier = Modifier.padding(end = 4.dp))
+                                            Text(
+                                                text = label,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = if (isSelected)
+                                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                                else
+                                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Spacer(modifier = Modifier.weight(1f))
+                                }
                             }
                         }
                     }

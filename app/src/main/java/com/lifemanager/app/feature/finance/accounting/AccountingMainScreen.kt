@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -444,7 +446,7 @@ private fun AccountingSidebar(
 }
 
 /**
- * 侧边栏项
+ * 侧边栏项 - 紧凑布局确保所有项可见
  */
 @Composable
 private fun SidebarItem(
@@ -462,31 +464,36 @@ private fun SidebarItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.bodyLarge
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.weight(1f)
+            )
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
+                modifier = Modifier.size(16.dp),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
         }
@@ -1107,7 +1114,7 @@ private fun QuickAddTransactionDialog(
                     }
                 }
 
-                // 分类选择
+                // 分类选择 - 使用网格布局
                 val filteredCategories = categories.filter {
                     it.moduleType == if (selectedType == TransactionType.EXPENSE) "EXPENSE" else "INCOME"
                 }
@@ -1118,29 +1125,35 @@ private fun QuickAddTransactionDialog(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(filteredCategories) { category ->
-                            val isSelected = selectedCategoryId == category.id
-                            val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
-                                name = category.name,
-                                iconName = category.iconName,
-                                moduleType = category.moduleType
-                            )
-                            if (isSelected) {
-                                Button(
-                                    onClick = { selectedCategoryId = category.id },
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                                ) {
-                                    Text("$emoji ${category.name}", style = MaterialTheme.typography.bodySmall)
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = { selectedCategoryId = category.id },
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                                ) {
-                                    Text("$emoji ${category.name}", style = MaterialTheme.typography.bodySmall)
+                    // 使用4列网格布局
+                    val columns = 4
+                    val rows = (filteredCategories.size + columns - 1) / columns
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        for (row in 0 until rows) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                for (col in 0 until columns) {
+                                    val index = row * columns + col
+                                    if (index < filteredCategories.size) {
+                                        val category = filteredCategories[index]
+                                        val isSelected = selectedCategoryId == category.id
+                                        val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                                            name = category.name,
+                                            iconName = category.iconName,
+                                            moduleType = category.moduleType
+                                        )
+                                        CategoryGridChip(
+                                            emoji = emoji,
+                                            name = category.name,
+                                            isSelected = isSelected,
+                                            onClick = { selectedCategoryId = category.id },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    } else {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
                                 }
                             }
                         }
@@ -1498,7 +1511,7 @@ private fun EditTransactionDialog(
                     }
                 }
 
-                // 分类选择
+                // 分类选择 - 使用网格布局
                 val filteredCategories = categories.filter {
                     it.moduleType == if (selectedType == "EXPENSE") "EXPENSE" else "INCOME"
                 }
@@ -1509,29 +1522,35 @@ private fun EditTransactionDialog(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(filteredCategories) { category ->
-                            val isSelected = selectedCategoryId == category.id
-                            val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
-                                name = category.name,
-                                iconName = category.iconName,
-                                moduleType = category.moduleType
-                            )
-                            if (isSelected) {
-                                Button(
-                                    onClick = { selectedCategoryId = category.id },
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                                ) {
-                                    Text("$emoji ${category.name}", style = MaterialTheme.typography.bodySmall)
-                                }
-                            } else {
-                                OutlinedButton(
-                                    onClick = { selectedCategoryId = category.id },
-                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                                ) {
-                                    Text("$emoji ${category.name}", style = MaterialTheme.typography.bodySmall)
+                    // 使用4列网格布局
+                    val columns = 4
+                    val rows = (filteredCategories.size + columns - 1) / columns
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        for (row in 0 until rows) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                for (col in 0 until columns) {
+                                    val index = row * columns + col
+                                    if (index < filteredCategories.size) {
+                                        val category = filteredCategories[index]
+                                        val isSelected = selectedCategoryId == category.id
+                                        val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
+                                            name = category.name,
+                                            iconName = category.iconName,
+                                            moduleType = category.moduleType
+                                        )
+                                        CategoryGridChip(
+                                            emoji = emoji,
+                                            name = category.name,
+                                            isSelected = isSelected,
+                                            onClick = { selectedCategoryId = category.id },
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    } else {
+                                        Spacer(modifier = Modifier.weight(1f))
+                                    }
                                 }
                             }
                         }
@@ -2099,4 +2118,51 @@ private fun ExportDialog(
             }
         }
     )
+}
+
+/**
+ * 分类网格选择项
+ */
+@Composable
+private fun CategoryGridChip(
+    emoji: String,
+    name: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clickable(onClick = onClick)
+            .height(48.dp),
+        shape = RoundedCornerShape(8.dp),
+        color = if (isSelected)
+            MaterialTheme.colorScheme.primaryContainer
+        else
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = if (isSelected)
+            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
+        else
+            null
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(emoji, fontSize = 16.sp)
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = if (isSelected)
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                else
+                    MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }

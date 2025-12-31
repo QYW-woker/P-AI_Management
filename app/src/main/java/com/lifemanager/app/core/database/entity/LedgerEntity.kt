@@ -71,9 +71,53 @@ data class LedgerEntity(
 
 /**
  * 账本类型枚举
+ *
+ * 支持内置类型和用户自定义类型
  */
 object LedgerType {
     const val PERSONAL = "PERSONAL"
     const val FAMILY = "FAMILY"
     const val BUSINESS = "BUSINESS"
+    const val TRAVEL = "TRAVEL"
+    const val PROJECT = "PROJECT"
+    const val INVESTMENT = "INVESTMENT"
+    const val CUSTOM = "CUSTOM"
+
+    // 获取所有内置类型
+    val builtInTypes = listOf(PERSONAL, FAMILY, BUSINESS, TRAVEL, PROJECT, INVESTMENT)
+
+    // 获取显示名称
+    fun getDisplayName(type: String): String = when (type) {
+        PERSONAL -> "个人"
+        FAMILY -> "家庭"
+        BUSINESS -> "生意"
+        TRAVEL -> "旅行"
+        PROJECT -> "项目"
+        INVESTMENT -> "投资"
+        else -> type  // 自定义类型返回类型名称本身
+    }
+
+    // 获取图标
+    fun getIcon(type: String): String = when (type) {
+        PERSONAL -> "👤"
+        FAMILY -> "👨‍👩‍👧"
+        BUSINESS -> "💼"
+        TRAVEL -> "✈️"
+        PROJECT -> "📋"
+        INVESTMENT -> "📈"
+        else -> "📒"  // 自定义类型默认图标
+    }
 }
+
+/**
+ * 自定义账本类型实体
+ */
+@Entity(tableName = "custom_ledger_types")
+data class CustomLedgerTypeEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    val name: String,
+    val icon: String = "📒",
+    val color: String = "#2196F3",
+    val createdAt: Long = System.currentTimeMillis()
+)
