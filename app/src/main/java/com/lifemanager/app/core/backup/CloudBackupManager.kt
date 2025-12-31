@@ -3,6 +3,7 @@ package com.lifemanager.app.core.backup
 import android.content.Context
 import android.content.SharedPreferences
 import com.lifemanager.app.core.database.AppDatabase
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +25,7 @@ import javax.inject.Singleton
  */
 @Singleton
 class CloudBackupManager @Inject constructor(
-    private val context: Context,
+    @ApplicationContext private val context: Context,
     private val database: AppDatabase
 ) {
     companion object {
