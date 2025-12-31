@@ -7,10 +7,13 @@ import com.lifemanager.app.core.database.entity.AIAnalysisEntity
 import com.lifemanager.app.core.database.entity.GoalEntity
 import com.lifemanager.app.core.database.entity.GoalStatus
 import com.lifemanager.app.domain.model.GoalEditState
+import com.lifemanager.app.domain.model.GoalInsights
 import com.lifemanager.app.domain.model.GoalStatistics
+import com.lifemanager.app.domain.model.GoalTemplate
 import com.lifemanager.app.domain.model.GoalUiState
 import com.lifemanager.app.domain.model.GoalWithChildren
 import com.lifemanager.app.domain.model.SubGoalEditState
+import com.lifemanager.app.domain.model.goalTemplates
 import com.lifemanager.app.domain.usecase.GoalUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -85,9 +88,34 @@ class GoalViewModel @Inject constructor(
     private val _expandedGoalIds = MutableStateFlow<Set<Long>>(emptySet())
     val expandedGoalIds: StateFlow<Set<Long>> = _expandedGoalIds.asStateFlow()
 
+    // 目标洞察
+    private val _goalInsights = MutableStateFlow<GoalInsights?>(null)
+    val goalInsights: StateFlow<GoalInsights?> = _goalInsights.asStateFlow()
+
+    // 推荐模板
+    private val _recommendedTemplates = MutableStateFlow<List<GoalTemplate>>(emptyList())
+    val recommendedTemplates: StateFlow<List<GoalTemplate>> = _recommendedTemplates.asStateFlow()
+
+    // 即将到期目标
+    private val _upcomingDeadlines = MutableStateFlow<List<GoalEntity>>(emptyList())
+    val upcomingDeadlines: StateFlow<List<GoalEntity>> = _upcomingDeadlines.asStateFlow()
+
+    // 已逾期目标
+    private val _overdueGoals = MutableStateFlow<List<GoalEntity>>(emptyList())
+    val overdueGoals: StateFlow<List<GoalEntity>> = _overdueGoals.asStateFlow()
+
+    // 模板选择对话框
+    private val _showTemplateDialog = MutableStateFlow(false)
+    val showTemplateDialog: StateFlow<Boolean> = _showTemplateDialog.asStateFlow()
+
+    // 当前选择的模板分类
+    private val _selectedTemplateCategory = MutableStateFlow<String?>(null)
+    val selectedTemplateCategory: StateFlow<String?> = _selectedTemplateCategory.asStateFlow()
+
     init {
         loadGoals()
         loadAIAnalysis()
+        loadEnhancedData()
     }
 
     /**
@@ -559,5 +587,123 @@ class GoalViewModel @Inject constructor(
      */
     suspend fun getGoalWithChildren(goalId: Long): GoalWithChildren? {
         return useCase.getGoalWithChildren(goalId)
+    }
+
+    // ============ 扩展功能 ============
+
+    /**
+     * 加载增强数据
+     */
+    private fun loadEnhancedData() {
+        viewModelScope.launch {
+            try {
+                // 加载目标洞察
+                _goalInsights.value = useCase.getGoalInsights()
+
+                // 加载推荐模板
+                _recommendedTemplates.value = useCase.getRecommendedTemplates()
+
+                // 加载即将到期目标
+                _upcomingDeadlines.value = useCase.getUpcomingDeadlines(7)
+
+                // 加载已逾期目标
+                _overdueGoals.value = useCase.getOverdueGoals()
+            } catch (e: Exception) {
+                // 增强数据加载失败不影响主功能
+            }
+        }
+    }
+
+    /**
+     * 刷新增强数据
+     */
+    fun refreshEnhancedData() {
+        loadEnhancedData()
+    }
+
+    /**
+     * 显示模板选择对话框
+     */
+    fun showTemplateDialog() {
+        _showTemplateDialog.value = true
+        _selectedTemplateCategory.value = null
+    }
+
+    /**
+     * 隐藏模板选择对话框
+     */
+    fun hideTemplateDialog() {
+        _showTemplateDialog.value = false
+        _selectedTemplateCategory.value = null
+    }
+
+    /**
+     * 选择模板分类
+     */
+    fun selectTemplateCategory(category: String?) {
+        _selectedTemplateCategory.value = category
+    }
+
+    /**
+     * 获取分类下的模板
+     */
+    fun getTemplatesForCategory(category: String): List<GoalTemplate> {
+        return goalTemplates.filter { it.category == category }
+    }
+
+    /**
+     * 从模板创建目标
+     */
+    fun createFromTemplate(template: GoalTemplate, customTitle: String? = null) {
+        viewModelScope.launch {
+            try {
+                useCase.createGoalFromTemplate(template, customTitle)
+                hideTemplateDialog()
+                loadEnhancedData()
+            } catch (e: Exception) {
+                // 处理错误
+            }
+        }
+    }
+
+    /**
+     * 计算目标健康度
+     */
+    fun getGoalHealth(goal: GoalEntity): Int {
+        return useCase.calculateGoalHealth(goal)
+    }
+
+    /**
+     * 获取目标时间线
+     */
+    suspend fun getGoalTimeline(goalId: Long) = useCase.getGoalTimeline(goalId)
+
+    /**
+     * 获取所有模板
+     */
+    fun getAllTemplates(): List<GoalTemplate> = goalTemplates
+
+    /**
+     * 检查是否有逾期目标
+     */
+    fun hasOverdueGoals(): Boolean = _overdueGoals.value.isNotEmpty()
+
+    /**
+     * 检查是否有即将到期目标
+     */
+    fun hasUpcomingDeadlines(): Boolean = _upcomingDeadlines.value.isNotEmpty()
+
+    /**
+     * 获取目标完成率
+     */
+    fun getCompletionRate(): Float {
+        return _goalInsights.value?.completionRate ?: 0f
+    }
+
+    /**
+     * 获取活跃目标数
+     */
+    fun getActiveGoalsCount(): Int {
+        return _goalInsights.value?.activeGoals ?: 0
     }
 }

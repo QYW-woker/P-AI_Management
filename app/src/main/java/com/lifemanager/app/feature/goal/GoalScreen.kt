@@ -30,10 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifemanager.app.core.database.entity.GoalEntity
 import com.lifemanager.app.core.database.entity.GoalStatus
+import com.lifemanager.app.domain.model.CategoryGoalStats
+import com.lifemanager.app.domain.model.GoalInsights
+import com.lifemanager.app.domain.model.GoalTemplate
 import com.lifemanager.app.domain.model.GoalUiState
 import com.lifemanager.app.domain.model.SubGoalEditState
 import com.lifemanager.app.domain.model.getCategoryDisplayName
 import com.lifemanager.app.domain.model.getGoalTypeDisplayName
+import com.lifemanager.app.domain.model.goalCategoryOptions
 import com.lifemanager.app.ui.component.PremiumTextField
 
 /**
@@ -60,6 +64,14 @@ fun GoalScreen(
     val subGoalEditState by viewModel.subGoalEditState.collectAsState()
     val childCounts by viewModel.childCounts.collectAsState()
     val expandedGoalIds by viewModel.expandedGoalIds.collectAsState()
+
+    // 扩展功能状态
+    val goalInsights by viewModel.goalInsights.collectAsState()
+    val recommendedTemplates by viewModel.recommendedTemplates.collectAsState()
+    val upcomingDeadlines by viewModel.upcomingDeadlines.collectAsState()
+    val overdueGoals by viewModel.overdueGoals.collectAsState()
+    val showTemplateDialog by viewModel.showTemplateDialog.collectAsState()
+    val selectedTemplateCategory by viewModel.selectedTemplateCategory.collectAsState()
 
     Scaffold(
         topBar = {
@@ -95,6 +107,37 @@ fun GoalScreen(
             // 统计卡片区域
             item {
                 EnhancedStatsSection(statistics = statistics)
+            }
+
+            // 逾期/即将到期警告
+            if (overdueGoals.isNotEmpty() || upcomingDeadlines.isNotEmpty()) {
+                item {
+                    DeadlineWarningsCard(
+                        overdueGoals = overdueGoals,
+                        upcomingDeadlines = upcomingDeadlines,
+                        onGoalClick = { viewModel.showEditDialog(it) }
+                    )
+                }
+            }
+
+            // 推荐模板快捷入口
+            if (recommendedTemplates.isNotEmpty()) {
+                item {
+                    RecommendedTemplatesSection(
+                        templates = recommendedTemplates,
+                        onTemplateClick = { viewModel.createFromTemplate(it) },
+                        onViewAllClick = { viewModel.showTemplateDialog() }
+                    )
+                }
+            }
+
+            // 分类统计卡片
+            goalInsights?.let { insights ->
+                if (insights.categoryStats.isNotEmpty()) {
+                    item {
+                        CategoryStatsCard(categoryStats = insights.categoryStats)
+                    }
+                }
             }
 
             // AI智能洞察
@@ -292,6 +335,17 @@ fun GoalScreen(
             onDescriptionChange = { viewModel.updateSubGoalDescription(it) },
             onDismiss = { viewModel.hideSubGoalDialog() },
             onConfirm = { viewModel.saveSubGoal() }
+        )
+    }
+
+    // 模板选择对话框
+    if (showTemplateDialog) {
+        TemplateSelectionDialog(
+            selectedCategory = selectedTemplateCategory,
+            onCategorySelect = { viewModel.selectTemplateCategory(it) },
+            onTemplateSelect = { viewModel.createFromTemplate(it) },
+            onDismiss = { viewModel.hideTemplateDialog() },
+            getTemplatesForCategory = { viewModel.getTemplatesForCategory(it) }
         )
     }
 }
@@ -1109,5 +1163,520 @@ private fun getCategoryIcon(category: String): ImageVector {
         "LIFESTYLE" -> Icons.Default.Home
         "HOBBY" -> Icons.Default.Palette
         else -> Icons.Default.Flag
+    }
+}
+
+/**
+ * 截止日期警告卡片
+ */
+@Composable
+private fun DeadlineWarningsCard(
+    overdueGoals: List<GoalEntity>,
+    upcomingDeadlines: List<GoalEntity>,
+    onGoalClick: (Long) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (overdueGoals.isNotEmpty())
+                Color(0xFFFEE2E2)
+            else
+                Color(0xFFFEF3C7)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            // 逾期目标
+            if (overdueGoals.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Color(0xFFDC2626),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "${overdueGoals.size}个目标已逾期",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFDC2626)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                overdueGoals.take(2).forEach { goal ->
+                    DeadlineItem(
+                        goal = goal,
+                        isOverdue = true,
+                        onClick = { onGoalClick(goal.id) }
+                    )
+                }
+                if (overdueGoals.size > 2) {
+                    Text(
+                        text = "还有${overdueGoals.size - 2}个...",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFDC2626).copy(alpha = 0.7f),
+                        modifier = Modifier.padding(start = 28.dp, top = 4.dp)
+                    )
+                }
+            }
+
+            // 即将到期目标
+            if (upcomingDeadlines.isNotEmpty()) {
+                if (overdueGoals.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    HorizontalDivider(color = Color(0xFFFBBF24).copy(alpha = 0.3f))
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = Color(0xFFD97706),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "${upcomingDeadlines.size}个目标即将到期",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFD97706)
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                upcomingDeadlines.take(2).forEach { goal ->
+                    DeadlineItem(
+                        goal = goal,
+                        isOverdue = false,
+                        onClick = { onGoalClick(goal.id) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DeadlineItem(
+    goal: GoalEntity,
+    isOverdue: Boolean,
+    onClick: () -> Unit
+) {
+    val today = java.time.LocalDate.now().toEpochDay().toInt()
+    val daysInfo = goal.endDate?.let { endDate ->
+        val diff = endDate - today
+        when {
+            diff < 0 -> "逾期${-diff}天"
+            diff == 0 -> "今天截止"
+            else -> "剩余${diff}天"
+        }
+    } ?: ""
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .background(
+                    getCategoryColor(goal.category),
+                    CircleShape
+                )
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = goal.title,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+            color = if (isOverdue) Color(0xFFDC2626) else Color(0xFFD97706)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = daysInfo,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (isOverdue) Color(0xFFDC2626) else Color(0xFFD97706)
+        )
+    }
+}
+
+/**
+ * 推荐模板区域
+ */
+@Composable
+private fun RecommendedTemplatesSection(
+    templates: List<GoalTemplate>,
+    onTemplateClick: (GoalTemplate) -> Unit,
+    onViewAllClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = Color(0xFFF59E0B),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "推荐目标",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+            TextButton(onClick = onViewAllClick) {
+                Text("查看全部", style = MaterialTheme.typography.labelMedium)
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(templates) { template ->
+                TemplateQuickCard(
+                    template = template,
+                    onClick = { onTemplateClick(template) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TemplateQuickCard(
+    template: GoalTemplate,
+    onClick: () -> Unit
+) {
+    val categoryColor = getCategoryColor(template.category)
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = categoryColor.copy(alpha = 0.1f),
+        modifier = Modifier.width(140.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(categoryColor.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = getCategoryIcon(template.category),
+                    contentDescription = null,
+                    tint = categoryColor,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = template.name,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = getCategoryDisplayName(template.category),
+                style = MaterialTheme.typography.labelSmall,
+                color = categoryColor
+            )
+        }
+    }
+}
+
+/**
+ * 分类统计卡片
+ */
+@Composable
+private fun CategoryStatsCard(categoryStats: List<CategoryGoalStats>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.PieChart,
+                    contentDescription = null,
+                    tint = Color(0xFF8B5CF6),
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "分类概况",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            categoryStats.take(4).forEach { stats ->
+                CategoryStatItem(stats = stats)
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryStatItem(stats: CategoryGoalStats) {
+    val color = try {
+        Color(android.graphics.Color.parseColor(stats.color))
+    } catch (e: Exception) {
+        Color(0xFF6B7280)
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(color.copy(alpha = 0.15f), RoundedCornerShape(8.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = getCategoryIcon(stats.category),
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = stats.categoryName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = "${stats.activeCount}进行中 / ${stats.completedCount}已完成",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            LinearProgressIndicator(
+                progress = { stats.completionRate },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = color,
+                trackColor = color.copy(alpha = 0.15f),
+            )
+        }
+    }
+}
+
+/**
+ * 模板选择对话框
+ */
+@Composable
+private fun TemplateSelectionDialog(
+    selectedCategory: String?,
+    onCategorySelect: (String?) -> Unit,
+    onTemplateSelect: (GoalTemplate) -> Unit,
+    onDismiss: () -> Unit,
+    getTemplatesForCategory: (String) -> List<GoalTemplate>
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Dashboard,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("选择目标模板")
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.height(400.dp)
+            ) {
+                Text(
+                    text = "选择一个分类查看可用模板",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 分类选择
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(goalCategoryOptions) { (category, name) ->
+                        val isSelected = selectedCategory == category
+                        val color = getCategoryColor(category)
+
+                        FilterChip(
+                            onClick = { onCategorySelect(if (isSelected) null else category) },
+                            label = { Text(name) },
+                            selected = isSelected,
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = getCategoryIcon(category),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = color.copy(alpha = 0.15f),
+                                selectedLabelColor = color,
+                                selectedLeadingIconColor = color
+                            )
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // 模板列表
+                if (selectedCategory != null) {
+                    val templates = getTemplatesForCategory(selectedCategory)
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(templates) { template ->
+                            TemplateListItem(
+                                template = template,
+                                onClick = { onTemplateSelect(template) }
+                            )
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.TouchApp,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                modifier = Modifier.size(48.dp)
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "请先选择一个分类",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    )
+}
+
+@Composable
+private fun TemplateListItem(
+    template: GoalTemplate,
+    onClick: () -> Unit
+) {
+    val color = getCategoryColor(template.category)
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = color.copy(alpha = 0.08f)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(color.copy(alpha = 0.15f), RoundedCornerShape(10.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = getCategoryIcon(template.category),
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = template.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium
+                )
+                Text(
+                    text = template.description,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "使用模板",
+                tint = color,
+                modifier = Modifier.size(24.dp)
+            )
+        }
     }
 }
