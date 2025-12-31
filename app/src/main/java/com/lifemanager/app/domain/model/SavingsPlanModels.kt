@@ -213,3 +213,94 @@ fun getStatusDisplayText(status: String): String {
         else -> "进行中"
     }
 }
+
+/**
+ * 存钱计划模板
+ */
+data class SavingsPlanTemplate(
+    val name: String,
+    val description: String,
+    val icon: String,
+    val suggestedAmount: Double,
+    val suggestedMonths: Int,
+    val color: String,
+    val strategy: String = "FIXED_MONTHLY"
+)
+
+/**
+ * 预设存钱计划模板
+ */
+val savingsPlanTemplates = listOf(
+    SavingsPlanTemplate(
+        name = "应急基金",
+        description = "建立3-6个月生活费的应急储备",
+        icon = "🛡️",
+        suggestedAmount = 30000.0,
+        suggestedMonths = 12,
+        color = "#2196F3",
+        strategy = "FIXED_MONTHLY"
+    ),
+    SavingsPlanTemplate(
+        name = "旅行基金",
+        description = "为下一次旅行攒钱",
+        icon = "✈️",
+        suggestedAmount = 10000.0,
+        suggestedMonths = 6,
+        color = "#00BCD4",
+        strategy = "FIXED_MONTHLY"
+    ),
+    SavingsPlanTemplate(
+        name = "数码产品",
+        description = "新手机、电脑等电子产品",
+        icon = "📱",
+        suggestedAmount = 8000.0,
+        suggestedMonths = 4,
+        color = "#9C27B0",
+        strategy = "FIXED_MONTHLY"
+    ),
+    SavingsPlanTemplate(
+        name = "节日礼物",
+        description = "春节/生日/纪念日礼物预算",
+        icon = "🎁",
+        suggestedAmount = 3000.0,
+        suggestedMonths = 3,
+        color = "#E91E63",
+        strategy = "FIXED_MONTHLY"
+    ),
+    SavingsPlanTemplate(
+        name = "学习提升",
+        description = "课程培训、书籍资料费用",
+        icon = "📚",
+        suggestedAmount = 5000.0,
+        suggestedMonths = 6,
+        color = "#4CAF50",
+        strategy = "FIXED_MONTHLY"
+    ),
+    SavingsPlanTemplate(
+        name = "购车首付",
+        description = "汽车首付款储蓄计划",
+        icon = "🚗",
+        suggestedAmount = 50000.0,
+        suggestedMonths = 24,
+        color = "#FF9800",
+        strategy = "FIXED_MONTHLY"
+    ),
+    SavingsPlanTemplate(
+        name = "装修基金",
+        description = "家居装修或家具更新",
+        icon = "🏠",
+        suggestedAmount = 30000.0,
+        suggestedMonths = 12,
+        color = "#795548",
+        strategy = "FIXED_MONTHLY"
+    ),
+    SavingsPlanTemplate(
+        name = "婚礼基金",
+        description = "婚礼筹备费用",
+        icon = "💍",
+        suggestedAmount = 100000.0,
+        suggestedMonths = 24,
+        color = "#F44336",
+        strategy = "FIXED_MONTHLY"
+    )
+)

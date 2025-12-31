@@ -120,4 +120,19 @@ interface SavingsPlanRepository {
      * 统计指定计划的记录数
      */
     suspend fun countRecordsByPlan(planId: Long): Int
+
+    /**
+     * 获取所有存款日期（用于计算连续存款天数）
+     */
+    suspend fun getAllDepositDates(): List<Int>
+
+    /**
+     * 获取总存款天数
+     */
+    suspend fun getTotalDepositDays(): Int
+
+    /**
+     * 获取本周存款总额
+     */
+    suspend fun getThisWeekDeposits(startOfWeek: Int): Double
 }

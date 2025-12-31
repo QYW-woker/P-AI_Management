@@ -35,6 +35,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.lifemanager.app.domain.model.savingsColors
 import com.lifemanager.app.domain.model.strategyOptions
+import com.lifemanager.app.domain.model.savingsPlanTemplates
+import com.lifemanager.app.domain.model.SavingsPlanTemplate
 import com.lifemanager.app.ui.component.PremiumTextField
 import com.lifemanager.app.ui.component.PremiumDialog
 import com.lifemanager.app.ui.component.PremiumConfirmButton
@@ -151,6 +153,47 @@ fun AddEditPlanDialog(
                             )
                         }
                         Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    // 模板选择（仅新建时显示）
+                    if (!editState.isEditing) {
+                        Text(
+                            text = "快速创建",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            items(savingsPlanTemplates.take(6)) { template ->
+                                TemplateCard(
+                                    template = template,
+                                    onClick = {
+                                        viewModel.applyTemplate(template)
+                                        amountText = template.suggestedAmount.toInt().toString()
+                                    }
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Divider()
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        Text(
+                            text = "自定义设置",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
                     }
 
                     // 计划名称
@@ -311,6 +354,73 @@ private fun ColorChip(
                 tint = Color.White,
                 modifier = Modifier.size(20.dp)
             )
+        }
+    }
+}
+
+/**
+ * 模板卡片
+ */
+@Composable
+private fun TemplateCard(
+    template: SavingsPlanTemplate,
+    onClick: () -> Unit
+) {
+    val cardColor = try {
+        Color(android.graphics.Color.parseColor(template.color))
+    } catch (e: Exception) {
+        MaterialTheme.colorScheme.primary
+    }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = cardColor.copy(alpha = 0.1f)
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = cardColor.copy(alpha = 0.3f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = template.icon,
+                    style = MaterialTheme.typography.titleLarge
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = template.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Column {
+                Text(
+                    text = "¥${String.format("%,.0f", template.suggestedAmount)}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = cardColor
+                )
+                Text(
+                    text = "${template.suggestedMonths}个月",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }

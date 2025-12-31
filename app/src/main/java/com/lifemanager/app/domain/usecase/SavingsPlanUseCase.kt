@@ -176,6 +176,12 @@ class SavingsPlanUseCase @Inject constructor(
             .filter { it.type == RecordType.WITHDRAWAL }
             .sumOf { it.amount }
 
+        // 计算连续存款天数
+        val savingsStreak = calculateSavingsStreak()
+
+        // 获取总存款天数
+        val totalDepositDays = repository.getTotalDepositDays()
+
         return SavingsStats(
             activePlans = activePlans,
             totalTarget = totalTarget,
@@ -185,8 +191,48 @@ class SavingsPlanUseCase @Inject constructor(
             lastMonthDeposit = lastMonthDeposit,
             monthlyChange = monthlyChange,
             totalDeposits = totalDeposits,
-            totalWithdrawals = totalWithdrawals
+            totalWithdrawals = totalWithdrawals,
+            savingsStreak = savingsStreak,
+            totalRecords = totalDepositDays
         )
+    }
+
+    /**
+     * 计算连续存款天数（从今天或昨天往前数）
+     */
+    private suspend fun calculateSavingsStreak(): Int {
+        val depositDates = repository.getAllDepositDates()
+        if (depositDates.isEmpty()) return 0
+
+        val today = getToday()
+        val sortedDates = depositDates.sorted().reversed()  // 从最近日期开始
+
+        // 检查最近一次存款是否为今天或昨天（允许一天的间隔保持streak）
+        val latestDate = sortedDates.first()
+        if (today - latestDate > 1) {
+            // 如果最近存款不是今天或昨天，streak为0
+            return 0
+        }
+
+        // 计算连续天数
+        var streak = 1
+        var previousDate = latestDate
+
+        for (i in 1 until sortedDates.size) {
+            val currentDate = sortedDates[i]
+            // 如果日期连续或者是同一天（多次存款）
+            if (previousDate - currentDate <= 1) {
+                if (previousDate - currentDate == 1) {
+                    streak++
+                }
+                previousDate = currentDate
+            } else {
+                // 连续中断
+                break
+            }
+        }
+
+        return streak
     }
 
     /**

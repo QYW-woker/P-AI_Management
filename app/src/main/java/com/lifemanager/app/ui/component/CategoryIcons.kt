@@ -21,6 +21,10 @@ object CategoryIcons {
         "转账收入" to "💸",
         "退款退货" to "↩️",
         "报销款项" to "🧾",
+        "租金收入" to "🏘️",
+        "理财利息" to "💹",
+        "中奖收入" to "🎰",
+        "公积金提取" to "🏛️",
         "其他收入" to "💵",
         "work" to "💰",
         "emoji_events" to "🏆",
@@ -30,7 +34,11 @@ object CategoryIcons {
         "card_giftcard" to "🧧",
         "swap_horiz" to "💸",
         "replay" to "↩️",
-        "receipt" to "🧾"
+        "receipt" to "🧾",
+        "real_estate_agent" to "🏘️",
+        "savings" to "💹",
+        "casino" to "🎰",
+        "account_balance_wallet" to "🏛️"
     )
 
     /**
@@ -51,6 +59,14 @@ object CategoryIcons {
         "金融保险" to "🏦",
         "宠物" to "🐾",
         "数码电子" to "💻",
+        "旅行度假" to "✈️",
+        "汽车养护" to "🔧",
+        "运动健身" to "🏋️",
+        "订阅服务" to "📺",
+        "育儿母婴" to "👶",
+        "书籍阅读" to "📖",
+        "烟酒茶" to "🍷",
+        "礼物送礼" to "🎀",
         "转账支出" to "💳",
         "其他支出" to "📝",
         "restaurant" to "🍜",
@@ -66,7 +82,15 @@ object CategoryIcons {
         "account_balance" to "🏦",
         "pets" to "🐾",
         "devices" to "💻",
-        "credit_card" to "💳"
+        "credit_card" to "💳",
+        "flight" to "✈️",
+        "car_repair" to "🔧",
+        "fitness_center" to "🏋️",
+        "subscriptions" to "📺",
+        "child_care" to "👶",
+        "menu_book" to "📖",
+        "local_bar" to "🍷",
+        "redeem" to "🎀"
     )
 
     /**
@@ -81,11 +105,22 @@ object CategoryIcons {
         "养老金账户" to "👴",
         "房产" to "🏡",
         "车辆" to "🚙",
+        "数字货币" to "₿",
+        "保险产品" to "🛡️",
+        "债券" to "📃",
+        "黄金贵金属" to "🥇",
+        "收藏品" to "🖼️",
+        "公积金余额" to "🏛️",
         "lock" to "🔐",
         "monetization_on" to "💵",
         "show_chart" to "📊",
         "pie_chart" to "📈",
-        "elderly" to "👴"
+        "elderly" to "👴",
+        "currency_bitcoin" to "₿",
+        "shield" to "🛡️",
+        "request_quote" to "📃",
+        "diamond" to "🥇",
+        "collections" to "🖼️"
     )
 
     /**
@@ -96,7 +131,12 @@ object CategoryIcons {
         "车贷" to "🚗",
         "信用卡" to "💳",
         "借款" to "🤝",
-        "handshake" to "🤝"
+        "消费贷" to "💸",
+        "花呗白条" to "📲",
+        "学生贷款" to "🎓",
+        "handshake" to "🤝",
+        "credit_score" to "💸",
+        "payment" to "📲"
     )
 
     /**

@@ -342,6 +342,61 @@ private fun SavingsStatsCard(stats: SavingsStats) {
                     }
                 }
             }
+
+            // 存款连续天数和总天数统计
+            if (stats.savingsStreak > 0 || stats.totalRecords > 0) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Divider()
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    // 连续存款天数
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "🔥",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "连续存款",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            text = "${stats.savingsStreak}天",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (stats.savingsStreak >= 7) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+
+                    // 总存款天数
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "📅",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "累计存款",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Text(
+                            text = "${stats.totalRecords}天",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
         }
     }
 }

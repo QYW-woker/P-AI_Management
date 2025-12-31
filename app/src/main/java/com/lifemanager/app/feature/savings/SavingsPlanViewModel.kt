@@ -8,6 +8,8 @@ import com.lifemanager.app.domain.model.RecordEditState
 import com.lifemanager.app.domain.model.SavingsPlanWithDetails
 import com.lifemanager.app.domain.model.SavingsStats
 import com.lifemanager.app.domain.model.SavingsUiState
+import com.lifemanager.app.domain.model.SavingsPlanTemplate
+import java.time.LocalDate
 import com.lifemanager.app.domain.usecase.SavingsPlanUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -188,6 +190,25 @@ class SavingsPlanViewModel @Inject constructor(
 
     fun updatePlanColor(color: String) {
         _planEditState.value = _planEditState.value.copy(color = color)
+    }
+
+    /**
+     * 应用模板
+     */
+    fun applyTemplate(template: SavingsPlanTemplate) {
+        val today = LocalDate.now()
+        val targetDate = today.plusMonths(template.suggestedMonths.toLong())
+
+        _planEditState.value = _planEditState.value.copy(
+            name = template.name,
+            description = template.description,
+            targetAmount = template.suggestedAmount,
+            startDate = today.toEpochDay().toInt(),
+            targetDate = targetDate.toEpochDay().toInt(),
+            strategy = template.strategy,
+            color = template.color,
+            error = null
+        )
     }
 
     /**

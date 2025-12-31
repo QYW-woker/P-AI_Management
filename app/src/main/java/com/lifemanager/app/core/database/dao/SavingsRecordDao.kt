@@ -135,4 +135,50 @@ interface SavingsRecordDao {
         WHERE date >= :startOfLastMonth AND date < :startOfThisMonth AND type = 'DEPOSIT'
     """)
     suspend fun getLastMonthDeposits(startOfLastMonth: Int, startOfThisMonth: Int): Double
+
+    /**
+     * 获取所有存款的日期列表（去重，用于计算连续存款天数）
+     */
+    @Query("""
+        SELECT DISTINCT date FROM savings_records
+        WHERE type = 'DEPOSIT'
+        ORDER BY date DESC
+    """)
+    suspend fun getAllDepositDates(): List<Int>
+
+    /**
+     * 获取最近一次存款的日期
+     */
+    @Query("""
+        SELECT MAX(date) FROM savings_records
+        WHERE type = 'DEPOSIT'
+    """)
+    suspend fun getLastDepositDate(): Int?
+
+    /**
+     * 获取指定日期范围内有存款的天数
+     */
+    @Query("""
+        SELECT COUNT(DISTINCT date) FROM savings_records
+        WHERE type = 'DEPOSIT' AND date >= :startDate AND date <= :endDate
+    """)
+    suspend fun countDepositDaysInRange(startDate: Int, endDate: Int): Int
+
+    /**
+     * 获取本周存款总额
+     */
+    @Query("""
+        SELECT COALESCE(SUM(amount), 0.0) FROM savings_records
+        WHERE date >= :startOfWeek AND type = 'DEPOSIT'
+    """)
+    suspend fun getThisWeekDeposits(startOfWeek: Int): Double
+
+    /**
+     * 获取总存款天数
+     */
+    @Query("""
+        SELECT COUNT(DISTINCT date) FROM savings_records
+        WHERE type = 'DEPOSIT'
+    """)
+    suspend fun getTotalDepositDays(): Int
 }

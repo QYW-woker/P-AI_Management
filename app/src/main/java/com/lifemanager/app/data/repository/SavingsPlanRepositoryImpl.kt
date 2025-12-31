@@ -111,4 +111,16 @@ class SavingsPlanRepositoryImpl @Inject constructor(
     override suspend fun countRecordsByPlan(planId: Long): Int {
         return recordDao.countByPlan(planId)
     }
+
+    override suspend fun getAllDepositDates(): List<Int> {
+        return recordDao.getAllDepositDates()
+    }
+
+    override suspend fun getTotalDepositDays(): Int {
+        return recordDao.getTotalDepositDays()
+    }
+
+    override suspend fun getThisWeekDeposits(startOfWeek: Int): Double {
+        return recordDao.getThisWeekDeposits(startOfWeek)
+    }
 }
