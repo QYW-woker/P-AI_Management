@@ -393,7 +393,7 @@ private fun ApiKeyDialog(
                     onValueChange = onApiKeyChange,
                     modifier = Modifier.fillMaxWidth(),
                     label = "API Key",
-                    placeholder = { Text("sk-...") },
+                    placeholder = "sk-...",
                     singleLine = true,
                     visualTransformation = if (showKey)
                         VisualTransformation.None

@@ -602,9 +602,8 @@ private fun BottomInputArea(
                 value = textInput,
                 onValueChange = onTextChange,
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("输入命令...") },
+                placeholder = "输入命令...",
                 singleLine = true,
-                shape = RoundedCornerShape(24.dp),
                 trailingIcon = {
                     // 语音按钮
                     CompactVoiceButton(

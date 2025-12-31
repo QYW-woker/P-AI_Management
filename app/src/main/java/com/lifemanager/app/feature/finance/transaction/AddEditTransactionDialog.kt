@@ -198,15 +198,10 @@ fun AddEditTransactionDialog(
                             newValue.toDoubleOrNull()?.let { viewModel.updateEditAmount(it) }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("0.00") },
+                        placeholder = "0.00",
                         leadingIcon = { Text("¥ ") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = if (editState.type == TransactionType.EXPENSE)
-                                Color(0xFFF44336) else Color(0xFF4CAF50)
-                        )
+                        singleLine = true
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -315,7 +310,7 @@ fun AddEditTransactionDialog(
                         value = editState.note,
                         onValueChange = { viewModel.updateEditNote(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("添加备注（可选）") },
+                        placeholder = "添加备注（可选）",
                         maxLines = 3,
                         minLines = 2
                     )

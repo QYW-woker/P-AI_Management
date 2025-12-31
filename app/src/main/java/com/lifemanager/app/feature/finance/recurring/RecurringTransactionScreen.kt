@@ -445,7 +445,7 @@ private fun EditRecurringDialog(
                         value = editState.name,
                         onValueChange = { viewModel.updateName(it) },
                         label = "名称",
-                        placeholder = { Text("例如：房租、工资") },
+                        placeholder = "例如：房租、工资",
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )

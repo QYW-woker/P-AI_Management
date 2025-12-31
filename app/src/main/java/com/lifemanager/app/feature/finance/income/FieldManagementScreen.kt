@@ -331,7 +331,7 @@ private fun FieldEditDialog(
                     onValueChange = { viewModel.updateName(it) },
                     modifier = Modifier.fillMaxWidth(),
                     label = "类别名称",
-                    placeholder = { Text("请输入类别名称") },
+                    placeholder = "请输入类别名称",
                     singleLine = true,
                     enabled = !editState.isPreset // 预设类别不能修改名称
                 )

@@ -241,7 +241,7 @@ private fun SavingsStatsCard(stats: SavingsStats) {
 
             // 进度条
             LinearProgressIndicator(
-                progress = { stats.overallProgress },
+                progress = stats.overallProgress,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)
@@ -249,7 +249,7 @@ private fun SavingsStatsCard(stats: SavingsStats) {
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider()
+            Divider()
             Spacer(modifier = Modifier.height(16.dp))
 
             Row(
@@ -300,7 +300,7 @@ private fun SavingsStatsCard(stats: SavingsStats) {
             // 本月存款统计
             if (stats.thisMonthDeposit > 0 || stats.lastMonthDeposit > 0) {
                 Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider()
+                Divider()
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
@@ -460,7 +460,7 @@ private fun PlanItem(
             Spacer(modifier = Modifier.height(8.dp))
 
             LinearProgressIndicator(
-                progress = { planWithDetails.progress },
+                progress = planWithDetails.progress,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)

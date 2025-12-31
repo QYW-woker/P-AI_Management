@@ -763,7 +763,7 @@ private fun AddRecordDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = "标题",
-                    placeholder = { Text("如：完成第一阶段") },
+                    placeholder = "如：完成第一阶段",
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -772,7 +772,7 @@ private fun AddRecordDialog(
                     value = content,
                     onValueChange = { content = it },
                     label = "详细内容（可选）",
-                    placeholder = { Text("记录更多细节...") },
+                    placeholder = "记录更多细节...",
                     minLines = 2,
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth()
@@ -783,7 +783,7 @@ private fun AddRecordDialog(
                         value = progressValue,
                         onValueChange = { progressValue = it.filter { c -> c.isDigit() || c == '.' } },
                         label = "进度增加值",
-                        placeholder = { Text("如：10") },
+                        placeholder = "如：10",
                         trailingIcon = { Text(goal.unit) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
@@ -839,7 +839,7 @@ private fun AbandonGoalDialog(
                     value = reason,
                     onValueChange = { reason = it },
                     label = "放弃原因（必填）",
-                    placeholder = { Text("请说明放弃的原因...") },
+                    placeholder = "请说明放弃的原因...",
                     minLines = 2,
                     maxLines = 4,
                     modifier = Modifier.fillMaxWidth()
@@ -889,7 +889,7 @@ private fun AddSubGoalDialog(
                     value = title,
                     onValueChange = { title = it },
                     label = "子目标标题",
-                    placeholder = { Text("如：完成第一章") },
+                    placeholder = "如：完成第一章",
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -898,7 +898,7 @@ private fun AddSubGoalDialog(
                     value = description,
                     onValueChange = { description = it },
                     label = "描述（可选）",
-                    placeholder = { Text("详细说明...") },
+                    placeholder = "详细说明...",
                     minLines = 2,
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth()
@@ -909,7 +909,7 @@ private fun AddSubGoalDialog(
                         value = targetValue,
                         onValueChange = { targetValue = it.filter { c -> c.isDigit() || c == '.' } },
                         label = "目标值",
-                        placeholder = { Text("如：100") },
+                        placeholder = "如：100",
                         trailingIcon = { Text(parentGoal.unit) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()

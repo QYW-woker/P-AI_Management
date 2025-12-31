@@ -64,7 +64,7 @@ fun AccountingSearchScreen(
                     PremiumTextField(
                         value = searchQuery,
                         onValueChange = { viewModel.updateQuery(it) },
-                        placeholder = { Text("搜索交易记录...") },
+                        placeholder = "搜索交易记录...",
                         singleLine = true,
                         modifier = Modifier
                             .fillMaxWidth()

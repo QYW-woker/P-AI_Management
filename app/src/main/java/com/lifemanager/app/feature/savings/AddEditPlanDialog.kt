@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -594,7 +595,7 @@ fun RecordHistoryDialog(
                     }
                 }
 
-                HorizontalDivider()
+                Divider()
 
                 // 统计信息
                 Row(
@@ -654,7 +655,7 @@ fun RecordHistoryDialog(
                     }
                 }
 
-                HorizontalDivider()
+                Divider()
 
                 // 记录列表
                 if (planDetails.records.isEmpty()) {
@@ -675,12 +676,12 @@ fun RecordHistoryDialog(
                         }
                     }
                 } else {
-                    androidx.compose.foundation.lazy.LazyColumn(
+                    LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        androidx.compose.foundation.lazy.items(
+                        items(
                             items = planDetails.records,
                             key = { it.id }
                         ) { record ->

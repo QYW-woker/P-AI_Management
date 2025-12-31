@@ -895,8 +895,7 @@ private fun CategoryBudgetEditItem(
             onValueChange = onAmountChange,
             modifier = Modifier.width(100.dp),
             leadingIcon = { Text("¥", style = MaterialTheme.typography.bodySmall) },
-            singleLine = true,
-            textStyle = MaterialTheme.typography.bodySmall
+            singleLine = true
         )
         IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
             Icon(
