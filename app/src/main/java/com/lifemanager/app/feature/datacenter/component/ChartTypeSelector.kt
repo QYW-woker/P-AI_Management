@@ -1,10 +1,10 @@
 package com.lifemanager.app.feature.datacenter.component
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.PieChart
-import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -75,6 +75,15 @@ private val ChartType.icon: ImageVector
         ChartType.PIE -> Icons.Default.PieChart
         ChartType.BAR -> Icons.Default.BarChart
         ChartType.LINE -> Icons.Default.ShowChart
+        ChartType.STACKED_BAR -> Icons.Default.StackedBarChart
+        ChartType.AREA -> Icons.Default.AreaChart
+        ChartType.RADAR -> Icons.Default.Radar
+        ChartType.HEATMAP -> Icons.Default.GridOn
+        ChartType.TREEMAP -> Icons.Default.ViewModule
+        ChartType.WATERFALL -> Icons.Default.Waterfall
+        ChartType.DONUT -> Icons.Default.DonutLarge
+        ChartType.SCATTER -> Icons.Default.ScatterPlot
+        ChartType.FUNNEL -> Icons.Default.FilterAlt
     }
 
 /**
@@ -144,5 +153,101 @@ fun LabeledChartTypeSelector(
             options = options,
             onSelect = onSelect
         )
+    }
+}
+
+/**
+ * 扩展图表类型选择器 - 支持所有图表类型
+ */
+@Composable
+fun ExtendedChartTypeSelector(
+    selected: ChartType,
+    onSelect: (ChartType) -> Unit,
+    modifier: Modifier = Modifier,
+    showAll: Boolean = true
+) {
+    val allChartTypes = if (showAll) {
+        ChartType.values().toList()
+    } else {
+        listOf(
+            ChartType.PIE, ChartType.BAR, ChartType.LINE,
+            ChartType.DONUT, ChartType.AREA, ChartType.HEATMAP
+        )
+    }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        allChartTypes.forEach { chartType ->
+            FilterChip(
+                selected = selected == chartType,
+                onClick = { onSelect(chartType) },
+                label = { Text(chartType.displayName) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = chartType.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            )
+        }
+    }
+}
+
+/**
+ * 分组图表类型选择器
+ */
+@Composable
+fun GroupedChartTypeSelector(
+    selected: ChartType,
+    onSelect: (ChartType) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val chartGroups = listOf(
+        "基础图表" to listOf(ChartType.PIE, ChartType.BAR, ChartType.LINE, ChartType.DONUT),
+        "趋势分析" to listOf(ChartType.AREA, ChartType.STACKED_BAR, ChartType.WATERFALL),
+        "分布展示" to listOf(ChartType.HEATMAP, ChartType.SCATTER, ChartType.TREEMAP),
+        "特殊图表" to listOf(ChartType.RADAR, ChartType.FUNNEL)
+    )
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        chartGroups.forEach { (groupName, chartTypes) ->
+            Column {
+                Text(
+                    text = groupName,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    chartTypes.forEach { chartType ->
+                        FilterChip(
+                            selected = selected == chartType,
+                            onClick = { onSelect(chartType) },
+                            label = { Text(chartType.displayName) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = chartType.icon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+        }
     }
 }
