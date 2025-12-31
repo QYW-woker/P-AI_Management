@@ -12,10 +12,10 @@ import kotlin.math.sin
 import kotlin.math.cos
 
 /**
- * 白衣仙女风格AI悬浮球视图
+ * 白衣小仙女风格AI悬浮球视图
  *
- * 像素级还原可爱的白衣仙女形象
- * 长发飘飘，身着白色汉服，头戴小皇冠
+ * 像素级还原参考图中的Q版小仙女形象
+ * 特点：大头小身、扁平化设计、简洁可爱
  */
 class FloatingBallView @JvmOverloads constructor(
     context: Context,
@@ -24,7 +24,7 @@ class FloatingBallView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
     companion object {
-        private const val BALL_SIZE_DP = 72  // 增大尺寸以显示更多细节
+        private const val BALL_SIZE_DP = 72
         private const val RIPPLE_MAX_SCALE = 1.4f
 
         // 心情等级
@@ -55,41 +55,25 @@ class FloatingBallView @JvmOverloads constructor(
     private var breathProgress = 0f
     private var floatOffset = 0f
     private var hairWaveProgress = 0f
-    private var sleeveWaveProgress = 0f
     private var glowPulse = 0f
     private var rippleScale = 1f
 
     // 画笔
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val hairPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val robePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val skinPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val eyePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    // 仙女配色 - 像素级还原
-    private val colorHairDark = Color.parseColor("#3D3D3D")        // 深色头发
-    private val colorHairHighlight = Color.parseColor("#5C5C5C")  // 头发高光
-    private val colorSkin = Color.parseColor("#FDF5F0")           // 白皙肌肤
-    private val colorSkinShadow = Color.parseColor("#F0E6E0")     // 肌肤阴影
-    private val colorCheek = Color.parseColor("#FFDDDD")          // 淡粉腮红
-    private val colorEyeBrown = Color.parseColor("#4A3728")       // 棕色眼睛
-    private val colorEyeHighlight = Color.parseColor("#FFFFFF")   // 眼睛高光
-    private val colorLipPink = Color.parseColor("#E8B4B4")        // 淡粉唇色
-
-    // 汉服配色
-    private val colorRobeWhite = Color.parseColor("#FAFAFA")      // 白色外袍
-    private val colorRobeInner = Color.parseColor("#F5F5F5")      // 内衬
-    private val colorRobeShadow = Color.parseColor("#E8E8E8")     // 袍子阴影
-    private val colorBeltGray = Color.parseColor("#9E9E9E")       // 灰色腰带
-    private val colorBeltTassel = Color.parseColor("#D4AF37")     // 金色流苏
-    private val colorTiara = Color.parseColor("#E8E8E8")          // 银色头冠
-    private val colorTiaraGem = Color.parseColor("#FFE4E1")       // 粉色宝石
-
-    // 光晕效果
-    private val colorGlowInner = Color.parseColor("#FFFFFF")
-    private val colorGlowOuter = Color.parseColor("#E8F4FF")
+    // 配色 - 完全匹配参考图
+    private val colorHairBlack = Color.parseColor("#2D2D2D")       // 黑色头发
+    private val colorSkin = Color.parseColor("#FFEEE6")            // 肤色（偏暖白）
+    private val colorCheek = Color.parseColor("#FFCCCC")           // 腮红
+    private val colorEyeBlack = Color.parseColor("#3D3D3D")        // 眼睛黑色
+    private val colorMouthPink = Color.parseColor("#E8A0A0")       // 嘴巴粉色
+    private val colorDressWhite = Color.parseColor("#FFFFFF")      // 白色裙子
+    private val colorDressShadow = Color.parseColor("#F0F0F0")     // 裙子阴影
+    private val colorBeltGray = Color.parseColor("#9E9E9E")        // 灰色腰带
+    private val colorPendant = Color.parseColor("#DAA520")         // 金色挂坠
+    private val colorTiara = Color.parseColor("#D0D0D0")           // 银色头冠
+    private val colorTiaraCenter = Color.parseColor("#4A4A4A")     // 头冠中心
+    private val colorGlow = Color.parseColor("#FFFFFF")            // 光晕
 
     // 尺寸
     private val ballSizePx: Int
@@ -102,7 +86,6 @@ class FloatingBallView @JvmOverloads constructor(
     private var breathAnimator: ValueAnimator? = null
     private var floatAnimator: ValueAnimator? = null
     private var hairAnimator: ValueAnimator? = null
-    private var sleeveAnimator: ValueAnimator? = null
     private var glowAnimator: ValueAnimator? = null
     private var pulseAnimator: ValueAnimator? = null
 
@@ -131,561 +114,434 @@ class FloatingBallView @JvmOverloads constructor(
         super.onDraw(canvas)
 
         val floatY = centerY + floatOffset
-        val breathScale = 1f + sin(breathProgress) * 0.015f
+        val breathScale = 1f + sin(breathProgress) * 0.01f
 
         canvas.save()
         canvas.scale(breathScale, breathScale, centerX, floatY)
 
-        // 1. 绘制外层光晕
-        drawOuterGlow(canvas, centerX, floatY)
+        // 绘制顺序（从后到前）
+        drawGlow(canvas, centerX, floatY)
 
-        // 2. 绘制波纹（录音时）
         if (isListening && rippleScale > 1f) {
             drawRipples(canvas, centerX, floatY)
         }
 
-        // 3. 绘制内层光晕
-        drawInnerGlow(canvas, centerX, floatY)
+        drawBackHair(canvas, centerX, floatY)      // 后面的头发
+        drawDress(canvas, centerX, floatY)          // 白色裙子
+        drawHead(canvas, centerX, floatY)           // 头部（脸）
+        drawFrontHair(canvas, centerX, floatY)      // 前面的头发（刘海）
+        drawFace(canvas, centerX, floatY)           // 五官
+        drawTiara(canvas, centerX, floatY)          // 头冠
+        drawArms(canvas, centerX, floatY)           // 小手臂
 
-        // 4. 绘制头发（后层）
-        drawHairBack(canvas, centerX, floatY)
-
-        // 5. 绘制身体和汉服
-        drawRobe(canvas, centerX, floatY)
-
-        // 6. 绘制脖子
-        drawNeck(canvas, centerX, floatY)
-
-        // 7. 绘制头部
-        drawHead(canvas, centerX, floatY)
-
-        // 8. 绘制头发（前层）
-        drawHairFront(canvas, centerX, floatY)
-
-        // 9. 绘制脸部
-        drawFace(canvas, centerX, floatY)
-
-        // 10. 绘制头冠
-        drawTiara(canvas, centerX, floatY)
-
-        // 11. 绘制飘动的衣袖
-        drawSleeves(canvas, centerX, floatY)
-
-        // 12. 绘制状态装饰
-        drawStatusDecoration(canvas, centerX, floatY)
+        drawStatusEffect(canvas, centerX, floatY)
 
         canvas.restore()
     }
 
     /**
-     * 绘制外层光晕
+     * 绘制光晕背景
      */
-    private fun drawOuterGlow(canvas: Canvas, cx: Float, cy: Float) {
-        val glowRadius = ballSizePx * 0.55f
-        val pulseRadius = glowRadius * (1f + glowPulse * 0.1f)
+    private fun drawGlow(canvas: Canvas, cx: Float, cy: Float) {
+        val glowRadius = ballSizePx * 0.5f * (1f + glowPulse * 0.08f)
 
-        glowPaint.shader = RadialGradient(
-            cx, cy, pulseRadius,
-            intArrayOf(
-                Color.argb(60, 255, 255, 255),
-                Color.argb(30, 232, 244, 255),
-                Color.argb(0, 232, 244, 255)
-            ),
-            floatArrayOf(0f, 0.6f, 1f),
-            Shader.TileMode.CLAMP
-        )
-        canvas.drawCircle(cx, cy, pulseRadius, glowPaint)
-        glowPaint.shader = null
-    }
-
-    /**
-     * 绘制内层光晕
-     */
-    private fun drawInnerGlow(canvas: Canvas, cx: Float, cy: Float) {
-        val glowRadius = ballSizePx * 0.4f
-
-        glowPaint.shader = RadialGradient(
+        paint.shader = RadialGradient(
             cx, cy, glowRadius,
             intArrayOf(
-                Color.argb(100, 255, 255, 255),
-                Color.argb(50, 255, 255, 255),
+                Color.argb(80, 255, 255, 255),
+                Color.argb(30, 255, 255, 255),
                 Color.argb(0, 255, 255, 255)
             ),
             floatArrayOf(0f, 0.5f, 1f),
             Shader.TileMode.CLAMP
         )
-        canvas.drawCircle(cx, cy, glowRadius, glowPaint)
-        glowPaint.shader = null
+        canvas.drawCircle(cx, cy, glowRadius, paint)
+        paint.shader = null
     }
 
     /**
-     * 绘制波纹
+     * 绘制波纹（录音时）
      */
     private fun drawRipples(canvas: Canvas, cx: Float, cy: Float) {
         for (i in 0..2) {
             val scale = rippleScale + i * 0.1f
-            val alpha = ((1f - (scale - 1f) / (RIPPLE_MAX_SCALE - 1f)) * 0.2f * 255).toInt()
-            glowPaint.color = Color.argb(alpha.coerceIn(0, 255), 200, 230, 255)
-            canvas.drawCircle(cx, cy, ballSizePx * 0.4f * scale, glowPaint)
+            val alpha = ((1f - (scale - 1f) / (RIPPLE_MAX_SCALE - 1f)) * 0.15f * 255).toInt()
+            paint.color = Color.argb(alpha.coerceIn(0, 255), 200, 220, 255)
+            paint.style = Paint.Style.FILL
+            canvas.drawCircle(cx, cy, ballSizePx * 0.4f * scale, paint)
         }
     }
 
     /**
-     * 绘制后层头发
+     * 绘制后面的长发
      */
-    private fun drawHairBack(canvas: Canvas, cx: Float, cy: Float) {
-        val headRadius = ballSizePx * 0.22f
-        val headCenterY = cy - ballSizePx * 0.12f
+    private fun drawBackHair(canvas: Canvas, cx: Float, cy: Float) {
+        paint.color = colorHairBlack
+        paint.style = Paint.Style.FILL
 
-        hairPaint.color = colorHairDark
-        hairPaint.style = Paint.Style.FILL
+        val headTop = cy - ballSizePx * 0.28f
+        val hairWave = sin(hairWaveProgress) * ballSizePx * 0.015f
 
         // 左侧长发
-        val leftHairPath = Path().apply {
-            val waveOffset = sin(hairWaveProgress) * ballSizePx * 0.02f
-
-            moveTo(cx - headRadius * 0.8f, headCenterY - headRadius * 0.3f)
+        val leftHair = Path().apply {
+            moveTo(cx - ballSizePx * 0.18f, headTop + ballSizePx * 0.1f)
+            // 外侧曲线
             quadTo(
-                cx - headRadius * 1.3f + waveOffset, headCenterY + ballSizePx * 0.1f,
-                cx - headRadius * 1.1f + waveOffset * 0.5f, headCenterY + ballSizePx * 0.35f
+                cx - ballSizePx * 0.28f + hairWave, cy + ballSizePx * 0.1f,
+                cx - ballSizePx * 0.24f + hairWave * 0.5f, cy + ballSizePx * 0.32f
             )
+            // 发尾
             quadTo(
-                cx - headRadius * 0.9f + waveOffset, headCenterY + ballSizePx * 0.45f,
-                cx - headRadius * 0.7f, headCenterY + ballSizePx * 0.5f
+                cx - ballSizePx * 0.2f, cy + ballSizePx * 0.35f,
+                cx - ballSizePx * 0.14f, cy + ballSizePx * 0.3f
             )
-            lineTo(cx - headRadius * 0.5f, headCenterY + ballSizePx * 0.15f)
+            // 内侧
+            lineTo(cx - ballSizePx * 0.1f, cy + ballSizePx * 0.05f)
             close()
         }
-        canvas.drawPath(leftHairPath, hairPaint)
+        canvas.drawPath(leftHair, paint)
 
         // 右侧长发
-        val rightHairPath = Path().apply {
-            val waveOffset = sin(hairWaveProgress + Math.PI.toFloat()) * ballSizePx * 0.02f
-
-            moveTo(cx + headRadius * 0.8f, headCenterY - headRadius * 0.3f)
+        val rightHair = Path().apply {
+            moveTo(cx + ballSizePx * 0.18f, headTop + ballSizePx * 0.1f)
             quadTo(
-                cx + headRadius * 1.3f + waveOffset, headCenterY + ballSizePx * 0.1f,
-                cx + headRadius * 1.1f + waveOffset * 0.5f, headCenterY + ballSizePx * 0.35f
+                cx + ballSizePx * 0.28f - hairWave, cy + ballSizePx * 0.1f,
+                cx + ballSizePx * 0.24f - hairWave * 0.5f, cy + ballSizePx * 0.32f
             )
             quadTo(
-                cx + headRadius * 0.9f + waveOffset, headCenterY + ballSizePx * 0.45f,
-                cx + headRadius * 0.7f, headCenterY + ballSizePx * 0.5f
+                cx + ballSizePx * 0.2f, cy + ballSizePx * 0.35f,
+                cx + ballSizePx * 0.14f, cy + ballSizePx * 0.3f
             )
-            lineTo(cx + headRadius * 0.5f, headCenterY + ballSizePx * 0.15f)
+            lineTo(cx + ballSizePx * 0.1f, cy + ballSizePx * 0.05f)
             close()
         }
-        canvas.drawPath(rightHairPath, hairPaint)
+        canvas.drawPath(rightHair, paint)
     }
 
     /**
-     * 绘制汉服袍子
+     * 绘制白色A字裙
      */
-    private fun drawRobe(canvas: Canvas, cx: Float, cy: Float) {
-        val robeTop = cy + ballSizePx * 0.02f
-        val robeBottom = cy + ballSizePx * 0.42f
-        val robeWidth = ballSizePx * 0.28f
+    private fun drawDress(canvas: Canvas, cx: Float, cy: Float) {
+        val dressTop = cy + ballSizePx * 0.02f
+        val dressBottom = cy + ballSizePx * 0.38f
 
-        // 外袍 - 白色
-        robePaint.color = colorRobeWhite
-        robePaint.style = Paint.Style.FILL
+        // 白色裙身 - 简单的梯形/A字形
+        paint.color = colorDressWhite
+        paint.style = Paint.Style.FILL
 
-        val robePath = Path().apply {
-            moveTo(cx - robeWidth * 0.5f, robeTop)
-            lineTo(cx + robeWidth * 0.5f, robeTop)
-            // 右侧
-            quadTo(cx + robeWidth * 0.8f, robeTop + ballSizePx * 0.1f,
-                   cx + robeWidth * 1.0f, robeBottom)
-            // 底部
-            quadTo(cx, robeBottom + ballSizePx * 0.03f,
-                   cx - robeWidth * 1.0f, robeBottom)
-            // 左侧
-            quadTo(cx - robeWidth * 0.8f, robeTop + ballSizePx * 0.1f,
-                   cx - robeWidth * 0.5f, robeTop)
+        val dressPath = Path().apply {
+            // 领口（窄）
+            moveTo(cx - ballSizePx * 0.08f, dressTop)
+            lineTo(cx + ballSizePx * 0.08f, dressTop)
+            // 右侧裙摆（宽）
+            lineTo(cx + ballSizePx * 0.2f, dressBottom)
+            // 底部裙摆 - 略带弧度
+            quadTo(cx, dressBottom + ballSizePx * 0.02f, cx - ballSizePx * 0.2f, dressBottom)
+            // 左侧回到领口
             close()
         }
-        canvas.drawPath(robePath, robePaint)
+        canvas.drawPath(dressPath, paint)
 
-        // 内衬 - V领设计
-        robePaint.color = colorRobeInner
-        val innerPath = Path().apply {
-            moveTo(cx - robeWidth * 0.2f, robeTop)
-            lineTo(cx, robeTop + ballSizePx * 0.08f)
-            lineTo(cx + robeWidth * 0.2f, robeTop)
-            lineTo(cx + robeWidth * 0.15f, robeTop + ballSizePx * 0.02f)
-            lineTo(cx, robeTop + ballSizePx * 0.1f)
-            lineTo(cx - robeWidth * 0.15f, robeTop + ballSizePx * 0.02f)
+        // 裙子阴影（左侧）
+        paint.color = colorDressShadow
+        val shadowPath = Path().apply {
+            moveTo(cx - ballSizePx * 0.08f, dressTop)
+            lineTo(cx - ballSizePx * 0.03f, dressTop)
+            lineTo(cx - ballSizePx * 0.1f, dressBottom)
+            lineTo(cx - ballSizePx * 0.2f, dressBottom)
             close()
         }
-        canvas.drawPath(innerPath, robePaint)
+        canvas.drawPath(shadowPath, paint)
 
-        // 腰带
-        robePaint.color = colorBeltGray
-        val beltY = robeTop + ballSizePx * 0.12f
-        val beltRect = RectF(
-            cx - robeWidth * 0.55f, beltY,
-            cx + robeWidth * 0.55f, beltY + ballSizePx * 0.035f
+        // 灰色腰带
+        paint.color = colorBeltGray
+        val beltY = dressTop + ballSizePx * 0.06f
+        val beltHeight = ballSizePx * 0.03f
+        canvas.drawRect(
+            cx - ballSizePx * 0.12f, beltY,
+            cx + ballSizePx * 0.12f, beltY + beltHeight,
+            paint
         )
-        canvas.drawRoundRect(beltRect, ballSizePx * 0.01f, ballSizePx * 0.01f, robePaint)
 
-        // 腰带结
-        robePaint.color = colorRobeWhite
-        canvas.drawCircle(cx, beltY + ballSizePx * 0.017f, ballSizePx * 0.025f, robePaint)
-
-        // 流苏
-        robePaint.color = colorBeltTassel
-        robePaint.strokeWidth = ballSizePx * 0.008f
-        robePaint.style = Paint.Style.STROKE
-        val tasselOffset = sin(hairWaveProgress) * ballSizePx * 0.01f
-        canvas.drawLine(cx, beltY + ballSizePx * 0.04f,
-                       cx + tasselOffset, beltY + ballSizePx * 0.1f, robePaint)
-        canvas.drawLine(cx - ballSizePx * 0.01f, beltY + ballSizePx * 0.04f,
-                       cx - ballSizePx * 0.01f + tasselOffset * 0.8f, beltY + ballSizePx * 0.09f, robePaint)
-        robePaint.style = Paint.Style.FILL
+        // 金色挂坠
+        paint.color = colorPendant
+        canvas.drawCircle(cx, beltY + beltHeight + ballSizePx * 0.03f, ballSizePx * 0.018f, paint)
     }
 
     /**
-     * 绘制脖子
-     */
-    private fun drawNeck(canvas: Canvas, cx: Float, cy: Float) {
-        skinPaint.color = colorSkin
-        skinPaint.style = Paint.Style.FILL
-
-        val neckWidth = ballSizePx * 0.06f
-        val neckTop = cy - ballSizePx * 0.02f
-        val neckBottom = cy + ballSizePx * 0.04f
-
-        canvas.drawRect(cx - neckWidth, neckTop, cx + neckWidth, neckBottom, skinPaint)
-    }
-
-    /**
-     * 绘制头部
+     * 绘制头部（椭圆形脸）
      */
     private fun drawHead(canvas: Canvas, cx: Float, cy: Float) {
-        val headRadius = ballSizePx * 0.22f
         val headCenterY = cy - ballSizePx * 0.12f
+        val headRadiusX = ballSizePx * 0.2f   // 横向半径
+        val headRadiusY = ballSizePx * 0.22f  // 纵向半径（稍高）
 
-        // 头部阴影
-        skinPaint.color = colorSkinShadow
-        canvas.drawCircle(cx + 1, headCenterY + 1, headRadius, skinPaint)
+        // 脸部（肤色椭圆）
+        paint.color = colorSkin
+        paint.style = Paint.Style.FILL
 
-        // 头部主体 - 稍微椭圆形
-        skinPaint.color = colorSkin
-        val headRect = RectF(
-            cx - headRadius, headCenterY - headRadius * 1.05f,
-            cx + headRadius, headCenterY + headRadius * 0.95f
+        val faceRect = RectF(
+            cx - headRadiusX, headCenterY - headRadiusY,
+            cx + headRadiusX, headCenterY + headRadiusY * 0.9f
         )
-        canvas.drawOval(headRect, skinPaint)
+        canvas.drawOval(faceRect, paint)
     }
 
     /**
-     * 绘制前层头发
+     * 绘制前面的头发（刘海和头顶）
      */
-    private fun drawHairFront(canvas: Canvas, cx: Float, cy: Float) {
-        val headRadius = ballSizePx * 0.22f
+    private fun drawFrontHair(canvas: Canvas, cx: Float, cy: Float) {
+        paint.color = colorHairBlack
+        paint.style = Paint.Style.FILL
+
         val headCenterY = cy - ballSizePx * 0.12f
+        val headTop = headCenterY - ballSizePx * 0.22f
 
-        hairPaint.color = colorHairDark
-        hairPaint.style = Paint.Style.FILL
-
-        // 刘海 - 中分造型
-        val bangsPath = Path().apply {
-            // 左侧刘海
-            moveTo(cx - headRadius * 0.05f, headCenterY - headRadius * 0.6f)
-            quadTo(cx - headRadius * 0.5f, headCenterY - headRadius * 0.9f,
-                   cx - headRadius * 0.9f, headCenterY - headRadius * 0.4f)
-            quadTo(cx - headRadius * 0.95f, headCenterY - headRadius * 0.1f,
-                   cx - headRadius * 0.85f, headCenterY + headRadius * 0.1f)
-            lineTo(cx - headRadius * 0.7f, headCenterY - headRadius * 0.1f)
-            quadTo(cx - headRadius * 0.4f, headCenterY - headRadius * 0.5f,
-                   cx - headRadius * 0.05f, headCenterY - headRadius * 0.6f)
+        // 头顶发型（覆盖头部上半部分）
+        val topHair = Path().apply {
+            // 从左边开始
+            moveTo(cx - ballSizePx * 0.2f, headCenterY - ballSizePx * 0.05f)
+            // 左侧弧线向上
+            quadTo(cx - ballSizePx * 0.22f, headTop, cx - ballSizePx * 0.1f, headTop - ballSizePx * 0.04f)
+            // 头顶中间
+            quadTo(cx, headTop - ballSizePx * 0.06f, cx + ballSizePx * 0.1f, headTop - ballSizePx * 0.04f)
+            // 右侧弧线向下
+            quadTo(cx + ballSizePx * 0.22f, headTop, cx + ballSizePx * 0.2f, headCenterY - ballSizePx * 0.05f)
+            // 右侧边缘向下延伸
+            lineTo(cx + ballSizePx * 0.19f, headCenterY + ballSizePx * 0.08f)
+            // 右侧刘海内边
+            lineTo(cx + ballSizePx * 0.12f, headCenterY - ballSizePx * 0.02f)
+            // 中分线右侧
+            lineTo(cx + ballSizePx * 0.01f, headTop + ballSizePx * 0.08f)
+            // 中分线左侧
+            lineTo(cx - ballSizePx * 0.01f, headTop + ballSizePx * 0.08f)
+            // 左侧刘海内边
+            lineTo(cx - ballSizePx * 0.12f, headCenterY - ballSizePx * 0.02f)
+            // 左侧边缘
+            lineTo(cx - ballSizePx * 0.19f, headCenterY + ballSizePx * 0.08f)
             close()
         }
-        canvas.drawPath(bangsPath, hairPaint)
-
-        // 右侧刘海
-        val bangsPathRight = Path().apply {
-            moveTo(cx + headRadius * 0.05f, headCenterY - headRadius * 0.6f)
-            quadTo(cx + headRadius * 0.5f, headCenterY - headRadius * 0.9f,
-                   cx + headRadius * 0.9f, headCenterY - headRadius * 0.4f)
-            quadTo(cx + headRadius * 0.95f, headCenterY - headRadius * 0.1f,
-                   cx + headRadius * 0.85f, headCenterY + headRadius * 0.1f)
-            lineTo(cx + headRadius * 0.7f, headCenterY - headRadius * 0.1f)
-            quadTo(cx + headRadius * 0.4f, headCenterY - headRadius * 0.5f,
-                   cx + headRadius * 0.05f, headCenterY - headRadius * 0.6f)
-            close()
-        }
-        canvas.drawPath(bangsPathRight, hairPaint)
-
-        // 头顶发型
-        val topHairPath = Path().apply {
-            moveTo(cx - headRadius * 0.3f, headCenterY - headRadius * 0.95f)
-            quadTo(cx, headCenterY - headRadius * 1.15f,
-                   cx + headRadius * 0.3f, headCenterY - headRadius * 0.95f)
-            quadTo(cx, headCenterY - headRadius * 0.85f,
-                   cx - headRadius * 0.3f, headCenterY - headRadius * 0.95f)
-            close()
-        }
-        canvas.drawPath(topHairPath, hairPaint)
-
-        // 头发高光
-        hairPaint.color = colorHairHighlight
-        hairPaint.style = Paint.Style.STROKE
-        hairPaint.strokeWidth = ballSizePx * 0.01f
-        val highlightPath = Path().apply {
-            moveTo(cx - headRadius * 0.4f, headCenterY - headRadius * 0.7f)
-            quadTo(cx - headRadius * 0.2f, headCenterY - headRadius * 0.85f,
-                   cx, headCenterY - headRadius * 0.75f)
-        }
-        canvas.drawPath(highlightPath, hairPaint)
-        hairPaint.style = Paint.Style.FILL
+        canvas.drawPath(topHair, paint)
     }
 
     /**
-     * 绘制脸部特征
+     * 绘制五官
      */
     private fun drawFace(canvas: Canvas, cx: Float, cy: Float) {
-        val headRadius = ballSizePx * 0.22f
         val headCenterY = cy - ballSizePx * 0.12f
 
-        // 眼睛参数
-        val eyeOffsetX = headRadius * 0.38f
-        val eyeOffsetY = headRadius * 0.05f
-        val eyeWidth = headRadius * 0.22f
-        val eyeHeight = headRadius * 0.28f
+        // 眼睛位置
+        val eyeY = headCenterY + ballSizePx * 0.02f
+        val eyeSpacing = ballSizePx * 0.09f
+        val eyeRadius = ballSizePx * 0.035f
 
-        // 眨眼效果
-        val eyeScaleY = 1f - blinkProgress * 0.85f
+        // 眨眼时眼睛变成线
+        val eyeScaleY = 1f - blinkProgress * 0.9f
 
-        // 绘制双眼
-        for (side in listOf(-1f, 1f)) {
-            val eyeCx = cx + eyeOffsetX * side
-            val eyeCy = headCenterY + eyeOffsetY
+        paint.color = colorEyeBlack
+        paint.style = Paint.Style.FILL
 
-            canvas.save()
-            canvas.scale(1f, eyeScaleY, eyeCx, eyeCy)
+        // 左眼
+        canvas.save()
+        canvas.scale(1f, eyeScaleY, cx - eyeSpacing, eyeY)
+        canvas.drawCircle(cx - eyeSpacing, eyeY, eyeRadius, paint)
+        canvas.restore()
 
-            // 眼白
-            eyePaint.color = Color.WHITE
-            val eyeRect = RectF(
-                eyeCx - eyeWidth, eyeCy - eyeHeight,
-                eyeCx + eyeWidth, eyeCy + eyeHeight
-            )
-            canvas.drawOval(eyeRect, eyePaint)
+        // 右眼
+        canvas.save()
+        canvas.scale(1f, eyeScaleY, cx + eyeSpacing, eyeY)
+        canvas.drawCircle(cx + eyeSpacing, eyeY, eyeRadius, paint)
+        canvas.restore()
 
-            // 瞳孔 - 大而圆润的棕色眼睛
-            eyePaint.color = colorEyeBrown
-            val pupilRadius = eyeWidth * 0.7f
-            canvas.drawCircle(eyeCx, eyeCy + eyeHeight * 0.1f, pupilRadius, eyePaint)
-
-            // 瞳孔中心（深色）
-            eyePaint.color = Color.parseColor("#2D1F14")
-            canvas.drawCircle(eyeCx, eyeCy + eyeHeight * 0.1f, pupilRadius * 0.5f, eyePaint)
-
-            // 大高光
-            eyePaint.color = colorEyeHighlight
-            canvas.drawCircle(eyeCx - eyeWidth * 0.25f, eyeCy - eyeHeight * 0.15f,
-                            pupilRadius * 0.35f, eyePaint)
-            // 小高光
-            canvas.drawCircle(eyeCx + eyeWidth * 0.2f, eyeCy + eyeHeight * 0.2f,
-                            pupilRadius * 0.15f, eyePaint)
-
-            canvas.restore()
+        // 眼睛高光（不眨眼时才显示）
+        if (blinkProgress < 0.3f) {
+            paint.color = Color.WHITE
+            val highlightRadius = eyeRadius * 0.35f
+            val highlightOffsetX = -eyeRadius * 0.25f
+            val highlightOffsetY = -eyeRadius * 0.25f
+            canvas.drawCircle(cx - eyeSpacing + highlightOffsetX, eyeY + highlightOffsetY, highlightRadius, paint)
+            canvas.drawCircle(cx + eyeSpacing + highlightOffsetX, eyeY + highlightOffsetY, highlightRadius, paint)
         }
 
         // 腮红
-        eyePaint.color = Color.argb(50, 255, 180, 180)
-        val cheekRadius = headRadius * 0.1f
-        canvas.drawCircle(cx - headRadius * 0.5f, headCenterY + headRadius * 0.35f, cheekRadius, eyePaint)
-        canvas.drawCircle(cx + headRadius * 0.5f, headCenterY + headRadius * 0.35f, cheekRadius, eyePaint)
+        paint.color = Color.argb(60, 255, 180, 180)
+        val cheekY = eyeY + ballSizePx * 0.06f
+        val cheekRadius = ballSizePx * 0.035f
+        canvas.drawCircle(cx - eyeSpacing - ballSizePx * 0.03f, cheekY, cheekRadius, paint)
+        canvas.drawCircle(cx + eyeSpacing + ballSizePx * 0.03f, cheekY, cheekRadius, paint)
 
-        // 嘴巴 - 小巧的粉色嘴唇
-        drawMouth(canvas, cx, headCenterY, headRadius)
+        // 嘴巴
+        drawMouth(canvas, cx, headCenterY)
     }
 
     /**
      * 绘制嘴巴
      */
-    private fun drawMouth(canvas: Canvas, cx: Float, headCenterY: Float, headRadius: Float) {
-        val mouthY = headCenterY + headRadius * 0.5f
+    private fun drawMouth(canvas: Canvas, cx: Float, headCenterY: Float) {
+        val mouthY = headCenterY + ballSizePx * 0.12f
 
-        paint.color = colorLipPink
+        paint.color = colorMouthPink
         paint.style = Paint.Style.FILL
 
         when (currentMood) {
             MOOD_VERY_GOOD -> {
-                // 开心微笑
+                // 开心大笑 - 弧形嘴
                 val smilePath = Path().apply {
-                    moveTo(cx - headRadius * 0.12f, mouthY)
-                    quadTo(cx, mouthY + headRadius * 0.1f, cx + headRadius * 0.12f, mouthY)
-                    quadTo(cx, mouthY + headRadius * 0.05f, cx - headRadius * 0.12f, mouthY)
+                    moveTo(cx - ballSizePx * 0.04f, mouthY)
+                    quadTo(cx, mouthY + ballSizePx * 0.035f, cx + ballSizePx * 0.04f, mouthY)
+                    quadTo(cx, mouthY + ballSizePx * 0.02f, cx - ballSizePx * 0.04f, mouthY)
                 }
                 canvas.drawPath(smilePath, paint)
             }
             MOOD_GOOD -> {
-                // 温柔微笑
+                // 微笑 - 小弧线
                 paint.style = Paint.Style.STROKE
-                paint.strokeWidth = headRadius * 0.04f
+                paint.strokeWidth = ballSizePx * 0.015f
                 paint.strokeCap = Paint.Cap.ROUND
                 val smilePath = Path().apply {
-                    moveTo(cx - headRadius * 0.08f, mouthY)
-                    quadTo(cx, mouthY + headRadius * 0.06f, cx + headRadius * 0.08f, mouthY)
+                    moveTo(cx - ballSizePx * 0.025f, mouthY)
+                    quadTo(cx, mouthY + ballSizePx * 0.02f, cx + ballSizePx * 0.025f, mouthY)
                 }
                 canvas.drawPath(smilePath, paint)
+                paint.style = Paint.Style.FILL
             }
             MOOD_NORMAL -> {
-                // 平静 - 小巧嘴唇
+                // 普通 - 小圆点/椭圆
                 canvas.drawOval(
-                    cx - headRadius * 0.05f, mouthY - headRadius * 0.02f,
-                    cx + headRadius * 0.05f, mouthY + headRadius * 0.02f,
+                    cx - ballSizePx * 0.018f, mouthY - ballSizePx * 0.008f,
+                    cx + ballSizePx * 0.018f, mouthY + ballSizePx * 0.008f,
                     paint
                 )
             }
-            MOOD_BAD -> {
-                // 担忧
+            MOOD_BAD, MOOD_VERY_BAD -> {
+                // 难过 - 倒弧线
                 paint.style = Paint.Style.STROKE
-                paint.strokeWidth = headRadius * 0.04f
+                paint.strokeWidth = ballSizePx * 0.015f
+                paint.strokeCap = Paint.Cap.ROUND
                 val sadPath = Path().apply {
-                    moveTo(cx - headRadius * 0.06f, mouthY + headRadius * 0.02f)
-                    quadTo(cx, mouthY - headRadius * 0.03f, cx + headRadius * 0.06f, mouthY + headRadius * 0.02f)
+                    moveTo(cx - ballSizePx * 0.025f, mouthY + ballSizePx * 0.01f)
+                    quadTo(cx, mouthY - ballSizePx * 0.015f, cx + ballSizePx * 0.025f, mouthY + ballSizePx * 0.01f)
                 }
                 canvas.drawPath(sadPath, paint)
-            }
-            MOOD_VERY_BAD -> {
-                // 难过
-                paint.style = Paint.Style.STROKE
-                paint.strokeWidth = headRadius * 0.04f
-                val sadPath = Path().apply {
-                    moveTo(cx - headRadius * 0.08f, mouthY + headRadius * 0.04f)
-                    quadTo(cx, mouthY - headRadius * 0.05f, cx + headRadius * 0.08f, mouthY + headRadius * 0.04f)
-                }
-                canvas.drawPath(sadPath, paint)
+                paint.style = Paint.Style.FILL
             }
         }
-        paint.style = Paint.Style.FILL
     }
 
     /**
      * 绘制头冠
      */
     private fun drawTiara(canvas: Canvas, cx: Float, cy: Float) {
-        val headRadius = ballSizePx * 0.22f
         val headCenterY = cy - ballSizePx * 0.12f
-        val tiaraY = headCenterY - headRadius * 0.85f
+        val tiaraY = headCenterY - ballSizePx * 0.22f
 
+        // 头冠底座（银色）
         paint.color = colorTiara
         paint.style = Paint.Style.FILL
 
-        // 头冠主体
+        // 简单的三角形头冠
         val tiaraPath = Path().apply {
-            moveTo(cx - headRadius * 0.3f, tiaraY + headRadius * 0.1f)
-            lineTo(cx - headRadius * 0.2f, tiaraY - headRadius * 0.15f)
-            lineTo(cx - headRadius * 0.08f, tiaraY)
-            lineTo(cx, tiaraY - headRadius * 0.25f)  // 中间尖顶
-            lineTo(cx + headRadius * 0.08f, tiaraY)
-            lineTo(cx + headRadius * 0.2f, tiaraY - headRadius * 0.15f)
-            lineTo(cx + headRadius * 0.3f, tiaraY + headRadius * 0.1f)
+            // 底部左
+            moveTo(cx - ballSizePx * 0.08f, tiaraY + ballSizePx * 0.04f)
+            // 左边尖
+            lineTo(cx - ballSizePx * 0.06f, tiaraY - ballSizePx * 0.01f)
+            // 中间最高点
+            lineTo(cx, tiaraY - ballSizePx * 0.05f)
+            // 右边尖
+            lineTo(cx + ballSizePx * 0.06f, tiaraY - ballSizePx * 0.01f)
+            // 底部右
+            lineTo(cx + ballSizePx * 0.08f, tiaraY + ballSizePx * 0.04f)
             close()
         }
         canvas.drawPath(tiaraPath, paint)
 
-        // 中心宝石
-        paint.color = colorTiaraGem
-        canvas.drawCircle(cx, tiaraY - headRadius * 0.1f, headRadius * 0.05f, paint)
-
-        // 宝石高光
-        paint.color = Color.WHITE
-        canvas.drawCircle(cx - headRadius * 0.015f, tiaraY - headRadius * 0.115f, headRadius * 0.02f, paint)
+        // 中心装饰（深色）
+        paint.color = colorTiaraCenter
+        val centerPath = Path().apply {
+            moveTo(cx, tiaraY - ballSizePx * 0.03f)
+            lineTo(cx - ballSizePx * 0.025f, tiaraY + ballSizePx * 0.02f)
+            lineTo(cx + ballSizePx * 0.025f, tiaraY + ballSizePx * 0.02f)
+            close()
+        }
+        canvas.drawPath(centerPath, paint)
     }
 
     /**
-     * 绘制飘动的衣袖
+     * 绘制小手臂
      */
-    private fun drawSleeves(canvas: Canvas, cx: Float, cy: Float) {
-        val robeTop = cy + ballSizePx * 0.05f
-        val sleeveWave = sin(sleeveWaveProgress) * ballSizePx * 0.02f
+    private fun drawArms(canvas: Canvas, cx: Float, cy: Float) {
+        val armY = cy + ballSizePx * 0.12f
+        val armWave = sin(hairWaveProgress) * ballSizePx * 0.01f
 
-        robePaint.color = colorRobeWhite
-        robePaint.style = Paint.Style.FILL
+        // 白色袖子
+        paint.color = colorDressWhite
+        paint.style = Paint.Style.FILL
 
         // 左袖
-        val leftSleevePath = Path().apply {
-            moveTo(cx - ballSizePx * 0.2f, robeTop)
-            quadTo(cx - ballSizePx * 0.35f + sleeveWave, robeTop + ballSizePx * 0.05f,
-                   cx - ballSizePx * 0.4f + sleeveWave * 1.5f, robeTop + ballSizePx * 0.15f)
-            quadTo(cx - ballSizePx * 0.38f + sleeveWave, robeTop + ballSizePx * 0.2f,
-                   cx - ballSizePx * 0.32f, robeTop + ballSizePx * 0.18f)
-            lineTo(cx - ballSizePx * 0.22f, robeTop + ballSizePx * 0.08f)
+        val leftArm = Path().apply {
+            moveTo(cx - ballSizePx * 0.12f, armY - ballSizePx * 0.02f)
+            quadTo(
+                cx - ballSizePx * 0.2f + armWave, armY,
+                cx - ballSizePx * 0.22f + armWave, armY + ballSizePx * 0.08f
+            )
+            lineTo(cx - ballSizePx * 0.18f + armWave, armY + ballSizePx * 0.1f)
+            lineTo(cx - ballSizePx * 0.1f, armY + ballSizePx * 0.03f)
             close()
         }
-        canvas.drawPath(leftSleevePath, robePaint)
+        canvas.drawPath(leftArm, paint)
 
         // 右袖
-        val rightSleevePath = Path().apply {
-            moveTo(cx + ballSizePx * 0.2f, robeTop)
-            quadTo(cx + ballSizePx * 0.35f - sleeveWave, robeTop + ballSizePx * 0.05f,
-                   cx + ballSizePx * 0.4f - sleeveWave * 1.5f, robeTop + ballSizePx * 0.15f)
-            quadTo(cx + ballSizePx * 0.38f - sleeveWave, robeTop + ballSizePx * 0.2f,
-                   cx + ballSizePx * 0.32f, robeTop + ballSizePx * 0.18f)
-            lineTo(cx + ballSizePx * 0.22f, robeTop + ballSizePx * 0.08f)
+        val rightArm = Path().apply {
+            moveTo(cx + ballSizePx * 0.12f, armY - ballSizePx * 0.02f)
+            quadTo(
+                cx + ballSizePx * 0.2f - armWave, armY,
+                cx + ballSizePx * 0.22f - armWave, armY + ballSizePx * 0.08f
+            )
+            lineTo(cx + ballSizePx * 0.18f - armWave, armY + ballSizePx * 0.1f)
+            lineTo(cx + ballSizePx * 0.1f, armY + ballSizePx * 0.03f)
             close()
         }
-        canvas.drawPath(rightSleevePath, robePaint)
+        canvas.drawPath(rightArm, paint)
 
-        // 小手 - 肤色
-        skinPaint.color = colorSkin
-        canvas.drawCircle(cx - ballSizePx * 0.38f + sleeveWave * 1.5f, robeTop + ballSizePx * 0.16f,
-                         ballSizePx * 0.025f, skinPaint)
-        canvas.drawCircle(cx + ballSizePx * 0.38f - sleeveWave * 1.5f, robeTop + ballSizePx * 0.16f,
-                         ballSizePx * 0.025f, skinPaint)
+        // 小手（肤色圆点）
+        paint.color = colorSkin
+        canvas.drawCircle(cx - ballSizePx * 0.2f + armWave, armY + ballSizePx * 0.09f, ballSizePx * 0.022f, paint)
+        canvas.drawCircle(cx + ballSizePx * 0.2f - armWave, armY + ballSizePx * 0.09f, ballSizePx * 0.022f, paint)
     }
 
     /**
-     * 绘制状态装饰
+     * 绘制状态效果
      */
-    private fun drawStatusDecoration(canvas: Canvas, cx: Float, cy: Float) {
+    private fun drawStatusEffect(canvas: Canvas, cx: Float, cy: Float) {
         when (currentState) {
-            STATE_LISTENING -> drawListeningEffect(canvas, cx, cy)
-            STATE_THINKING -> drawThinkingEffect(canvas, cx, cy)
-            STATE_SUCCESS -> drawSuccessEffect(canvas, cx, cy)
-            STATE_ERROR -> drawErrorEffect(canvas, cx, cy)
+            STATE_LISTENING -> {
+                // 音符
+                paint.color = Color.parseColor("#90CAF9")
+                paint.textSize = ballSizePx * 0.1f
+                val offset = sin(hairWaveProgress * 2) * ballSizePx * 0.02f
+                canvas.drawText("♪", cx + ballSizePx * 0.3f, cy - ballSizePx * 0.3f + offset, paint)
+            }
+            STATE_THINKING -> {
+                // 思考泡泡
+                paint.color = Color.WHITE
+                val offset = sin(hairWaveProgress) * ballSizePx * 0.01f
+                canvas.drawCircle(cx + ballSizePx * 0.28f, cy - ballSizePx * 0.35f + offset, ballSizePx * 0.02f, paint)
+                canvas.drawCircle(cx + ballSizePx * 0.34f, cy - ballSizePx * 0.42f + offset, ballSizePx * 0.03f, paint)
+                canvas.drawCircle(cx + ballSizePx * 0.4f, cy - ballSizePx * 0.5f + offset, ballSizePx * 0.04f, paint)
+            }
+            STATE_SUCCESS -> {
+                // 星星
+                paint.color = Color.parseColor("#FFD700")
+                val offset = sin(glowPulse * 4) * ballSizePx * 0.015f
+                drawStar(canvas, cx - ballSizePx * 0.3f, cy - ballSizePx * 0.38f + offset, ballSizePx * 0.04f)
+                drawStar(canvas, cx + ballSizePx * 0.32f, cy - ballSizePx * 0.35f - offset, ballSizePx * 0.03f)
+            }
+            STATE_ERROR -> {
+                paint.color = Color.parseColor("#FFCDD2")
+                paint.textSize = ballSizePx * 0.1f
+                canvas.drawText("?", cx + ballSizePx * 0.28f, cy - ballSizePx * 0.3f, paint)
+            }
         }
-    }
-
-    private fun drawListeningEffect(canvas: Canvas, cx: Float, cy: Float) {
-        // 音符飘动
-        paint.color = Color.parseColor("#90CAF9")
-        paint.textSize = ballSizePx * 0.1f
-        val offset = sin(hairWaveProgress * 2) * ballSizePx * 0.03f
-        canvas.drawText("♪", cx + ballSizePx * 0.35f, cy - ballSizePx * 0.25f + offset, paint)
-        canvas.drawText("♫", cx - ballSizePx * 0.38f, cy - ballSizePx * 0.2f - offset, paint)
-    }
-
-    private fun drawThinkingEffect(canvas: Canvas, cx: Float, cy: Float) {
-        // 思考泡泡
-        paint.color = Color.WHITE
-        val offset = sin(hairWaveProgress) * ballSizePx * 0.01f
-        canvas.drawCircle(cx + ballSizePx * 0.32f, cy - ballSizePx * 0.32f + offset, ballSizePx * 0.025f, paint)
-        canvas.drawCircle(cx + ballSizePx * 0.38f, cy - ballSizePx * 0.4f + offset, ballSizePx * 0.035f, paint)
-        canvas.drawCircle(cx + ballSizePx * 0.45f, cy - ballSizePx * 0.5f + offset, ballSizePx * 0.05f, paint)
-
-        paint.color = Color.parseColor("#90A4AE")
-        paint.textSize = ballSizePx * 0.05f
-        canvas.drawText("...", cx + ballSizePx * 0.42f, cy - ballSizePx * 0.48f + offset, paint)
-    }
-
-    private fun drawSuccessEffect(canvas: Canvas, cx: Float, cy: Float) {
-        // 闪烁星星
-        paint.color = Color.parseColor("#FFD700")
-        val offset = sin(glowPulse * 4) * ballSizePx * 0.02f
-        drawStar(canvas, cx - ballSizePx * 0.35f, cy - ballSizePx * 0.35f + offset, ballSizePx * 0.05f)
-        drawStar(canvas, cx + ballSizePx * 0.38f, cy - ballSizePx * 0.3f - offset, ballSizePx * 0.04f)
-        drawStar(canvas, cx + ballSizePx * 0.08f, cy - ballSizePx * 0.48f + offset * 0.5f, ballSizePx * 0.035f)
-    }
-
-    private fun drawErrorEffect(canvas: Canvas, cx: Float, cy: Float) {
-        paint.color = Color.parseColor("#FFCDD2")
-        paint.textSize = ballSizePx * 0.12f
-        canvas.drawText("?", cx + ballSizePx * 0.32f, cy - ballSizePx * 0.28f, paint)
     }
 
     private fun drawStar(canvas: Canvas, cx: Float, cy: Float, size: Float) {
@@ -757,15 +613,14 @@ class FloatingBallView @JvmOverloads constructor(
         startBreathAnimation()
         startFloatAnimation()
         startHairAnimation()
-        startSleeveAnimation()
         startGlowAnimation()
     }
 
     private fun startBlinkAnimation() {
         blinkAnimator?.cancel()
         blinkAnimator = ValueAnimator.ofFloat(0f, 1f, 0f).apply {
-            duration = 180
-            startDelay = 4000
+            duration = 150
+            startDelay = 3500
             repeatCount = ValueAnimator.INFINITE
             repeatMode = ValueAnimator.RESTART
             addUpdateListener {
@@ -779,7 +634,7 @@ class FloatingBallView @JvmOverloads constructor(
     private fun startBreathAnimation() {
         breathAnimator?.cancel()
         breathAnimator = ValueAnimator.ofFloat(0f, (2 * Math.PI).toFloat()).apply {
-            duration = 4000
+            duration = 3500
             repeatCount = ValueAnimator.INFINITE
             interpolator = LinearInterpolator()
             addUpdateListener {
@@ -792,8 +647,8 @@ class FloatingBallView @JvmOverloads constructor(
 
     private fun startFloatAnimation() {
         floatAnimator?.cancel()
-        floatAnimator = ValueAnimator.ofFloat(-ballSizePx * 0.02f, ballSizePx * 0.02f).apply {
-            duration = 2500
+        floatAnimator = ValueAnimator.ofFloat(-ballSizePx * 0.015f, ballSizePx * 0.015f).apply {
+            duration = 2000
             repeatCount = ValueAnimator.INFINITE
             repeatMode = ValueAnimator.REVERSE
             interpolator = AccelerateDecelerateInterpolator()
@@ -808,7 +663,7 @@ class FloatingBallView @JvmOverloads constructor(
     private fun startHairAnimation() {
         hairAnimator?.cancel()
         hairAnimator = ValueAnimator.ofFloat(0f, (2 * Math.PI).toFloat()).apply {
-            duration = 3000
+            duration = 2500
             repeatCount = ValueAnimator.INFINITE
             interpolator = LinearInterpolator()
             addUpdateListener {
@@ -819,24 +674,10 @@ class FloatingBallView @JvmOverloads constructor(
         }
     }
 
-    private fun startSleeveAnimation() {
-        sleeveAnimator?.cancel()
-        sleeveAnimator = ValueAnimator.ofFloat(0f, (2 * Math.PI).toFloat()).apply {
-            duration = 2000
-            repeatCount = ValueAnimator.INFINITE
-            interpolator = LinearInterpolator()
-            addUpdateListener {
-                sleeveWaveProgress = it.animatedValue as Float
-                invalidate()
-            }
-            start()
-        }
-    }
-
     private fun startGlowAnimation() {
         glowAnimator?.cancel()
         glowAnimator = ValueAnimator.ofFloat(0f, (2 * Math.PI).toFloat()).apply {
-            duration = 3500
+            duration = 3000
             repeatCount = ValueAnimator.INFINITE
             interpolator = LinearInterpolator()
             addUpdateListener {
@@ -873,7 +714,6 @@ class FloatingBallView @JvmOverloads constructor(
         breathAnimator?.cancel()
         floatAnimator?.cancel()
         hairAnimator?.cancel()
-        sleeveAnimator?.cancel()
         glowAnimator?.cancel()
         pulseAnimator?.cancel()
     }
