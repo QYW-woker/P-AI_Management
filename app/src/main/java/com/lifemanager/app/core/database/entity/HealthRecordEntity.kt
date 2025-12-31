@@ -147,6 +147,11 @@ object ExerciseCategory {
     const val BADMINTON = "BADMINTON"     // 羽毛球
     const val OTHER = "OTHER"             // 其他
 
+    fun getAllCategories(): List<String> = listOf(
+        RUNNING, WALKING, CYCLING, SWIMMING, GYM,
+        YOGA, BASKETBALL, FOOTBALL, BADMINTON, OTHER
+    )
+
     fun getDisplayName(category: String): String = when (category) {
         RUNNING -> "跑步"
         WALKING -> "步行"
