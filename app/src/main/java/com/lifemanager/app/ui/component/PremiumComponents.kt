@@ -5,22 +5,35 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.lifemanager.app.ui.theme.AppColors
 import kotlin.math.cos
 import kotlin.math.sin
@@ -739,6 +752,497 @@ fun PremiumStatItem(
             text = label,
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+// ==================== Premium 输入框组件 ====================
+
+/**
+ * Premium 风格输入框
+ * 带有渐变边框、聚焦动画和玻璃态背景
+ */
+@Composable
+fun PremiumTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    label: String? = null,
+    placeholder: String? = null,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    isError: Boolean = false,
+    errorMessage: String? = null,
+    isPassword: Boolean = false,
+    enabled: Boolean = true,
+    singleLine: Boolean = true,
+    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
+    minLines: Int = 1,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    // 聚焦时的动画
+    val borderAlpha by animateFloatAsState(
+        targetValue = if (isFocused) 1f else 0.5f,
+        animationSpec = tween(300),
+        label = "borderAlpha"
+    )
+    val elevation by animateDpAsState(
+        targetValue = if (isFocused) 8.dp else 2.dp,
+        animationSpec = tween(300),
+        label = "elevation"
+    )
+    val scale by animateFloatAsState(
+        targetValue = if (isFocused) 1.02f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scale"
+    )
+
+    val borderColor = when {
+        isError -> MaterialTheme.colorScheme.error
+        isFocused -> AppColors.Primary
+        else -> MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+    }
+
+    val gradientBorder = if (isFocused && !isError) {
+        Brush.linearGradient(
+            colors = listOf(
+                AppColors.Primary.copy(alpha = borderAlpha),
+                AppColors.Secondary.copy(alpha = borderAlpha),
+                AppColors.Primary.copy(alpha = borderAlpha)
+            )
+        )
+    } else {
+        Brush.linearGradient(
+            colors = listOf(borderColor, borderColor)
+        )
+    }
+
+    Column(modifier = modifier) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .scale(scale)
+                .shadow(
+                    elevation = elevation,
+                    shape = RoundedCornerShape(16.dp),
+                    spotColor = if (isFocused) AppColors.Primary.copy(alpha = 0.3f) else Color.Transparent
+                )
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+                        )
+                    )
+                )
+                .border(
+                    width = if (isFocused) 2.dp else 1.dp,
+                    brush = gradientBorder,
+                    shape = RoundedCornerShape(16.dp)
+                )
+        ) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = label?.let { { Text(it) } },
+                placeholder = placeholder?.let { { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) } },
+                leadingIcon = leadingIcon,
+                trailingIcon = if (isPassword) {
+                    {
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(
+                                imageVector = if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                contentDescription = if (passwordVisible) "隐藏密码" else "显示密码",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else trailingIcon,
+                isError = isError,
+                enabled = enabled,
+                singleLine = singleLine,
+                maxLines = maxLines,
+                minLines = minLines,
+                keyboardOptions = keyboardOptions,
+                keyboardActions = keyboardActions,
+                visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else visualTransformation,
+                interactionSource = interactionSource,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    errorBorderColor = Color.Transparent,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    errorContainerColor = Color.Transparent,
+                    cursorColor = AppColors.Primary,
+                    focusedLabelColor = AppColors.Primary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                shape = RoundedCornerShape(16.dp)
+            )
+        }
+
+        // 错误提示
+        if (isError && !errorMessage.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = errorMessage,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(start = 16.dp)
+            )
+        }
+    }
+}
+
+// ==================== Premium 弹框组件 ====================
+
+/**
+ * Premium 风格弹框
+ * 带有玻璃态背景、渐变边框和动画效果
+ */
+@Composable
+fun PremiumDialog(
+    onDismissRequest: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: String? = null,
+    iconBackgroundColor: Color = AppColors.Primary.copy(alpha = 0.1f),
+    title: String? = null,
+    titleAlign: TextAlign = TextAlign.Center,
+    confirmButton: @Composable () -> Unit = {},
+    dismissButton: @Composable (() -> Unit)? = null,
+    properties: DialogProperties = DialogProperties(),
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = properties
+    ) {
+        // 动画效果
+        var isVisible by remember { mutableStateOf(false) }
+        LaunchedEffect(Unit) { isVisible = true }
+
+        val scale by animateFloatAsState(
+            targetValue = if (isVisible) 1f else 0.8f,
+            animationSpec = spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessMedium
+            ),
+            label = "dialogScale"
+        )
+        val alpha by animateFloatAsState(
+            targetValue = if (isVisible) 1f else 0f,
+            animationSpec = tween(200),
+            label = "dialogAlpha"
+        )
+
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .scale(scale)
+                .alpha(alpha)
+                .shadow(
+                    elevation = 24.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    spotColor = AppColors.Primary.copy(alpha = 0.2f),
+                    ambientColor = AppColors.GlowBlue.copy(alpha = 0.1f)
+                )
+                .clip(RoundedCornerShape(28.dp))
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surface,
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.98f)
+                        )
+                    )
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.5f),
+                            Color.White.copy(alpha = 0.1f),
+                            AppColors.Primary.copy(alpha = 0.2f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(28.dp)
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // 图标
+                icon?.let {
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .shadow(8.dp, CircleShape, spotColor = iconBackgroundColor)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        iconBackgroundColor,
+                                        iconBackgroundColor.copy(alpha = 0.5f)
+                                    )
+                                ),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(it, fontSize = 32.sp)
+                    }
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+
+                // 标题
+                title?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = titleAlign,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+
+                // 内容
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    content = content
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // 按钮区域
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End)
+                ) {
+                    dismissButton?.invoke()
+                    confirmButton()
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Premium 确认按钮
+ */
+@Composable
+fun PremiumConfirmButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    gradientColors: List<Color> = listOf(AppColors.Primary, AppColors.Secondary)
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "buttonScale"
+    )
+
+    Button(
+        onClick = onClick,
+        modifier = modifier
+            .scale(scale)
+            .shadow(
+                elevation = if (enabled) 8.dp else 0.dp,
+                shape = RoundedCornerShape(14.dp),
+                spotColor = gradientColors.first().copy(alpha = 0.4f)
+            ),
+        enabled = enabled,
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        contentPadding = PaddingValues(0.dp),
+        interactionSource = interactionSource
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    brush = if (enabled) Brush.horizontalGradient(gradientColors)
+                    else Brush.horizontalGradient(listOf(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        MaterialTheme.colorScheme.surfaceVariant
+                    ))
+                )
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                fontWeight = FontWeight.SemiBold,
+                color = if (enabled) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+/**
+ * Premium 取消按钮
+ */
+@Composable
+fun PremiumDismissButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "buttonScale"
+    )
+
+    TextButton(
+        onClick = onClick,
+        modifier = modifier.scale(scale),
+        shape = RoundedCornerShape(14.dp),
+        interactionSource = interactionSource
+    ) {
+        Text(
+            text = text,
+            fontWeight = FontWeight.Medium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/**
+ * Premium 删除确认弹框
+ */
+@Composable
+fun PremiumDeleteDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: () -> Unit,
+    title: String = "确认删除",
+    message: String = "确定要删除吗？此操作无法撤销。",
+    confirmText: String = "删除",
+    dismissText: String = "取消"
+) {
+    PremiumDialog(
+        onDismissRequest = onDismissRequest,
+        icon = "🗑️",
+        iconBackgroundColor = MaterialTheme.colorScheme.errorContainer,
+        title = title,
+        confirmButton = {
+            PremiumConfirmButton(
+                text = confirmText,
+                onClick = onConfirm,
+                gradientColors = listOf(
+                    MaterialTheme.colorScheme.error,
+                    MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                )
+            )
+        },
+        dismissButton = {
+            PremiumDismissButton(text = dismissText, onClick = onDismissRequest)
+        }
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+/**
+ * Premium 信息提示弹框
+ */
+@Composable
+fun PremiumInfoDialog(
+    onDismissRequest: () -> Unit,
+    icon: String = "ℹ️",
+    title: String,
+    message: String,
+    confirmText: String = "确定"
+) {
+    PremiumDialog(
+        onDismissRequest = onDismissRequest,
+        icon = icon,
+        iconBackgroundColor = AppColors.Primary.copy(alpha = 0.1f),
+        title = title,
+        confirmButton = {
+            PremiumConfirmButton(
+                text = confirmText,
+                onClick = onDismissRequest
+            )
+        }
+    ) {
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
+}
+
+/**
+ * Premium 输入弹框
+ */
+@Composable
+fun PremiumInputDialog(
+    onDismissRequest: () -> Unit,
+    onConfirm: (String) -> Unit,
+    icon: String? = null,
+    title: String,
+    initialValue: String = "",
+    label: String? = null,
+    placeholder: String? = null,
+    confirmText: String = "确定",
+    dismissText: String = "取消",
+    singleLine: Boolean = true,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default
+) {
+    var inputValue by remember { mutableStateOf(initialValue) }
+
+    PremiumDialog(
+        onDismissRequest = onDismissRequest,
+        icon = icon,
+        title = title,
+        confirmButton = {
+            PremiumConfirmButton(
+                text = confirmText,
+                onClick = { onConfirm(inputValue) },
+                enabled = inputValue.isNotBlank()
+            )
+        },
+        dismissButton = {
+            PremiumDismissButton(text = dismissText, onClick = onDismissRequest)
+        }
+    ) {
+        PremiumTextField(
+            value = inputValue,
+            onValueChange = { inputValue = it },
+            label = label,
+            placeholder = placeholder,
+            singleLine = singleLine,
+            keyboardOptions = keyboardOptions,
+            modifier = Modifier.fillMaxWidth()
         )
     }
 }

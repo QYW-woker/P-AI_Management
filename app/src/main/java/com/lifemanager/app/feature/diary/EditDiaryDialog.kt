@@ -4,7 +4,9 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
@@ -24,6 +26,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -35,6 +40,8 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.lifemanager.app.domain.model.moodList
 import com.lifemanager.app.domain.model.weatherList
+import com.lifemanager.app.ui.component.PremiumTextField
+import com.lifemanager.app.ui.theme.AppColors
 
 /**
  * 编辑日记对话框
@@ -47,6 +54,19 @@ fun EditDiaryDialog(
 ) {
     val editState by viewModel.editState.collectAsState()
 
+    // 动画效果
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
+
+    val scale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.9f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "dialogScale"
+    )
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -54,8 +74,28 @@ fun EditDiaryDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.9f),
-            shape = RoundedCornerShape(24.dp)
+                .fillMaxHeight(0.9f)
+                .scale(scale)
+                .shadow(
+                    elevation = 24.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    spotColor = AppColors.Primary.copy(alpha = 0.2f)
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.5f),
+                            Color.White.copy(alpha = 0.1f),
+                            AppColors.Primary.copy(alpha = 0.2f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(28.dp)
+                ),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 TopAppBar(
@@ -189,14 +229,15 @@ fun EditDiaryDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
+                    PremiumTextField(
                         value = editState.content,
                         onValueChange = { viewModel.updateEditContent(it) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(300.dp),
-                        placeholder = { Text("记录今天的点滴...") },
-                        textStyle = MaterialTheme.typography.bodyLarge
+                        placeholder = "记录今天的点滴...",
+                        singleLine = false,
+                        maxLines = Int.MAX_VALUE
                     )
                 }
             }

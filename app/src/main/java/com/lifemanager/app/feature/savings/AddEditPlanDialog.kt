@@ -1,6 +1,8 @@
 package com.lifemanager.app.feature.savings
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -19,6 +21,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -27,6 +32,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.lifemanager.app.domain.model.savingsColors
 import com.lifemanager.app.domain.model.strategyOptions
+import com.lifemanager.app.ui.component.PremiumTextField
+import com.lifemanager.app.ui.component.PremiumDialog
+import com.lifemanager.app.ui.component.PremiumConfirmButton
+import com.lifemanager.app.ui.component.PremiumDismissButton
+import com.lifemanager.app.ui.theme.AppColors
 
 /**
  * 添加/编辑存钱计划对话框
@@ -43,6 +53,19 @@ fun AddEditPlanDialog(
         mutableStateOf(if (editState.targetAmount > 0) editState.targetAmount.toInt().toString() else "")
     }
 
+    // 动画效果
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
+
+    val scale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.9f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "dialogScale"
+    )
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -50,8 +73,28 @@ fun AddEditPlanDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.9f),
-            shape = RoundedCornerShape(24.dp)
+                .fillMaxHeight(0.9f)
+                .scale(scale)
+                .shadow(
+                    elevation = 24.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    spotColor = AppColors.Primary.copy(alpha = 0.2f)
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.5f),
+                            Color.White.copy(alpha = 0.1f),
+                            AppColors.Primary.copy(alpha = 0.2f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(28.dp)
+                ),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 TopAppBar(
@@ -111,11 +154,11 @@ fun AddEditPlanDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
+                    PremiumTextField(
                         value = editState.name,
                         onValueChange = { viewModel.updatePlanName(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("如：旅游基金、应急储蓄") },
+                        placeholder = "如：旅游基金、应急储蓄",
                         singleLine = true
                     )
 
@@ -129,7 +172,7 @@ fun AddEditPlanDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
+                    PremiumTextField(
                         value = amountText,
                         onValueChange = { value ->
                             val filtered = value.filter { it.isDigit() }
@@ -139,8 +182,8 @@ fun AddEditPlanDialog(
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("请输入目标金额") },
-                        prefix = { Text("¥ ") },
+                        placeholder = "请输入目标金额",
+                        label = "¥",
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         singleLine = true
                     )
@@ -155,13 +198,14 @@ fun AddEditPlanDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
+                    PremiumTextField(
                         value = editState.description,
                         onValueChange = { viewModel.updatePlanDescription(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("添加描述") },
+                        placeholder = "添加描述",
                         maxLines = 2,
-                        minLines = 2
+                        minLines = 2,
+                        singleLine = false
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -276,66 +320,60 @@ fun DepositDialog(
 
     var amountText by remember { mutableStateOf("") }
 
-    AlertDialog(
+    PremiumDialog(
         onDismissRequest = onDismiss,
-        title = { Text("存款") },
-        text = {
-            Column {
-                editState.error?.let { error ->
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-
-                OutlinedTextField(
-                    value = amountText,
-                    onValueChange = { value ->
-                        val filtered = value.filter { it.isDigit() || it == '.' }
-                        amountText = filtered
-                        filtered.toDoubleOrNull()?.let {
-                            viewModel.updateDepositAmount(it)
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("存款金额") },
-                    prefix = { Text("¥ ") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    singleLine = true
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedTextField(
-                    value = editState.note,
-                    onValueChange = { viewModel.updateDepositNote(it) },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("备注（可选）") },
-                    singleLine = true
-                )
-            }
-        },
+        icon = "💰",
+        iconBackgroundColor = AppColors.Primary.copy(alpha = 0.1f),
+        title = "存款",
         confirmButton = {
-            TextButton(
-                onClick = { viewModel.confirmDeposit() },
-                enabled = !editState.isSaving
-            ) {
-                if (editState.isSaving) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("确认")
-                }
+            if (editState.isSaving) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                PremiumConfirmButton(
+                    text = "确认",
+                    onClick = { viewModel.confirmDeposit() }
+                )
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
+            PremiumDismissButton(text = "取消", onClick = onDismiss)
         }
-    )
+    ) {
+        editState.error?.let { error ->
+            Text(
+                text = error,
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        PremiumTextField(
+            value = amountText,
+            onValueChange = { value ->
+                val filtered = value.filter { it.isDigit() || it == '.' }
+                amountText = filtered
+                filtered.toDoubleOrNull()?.let {
+                    viewModel.updateDepositAmount(it)
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = "存款金额 (¥)",
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        PremiumTextField(
+            value = editState.note,
+            onValueChange = { viewModel.updateDepositNote(it) },
+            modifier = Modifier.fillMaxWidth(),
+            label = "备注（可选）",
+            singleLine = true
+        )
+    }
 }

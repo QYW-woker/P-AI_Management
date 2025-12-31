@@ -23,6 +23,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.lifemanager.app.ui.component.PremiumTextField
+import com.lifemanager.app.ui.component.GlowingButton
 
 /**
  * 登录页面
@@ -87,11 +89,11 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(48.dp))
 
             // 邮箱/用户名输入
-            OutlinedTextField(
+            PremiumTextField(
                 value = email,
                 onValueChange = { viewModel.updateLoginEmail(it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("邮箱或用户名") },
+                label = "邮箱或用户名",
                 leadingIcon = {
                     Icon(Icons.Outlined.Email, contentDescription = null)
                 },
@@ -108,24 +110,16 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 密码输入
-            OutlinedTextField(
+            PremiumTextField(
                 value = password,
                 onValueChange = { viewModel.updateLoginPassword(it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("密码") },
+                label = "密码",
                 leadingIcon = {
                     Icon(Icons.Outlined.Lock, contentDescription = null)
                 },
-                trailingIcon = {
-                    IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                            contentDescription = if (passwordVisible) "隐藏密码" else "显示密码"
-                        )
-                    }
-                },
+                isPassword = true,
                 singleLine = true,
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
@@ -151,22 +145,24 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // 登录按钮
-            Button(
-                onClick = { viewModel.login() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                enabled = uiState !is AuthUiState.Loading
-            ) {
-                if (uiState is AuthUiState.Loading) {
+            if (uiState is AuthUiState.Loading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
                         strokeWidth = 2.dp
                     )
-                } else {
-                    Text("登录", style = MaterialTheme.typography.titleMedium)
                 }
+            } else {
+                GlowingButton(
+                    text = "登录",
+                    onClick = { viewModel.login() },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))

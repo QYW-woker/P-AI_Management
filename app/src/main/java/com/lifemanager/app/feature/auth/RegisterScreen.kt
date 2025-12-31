@@ -22,6 +22,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.lifemanager.app.ui.component.PremiumTextField
+import com.lifemanager.app.ui.component.GlowingButton
 
 /**
  * 注册页面
@@ -88,12 +90,12 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             // 用户名输入
-            OutlinedTextField(
+            PremiumTextField(
                 value = username,
                 onValueChange = { viewModel.updateRegisterUsername(it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("用户名") },
-                placeholder = { Text("3-20个字符") },
+                label = "用户名",
+                placeholder = "3-20个字符",
                 leadingIcon = {
                     Icon(Icons.Outlined.Person, contentDescription = null)
                 },
@@ -110,12 +112,12 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 邮箱输入
-            OutlinedTextField(
+            PremiumTextField(
                 value = email,
                 onValueChange = { viewModel.updateRegisterEmail(it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("邮箱") },
-                placeholder = { Text("example@email.com") },
+                label = "邮箱",
+                placeholder = "example@email.com",
                 leadingIcon = {
                     Icon(Icons.Outlined.Email, contentDescription = null)
                 },
@@ -132,25 +134,17 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 密码输入
-            OutlinedTextField(
+            PremiumTextField(
                 value = password,
                 onValueChange = { viewModel.updateRegisterPassword(it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("密码") },
-                placeholder = { Text("至少6个字符") },
+                label = "密码",
+                placeholder = "至少6个字符",
                 leadingIcon = {
                     Icon(Icons.Outlined.Lock, contentDescription = null)
                 },
-                trailingIcon = {
-                    IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
-                        Icon(
-                            imageVector = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                            contentDescription = if (passwordVisible) "隐藏密码" else "显示密码"
-                        )
-                    }
-                },
+                isPassword = true,
                 singleLine = true,
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Next
@@ -163,17 +157,17 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // 确认密码输入
-            OutlinedTextField(
+            PremiumTextField(
                 value = confirmPassword,
                 onValueChange = { viewModel.updateRegisterConfirmPassword(it) },
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("确认密码") },
-                placeholder = { Text("再次输入密码") },
+                label = "确认密码",
+                placeholder = "再次输入密码",
                 leadingIcon = {
                     Icon(Icons.Outlined.Lock, contentDescription = null)
                 },
+                isPassword = true,
                 singleLine = true,
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
                     keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done
@@ -185,9 +179,7 @@ fun RegisterScreen(
                     }
                 ),
                 isError = confirmPassword.isNotEmpty() && password != confirmPassword,
-                supportingText = if (confirmPassword.isNotEmpty() && password != confirmPassword) {
-                    { Text("两次输入的密码不一致") }
-                } else null
+                errorMessage = if (confirmPassword.isNotEmpty() && password != confirmPassword) "两次输入的密码不一致" else null
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -238,22 +230,24 @@ fun RegisterScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // 注册按钮
-            Button(
-                onClick = { viewModel.register() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                enabled = uiState !is AuthUiState.Loading && agreeToTerms
-            ) {
-                if (uiState is AuthUiState.Loading) {
+            if (uiState is AuthUiState.Loading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    contentAlignment = Alignment.Center
+                ) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
                         strokeWidth = 2.dp
                     )
-                } else {
-                    Text("注册", style = MaterialTheme.typography.titleMedium)
                 }
+            } else {
+                GlowingButton(
+                    text = "注册",
+                    onClick = { viewModel.register() },
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))

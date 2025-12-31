@@ -1,6 +1,8 @@
 package com.lifemanager.app.feature.todo
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +17,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,6 +31,8 @@ import com.lifemanager.app.ui.component.DatePickerButton
 import com.lifemanager.app.ui.component.DatePickerDialog
 import com.lifemanager.app.ui.component.TimePickerButton
 import com.lifemanager.app.ui.component.TimePickerDialog
+import com.lifemanager.app.ui.component.PremiumTextField
+import com.lifemanager.app.ui.theme.AppColors
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -53,6 +60,19 @@ fun AddEditTodoDialog(
         } catch (e: Exception) { null }
     }
 
+    // 动画效果
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { isVisible = true }
+
+    val dialogScale by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0.9f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "dialogScale"
+    )
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -60,8 +80,28 @@ fun AddEditTodoDialog(
         Card(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
-                .fillMaxHeight(0.85f),
-            shape = RoundedCornerShape(24.dp)
+                .fillMaxHeight(0.85f)
+                .scale(dialogScale)
+                .shadow(
+                    elevation = 24.dp,
+                    shape = RoundedCornerShape(28.dp),
+                    spotColor = AppColors.Primary.copy(alpha = 0.2f)
+                )
+                .border(
+                    width = 1.dp,
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0.5f),
+                            Color.White.copy(alpha = 0.1f),
+                            AppColors.Primary.copy(alpha = 0.2f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(28.dp)
+                ),
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 TopAppBar(
@@ -121,11 +161,11 @@ fun AddEditTodoDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
+                    PremiumTextField(
                         value = editState.title,
                         onValueChange = { viewModel.updateEditTitle(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("输入待办事项") },
+                        placeholder = "输入待办事项",
                         singleLine = true
                     )
 
@@ -139,13 +179,14 @@ fun AddEditTodoDialog(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    OutlinedTextField(
+                    PremiumTextField(
                         value = editState.description,
                         onValueChange = { viewModel.updateEditDescription(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("添加描述") },
+                        placeholder = "添加描述",
                         maxLines = 3,
-                        minLines = 2
+                        minLines = 2,
+                        singleLine = false
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))

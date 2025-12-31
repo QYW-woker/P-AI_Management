@@ -33,8 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifemanager.app.core.database.entity.*
-import com.lifemanager.app.ui.component.PremiumCircularProgress
-import com.lifemanager.app.ui.component.PremiumLinearProgress
+import com.lifemanager.app.ui.component.*
 import com.lifemanager.app.ui.theme.AppColors
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -197,26 +196,11 @@ fun HealthRecordScreen(
 
     // 删除确认对话框
     showDeleteConfirm?.let { record ->
-        AlertDialog(
+        PremiumDeleteDialog(
             onDismissRequest = { viewModel.hideDeleteConfirm() },
-            shape = RoundedCornerShape(24.dp),
-            icon = { Text("🗑️", fontSize = 36.sp) },
-            title = { Text("确认删除", fontWeight = FontWeight.Bold) },
-            text = { Text("确定要删除这条${HealthRecordType.getDisplayName(record.recordType)}记录吗？") },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.deleteRecord(record) },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("删除")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.hideDeleteConfirm() }) {
-                    Text("取消")
-                }
-            }
+            onConfirm = { viewModel.deleteRecord(record) },
+            title = "确认删除",
+            message = "确定要删除这条${HealthRecordType.getDisplayName(record.recordType)}记录吗？此操作无法撤销。"
         )
     }
 
@@ -906,7 +890,7 @@ private fun GlassCard(
 }
 
 /**
- * 添加健康记录对话框
+ * 添加健康记录对话框 - Premium Design
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -933,307 +917,25 @@ private fun AddHealthRecordDialog(
     }
     var showCategoryDropdown by remember { mutableStateOf(false) }
 
-    AlertDialog(
+    val isValid = when (type) {
+        HealthRecordType.MOOD -> true
+        HealthRecordType.BLOOD_PRESSURE -> value.isNotEmpty() && secondaryValue.isNotEmpty()
+        else -> value.isNotEmpty()
+    }
+
+    PremiumDialog(
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(24.dp),
-        containerColor = MaterialTheme.colorScheme.surface,
-        icon = {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(
-                        color = AppColors.Primary.copy(alpha = 0.1f),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(HealthRecordType.getIcon(type), fontSize = 28.sp)
-            }
-        },
-        title = {
-            Text(
-                text = if (existingRecord != null) "编辑${HealthRecordType.getDisplayName(type)}"
-                       else "记录${HealthRecordType.getDisplayName(type)}",
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                when (type) {
-                    HealthRecordType.WEIGHT -> {
-                        // 体重输入
-                        OutlinedTextField(
-                            value = value,
-                            onValueChange = { value = it.filter { c -> c.isDigit() || c == '.' } },
-                            label = { Text("体重 (kg)") },
-                            placeholder = { Text("例如: 65.5") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    HealthRecordType.SLEEP -> {
-                        // 睡眠时长
-                        OutlinedTextField(
-                            value = value,
-                            onValueChange = { value = it.filter { c -> c.isDigit() || c == '.' } },
-                            label = { Text("睡眠时长 (小时)") },
-                            placeholder = { Text("例如: 7.5") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // 睡眠质量
-                        Text(
-                            text = "睡眠质量",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            (1..5).forEach { quality ->
-                                Surface(
-                                    onClick = { rating = quality },
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = if (rating == quality) AppColors.Primary
-                                            else MaterialTheme.colorScheme.surfaceVariant,
-                                    modifier = Modifier.size(48.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = SleepQuality.getIcon(quality),
-                                            fontSize = 22.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    HealthRecordType.EXERCISE -> {
-                        // 运动时长
-                        OutlinedTextField(
-                            value = value,
-                            onValueChange = { value = it.filter { c -> c.isDigit() } },
-                            label = { Text("运动时长 (分钟)") },
-                            placeholder = { Text("例如: 30") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // 运动类型
-                        ExposedDropdownMenuBox(
-                            expanded = showCategoryDropdown,
-                            onExpandedChange = { showCategoryDropdown = it }
-                        ) {
-                            OutlinedTextField(
-                                value = selectedCategory?.let { ExerciseCategory.getDisplayName(it) } ?: "选择运动类型",
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("运动类型") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown) },
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor()
-                            )
-
-                            ExposedDropdownMenu(
-                                expanded = showCategoryDropdown,
-                                onDismissRequest = { showCategoryDropdown = false }
-                            ) {
-                                ExerciseCategory.getAllCategories().forEach { category ->
-                                    DropdownMenuItem(
-                                        text = { Text("${ExerciseCategory.getIcon(category)} ${ExerciseCategory.getDisplayName(category)}") },
-                                        onClick = {
-                                            selectedCategory = category
-                                            showCategoryDropdown = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // 消耗热量（可选）
-                        OutlinedTextField(
-                            value = secondaryValue,
-                            onValueChange = { secondaryValue = it.filter { c -> c.isDigit() } },
-                            label = { Text("消耗热量 (kcal) - 可选") },
-                            placeholder = { Text("例如: 200") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    HealthRecordType.MOOD -> {
-                        // 心情选择
-                        Text(
-                            text = "选择你的心情",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            (1..5).forEach { mood ->
-                                Surface(
-                                    onClick = {
-                                        rating = mood
-                                        value = mood.toString()
-                                    },
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = if (rating == mood) AppColors.Primary.copy(alpha = 0.15f)
-                                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                                    border = if (rating == mood) androidx.compose.foundation.BorderStroke(2.dp, AppColors.Primary) else null,
-                                    modifier = Modifier.size(56.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = MoodRating.getIcon(mood),
-                                            fontSize = 28.sp
-                                        )
-                                    }
-                                }
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        Text(
-                            text = MoodRating.getDisplayName(rating),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = AppColors.Primary,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    HealthRecordType.WATER -> {
-                        // 饮水量快速选择
-                        Text(
-                            text = "选择饮水量",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
-                        ) {
-                            listOf(150, 250, 350, 500).forEach { ml ->
-                                Surface(
-                                    onClick = { value = ml.toString() },
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = if (value == ml.toString()) AppColors.Primary
-                                            else MaterialTheme.colorScheme.surfaceVariant
-                                ) {
-                                    Text(
-                                        text = "${ml}ml",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = if (value == ml.toString()) Color.White
-                                                else MaterialTheme.colorScheme.onSurface,
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                                    )
-                                }
-                            }
-                        }
-
-                        // 自定义输入
-                        OutlinedTextField(
-                            value = value,
-                            onValueChange = { value = it.filter { c -> c.isDigit() } },
-                            label = { Text("自定义 (ml)") },
-                            placeholder = { Text("例如: 300") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    HealthRecordType.STEPS -> {
-                        // 步数输入
-                        OutlinedTextField(
-                            value = value,
-                            onValueChange = { value = it.filter { c -> c.isDigit() } },
-                            label = { Text("步数") },
-                            placeholder = { Text("例如: 8000") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    HealthRecordType.BLOOD_PRESSURE -> {
-                        // 收缩压
-                        OutlinedTextField(
-                            value = value,
-                            onValueChange = { value = it.filter { c -> c.isDigit() } },
-                            label = { Text("收缩压 (mmHg)") },
-                            placeholder = { Text("例如: 120") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-
-                        // 舒张压
-                        OutlinedTextField(
-                            value = secondaryValue,
-                            onValueChange = { secondaryValue = it.filter { c -> c.isDigit() } },
-                            label = { Text("舒张压 (mmHg)") },
-                            placeholder = { Text("例如: 80") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                    HealthRecordType.HEART_RATE -> {
-                        // 心率输入
-                        OutlinedTextField(
-                            value = value,
-                            onValueChange = { value = it.filter { c -> c.isDigit() } },
-                            label = { Text("心率 (bpm)") },
-                            placeholder = { Text("例如: 72") },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-
-                // 备注（所有类型通用）
-                OutlinedTextField(
-                    value = note,
-                    onValueChange = { note = it },
-                    label = { Text("备注 (可选)") },
-                    placeholder = { Text("添加一些备注...") },
-                    shape = RoundedCornerShape(12.dp),
-                    minLines = 2,
-                    maxLines = 3,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        },
+        icon = HealthRecordType.getIcon(type),
+        iconBackgroundColor = AppColors.Primary.copy(alpha = 0.15f),
+        title = if (existingRecord != null) "编辑${HealthRecordType.getDisplayName(type)}"
+                else "记录${HealthRecordType.getDisplayName(type)}",
         confirmButton = {
-            Button(
+            PremiumConfirmButton(
+                text = if (existingRecord != null) "保存" else "记录",
                 onClick = {
                     val parsedValue = when (type) {
                         HealthRecordType.MOOD -> rating.toDouble()
-                        else -> value.toDoubleOrNull() ?: return@Button
+                        else -> value.toDoubleOrNull() ?: return@PremiumConfirmButton
                     }
                     val parsedSecondary = secondaryValue.toDoubleOrNull()
                     val parsedRating = when (type) {
@@ -1242,23 +944,325 @@ private fun AddHealthRecordDialog(
                     }
                     onSave(parsedValue, parsedSecondary, parsedRating, selectedCategory, note)
                 },
-                enabled = when (type) {
-                    HealthRecordType.MOOD -> true
-                    HealthRecordType.BLOOD_PRESSURE -> value.isNotEmpty() && secondaryValue.isNotEmpty()
-                    else -> value.isNotEmpty()
-                },
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
-            ) {
-                Text(if (existingRecord != null) "保存" else "记录")
-            }
+                enabled = isValid
+            )
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
+            PremiumDismissButton(text = "取消", onClick = onDismiss)
         }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            when (type) {
+                HealthRecordType.WEIGHT -> {
+                    PremiumTextField(
+                        value = value,
+                        onValueChange = { value = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = "体重 (kg)",
+                        placeholder = "例如: 65.5",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                HealthRecordType.SLEEP -> {
+                    PremiumTextField(
+                        value = value,
+                        onValueChange = { value = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = "睡眠时长 (小时)",
+                        placeholder = "例如: 7.5",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "睡眠质量",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        (1..5).forEach { quality ->
+                            PremiumRatingButton(
+                                icon = SleepQuality.getIcon(quality),
+                                selected = rating == quality,
+                                onClick = { rating = quality }
+                            )
+                        }
+                    }
+                }
+                HealthRecordType.EXERCISE -> {
+                    PremiumTextField(
+                        value = value,
+                        onValueChange = { value = it.filter { c -> c.isDigit() } },
+                        label = "运动时长 (分钟)",
+                        placeholder = "例如: 30",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    // 运动类型下拉框
+                    ExposedDropdownMenuBox(
+                        expanded = showCategoryDropdown,
+                        onExpandedChange = { showCategoryDropdown = it }
+                    ) {
+                        PremiumTextField(
+                            value = selectedCategory?.let { ExerciseCategory.getDisplayName(it) } ?: "",
+                            onValueChange = {},
+                            label = "运动类型",
+                            placeholder = "选择运动类型",
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCategoryDropdown) },
+                            enabled = false,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                                .clickable { showCategoryDropdown = true }
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = showCategoryDropdown,
+                            onDismissRequest = { showCategoryDropdown = false }
+                        ) {
+                            ExerciseCategory.getAllCategories().forEach { category ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            "${ExerciseCategory.getIcon(category)} ${ExerciseCategory.getDisplayName(category)}",
+                                            fontWeight = if (selectedCategory == category) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedCategory = category
+                                        showCategoryDropdown = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    PremiumTextField(
+                        value = secondaryValue,
+                        onValueChange = { secondaryValue = it.filter { c -> c.isDigit() } },
+                        label = "消耗热量 (kcal) - 可选",
+                        placeholder = "例如: 200",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                HealthRecordType.MOOD -> {
+                    Text(
+                        text = "选择你的心情",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        (1..5).forEach { mood ->
+                            PremiumMoodButton(
+                                icon = MoodRating.getIcon(mood),
+                                selected = rating == mood,
+                                onClick = {
+                                    rating = mood
+                                    value = mood.toString()
+                                }
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = MoodRating.getDisplayName(rating),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = AppColors.Primary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                HealthRecordType.WATER -> {
+                    Text(
+                        text = "快速选择",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        listOf(150, 250, 350, 500).forEach { ml ->
+                            PremiumQuickSelectButton(
+                                text = "${ml}ml",
+                                selected = value == ml.toString(),
+                                onClick = { value = ml.toString() }
+                            )
+                        }
+                    }
+
+                    PremiumTextField(
+                        value = value,
+                        onValueChange = { value = it.filter { c -> c.isDigit() } },
+                        label = "自定义 (ml)",
+                        placeholder = "例如: 300",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                HealthRecordType.STEPS -> {
+                    PremiumTextField(
+                        value = value,
+                        onValueChange = { value = it.filter { c -> c.isDigit() } },
+                        label = "步数",
+                        placeholder = "例如: 8000",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                HealthRecordType.BLOOD_PRESSURE -> {
+                    PremiumTextField(
+                        value = value,
+                        onValueChange = { value = it.filter { c -> c.isDigit() } },
+                        label = "收缩压 (mmHg)",
+                        placeholder = "例如: 120",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    PremiumTextField(
+                        value = secondaryValue,
+                        onValueChange = { secondaryValue = it.filter { c -> c.isDigit() } },
+                        label = "舒张压 (mmHg)",
+                        placeholder = "例如: 80",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                HealthRecordType.HEART_RATE -> {
+                    PremiumTextField(
+                        value = value,
+                        onValueChange = { value = it.filter { c -> c.isDigit() } },
+                        label = "心率 (bpm)",
+                        placeholder = "例如: 72",
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+
+            // 备注
+            PremiumTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = "备注 (可选)",
+                placeholder = "添加一些备注...",
+                singleLine = false,
+                minLines = 2,
+                maxLines = 3,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+/**
+ * Premium 评分按钮
+ */
+@Composable
+private fun PremiumRatingButton(
+    icon: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.1f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scale"
     )
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(14.dp),
+        color = if (selected) AppColors.Primary else MaterialTheme.colorScheme.surfaceVariant,
+        shadowElevation = if (selected) 8.dp else 2.dp,
+        modifier = Modifier
+            .size(48.dp)
+            .scale(scale)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(text = icon, fontSize = 22.sp)
+        }
+    }
+}
+
+/**
+ * Premium 心情按钮
+ */
+@Composable
+private fun PremiumMoodButton(
+    icon: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.15f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scale"
+    )
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(16.dp),
+        color = if (selected) AppColors.Primary.copy(alpha = 0.15f)
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = if (selected) BorderStroke(2.dp, AppColors.Primary) else null,
+        shadowElevation = if (selected) 8.dp else 0.dp,
+        modifier = Modifier
+            .size(56.dp)
+            .scale(scale)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(text = icon, fontSize = 28.sp)
+        }
+    }
+}
+
+/**
+ * Premium 快速选择按钮
+ */
+@Composable
+private fun PremiumQuickSelectButton(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1.05f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+        label = "scale"
+    )
+
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected) AppColors.Primary else MaterialTheme.colorScheme.surfaceVariant,
+        shadowElevation = if (selected) 6.dp else 2.dp,
+        modifier = Modifier.scale(scale)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+        )
+    }
 }
 
 // 扩展函数
