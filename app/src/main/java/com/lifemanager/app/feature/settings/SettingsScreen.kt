@@ -1,8 +1,13 @@
 package com.lifemanager.app.feature.settings
 
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -11,19 +16,27 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifemanager.app.BuildConfig
 import com.lifemanager.app.core.data.repository.CurrencySymbol
 import com.lifemanager.app.core.data.repository.DateFormat
 import com.lifemanager.app.core.data.repository.WeekStartDay
+import com.lifemanager.app.ui.theme.AppColors
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 /**
- * 设置页面
+ * 设置页面 - Premium Design
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +71,9 @@ fun SettingsScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // 判断主题
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
     // 处理UI状态变化
     LaunchedEffect(uiState) {
         when (val state = uiState) {
@@ -73,243 +89,294 @@ fun SettingsScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = { Text("设置") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        LazyColumn(
+    Box(modifier = Modifier.fillMaxSize()) {
+        // 背景渐变
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // 外观设置
-            item {
-                SettingsSection(title = "外观") {
-                    SwitchSettingItem(
-                        icon = Icons.Outlined.DarkMode,
-                        title = "深色模式",
-                        subtitle = "使用深色主题",
-                        checked = settings.isDarkMode,
-                        onCheckedChange = { viewModel.toggleDarkMode(it) }
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = if (isDarkTheme) {
+                            listOf(
+                                Color(0xFF1a1a2e),
+                                Color(0xFF16213e),
+                                Color(0xFF0f3460)
+                            )
+                        } else {
+                            listOf(
+                                Color(0xFFF5F7FF),
+                                Color(0xFFFFF5F8),
+                                Color(0xFFF0F9FF)
+                            )
+                        }
                     )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.Language,
-                        title = "语言",
-                        value = settings.language,
-                        onClick = { viewModel.showLanguagePickerDialog() }
-                    )
-                }
-            }
+                )
+        )
 
-            // 显示格式设置
-            item {
-                SettingsSection(title = "显示格式") {
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.AttachMoney,
-                        title = "货币符号",
-                        value = settings.currencySymbol.displayName,
-                        onClick = { viewModel.showCurrencyPickerDialog() }
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.Pin,
-                        title = "金额小数位",
-                        value = "${settings.decimalPlaces}位",
-                        onClick = { viewModel.showDecimalPlacesPickerDialog() }
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    SwitchSettingItem(
-                        icon = Icons.Outlined.FormatListNumbered,
-                        title = "千位分隔符",
-                        subtitle = "使用逗号分隔大数字 (如 1,000)",
-                        checked = settings.useThousandSeparator,
-                        onCheckedChange = { viewModel.toggleThousandSeparator(it) }
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.CalendarMonth,
-                        title = "日期格式",
-                        value = settings.dateFormat.displayName,
-                        onClick = { viewModel.showDateFormatPickerDialog() }
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.DateRange,
-                        title = "周起始日",
-                        value = settings.weekStartDay.displayName,
-                        onClick = { viewModel.showWeekStartPickerDialog() }
-                    )
-                }
+        Scaffold(
+            containerColor = Color.Transparent,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                PremiumSettingsTopBar(onNavigateBack = onNavigateBack)
             }
-
-            // 首页布局设置
-            item {
-                SettingsSection(title = "首页布局") {
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.Dashboard,
-                        title = "自定义首页卡片",
-                        value = "显示/隐藏卡片",
-                        onClick = { viewModel.showHomeCardSettingsDialog() }
-                    )
-                }
-            }
-
-            // 通知设置
-            item {
-                SettingsSection(title = "通知") {
-                    SwitchSettingItem(
-                        icon = Icons.Outlined.Notifications,
-                        title = "开启通知",
-                        subtitle = "接收提醒和通知",
-                        checked = settings.enableNotification,
-                        onCheckedChange = { viewModel.toggleNotification(it) }
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.Schedule,
-                        title = "每日提醒时间",
-                        value = settings.reminderTime,
-                        enabled = settings.enableNotification,
-                        onClick = { viewModel.showTimePickerDialog() }
-                    )
-                }
-            }
-
-            // AI功能设置
-            item {
-                SettingsSection(title = "AI功能") {
-                    ClickableSettingItem(
-                        icon = Icons.Filled.SmartToy,
-                        title = "AI设置",
-                        value = "",
-                        onClick = onNavigateToAISettings
-                    )
-                }
-            }
-
-            // 数据设置
-            item {
-                SettingsSection(title = "数据") {
-                    SwitchSettingItem(
-                        icon = Icons.Outlined.CloudSync,
-                        title = "自动备份",
-                        subtitle = "定期备份数据到云端",
-                        checked = settings.autoBackup,
-                        onCheckedChange = { viewModel.toggleAutoBackup(it) }
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.CloudUpload,
-                        title = "立即备份",
-                        value = "",
-                        onClick = { viewModel.backupNow() }
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.CloudDownload,
-                        title = "恢复数据",
-                        value = "",
-                        onClick = { viewModel.restoreData() }
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.FileDownload,
-                        title = "导出记账数据",
-                        value = "",
-                        onClick = { viewModel.showExportDialog() }
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.Delete,
-                        title = "清除所有数据",
-                        value = "",
-                        isDanger = true,
-                        onClick = { viewModel.showClearDataConfirmation() }
-                    )
-                }
-            }
-
-            // 关于
-            item {
-                SettingsSection(title = "关于") {
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.Info,
-                        title = "版本",
-                        value = BuildConfig.VERSION_NAME,
-                        onClick = { }
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.Description,
-                        title = "隐私政策",
-                        value = "",
-                        onClick = onNavigateToPrivacy
-                    )
-                    Divider(modifier = Modifier.padding(start = 56.dp))
-                    ClickableSettingItem(
-                        icon = Icons.Outlined.Gavel,
-                        title = "用户协议",
-                        value = "",
-                        onClick = onNavigateToTerms
-                    )
-                }
-            }
-
-            // 账户
-            item {
-                SettingsSection(title = "账户") {
-                    if (isLoggedIn && currentUser != null) {
-                        // 已登录 - 显示用户信息和退出按钮
-                        ClickableSettingItem(
-                            icon = Icons.Outlined.Person,
-                            title = currentUser?.nickname ?: currentUser?.username ?: "用户",
-                            value = currentUser?.email ?: "",
-                            onClick = { }
-                        )
-                        Divider(modifier = Modifier.padding(start = 56.dp))
-                        ClickableSettingItem(
-                            icon = Icons.Outlined.Logout,
-                            title = "退出登录",
-                            value = "",
-                            isDanger = true,
-                            onClick = { viewModel.showLogoutConfirmation() }
-                        )
-                    } else {
-                        // 未登录 - 显示登录按钮
-                        ClickableSettingItem(
-                            icon = Icons.Outlined.Login,
-                            title = "登录/注册",
-                            value = "",
-                            onClick = onNavigateToLogin
+        ) { paddingValues ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // 用户头像区域（如果已登录）
+                if (isLoggedIn && currentUser != null) {
+                    item {
+                        UserProfileCard(
+                            nickname = currentUser?.nickname ?: currentUser?.username ?: "用户",
+                            email = currentUser?.email ?: "",
+                            onLogoutClick = { viewModel.showLogoutConfirmation() }
                         )
                     }
+                }
+
+                // 外观设置
+                item {
+                    PremiumSettingsSection(
+                        title = "外观",
+                        icon = "🎨",
+                        gradientColors = AppColors.GradientAurora
+                    ) {
+                        PremiumSwitchItem(
+                            icon = Icons.Outlined.DarkMode,
+                            title = "深色模式",
+                            subtitle = "使用深色主题",
+                            checked = settings.isDarkMode,
+                            onCheckedChange = { viewModel.toggleDarkMode(it) }
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.Language,
+                            title = "语言",
+                            value = settings.language,
+                            onClick = { viewModel.showLanguagePickerDialog() }
+                        )
+                    }
+                }
+
+                // 显示格式设置
+                item {
+                    PremiumSettingsSection(
+                        title = "显示格式",
+                        icon = "📐",
+                        gradientColors = AppColors.GradientEmerald
+                    ) {
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.AttachMoney,
+                            title = "货币符号",
+                            value = settings.currencySymbol.displayName,
+                            onClick = { viewModel.showCurrencyPickerDialog() }
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.Pin,
+                            title = "金额小数位",
+                            value = "${settings.decimalPlaces}位",
+                            onClick = { viewModel.showDecimalPlacesPickerDialog() }
+                        )
+                        PremiumDivider()
+                        PremiumSwitchItem(
+                            icon = Icons.Outlined.FormatListNumbered,
+                            title = "千位分隔符",
+                            subtitle = "使用逗号分隔 (1,000)",
+                            checked = settings.useThousandSeparator,
+                            onCheckedChange = { viewModel.toggleThousandSeparator(it) }
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.CalendarMonth,
+                            title = "日期格式",
+                            value = settings.dateFormat.displayName,
+                            onClick = { viewModel.showDateFormatPickerDialog() }
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.DateRange,
+                            title = "周起始日",
+                            value = settings.weekStartDay.displayName,
+                            onClick = { viewModel.showWeekStartPickerDialog() }
+                        )
+                    }
+                }
+
+                // 首页布局设置
+                item {
+                    PremiumSettingsSection(
+                        title = "首页布局",
+                        icon = "🏠",
+                        gradientColors = AppColors.GradientGold
+                    ) {
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.Dashboard,
+                            title = "自定义首页卡片",
+                            value = "显示/隐藏",
+                            onClick = { viewModel.showHomeCardSettingsDialog() }
+                        )
+                    }
+                }
+
+                // 通知设置
+                item {
+                    PremiumSettingsSection(
+                        title = "通知",
+                        icon = "🔔",
+                        gradientColors = AppColors.GradientRose
+                    ) {
+                        PremiumSwitchItem(
+                            icon = Icons.Outlined.Notifications,
+                            title = "开启通知",
+                            subtitle = "接收提醒和通知",
+                            checked = settings.enableNotification,
+                            onCheckedChange = { viewModel.toggleNotification(it) }
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.Schedule,
+                            title = "每日提醒时间",
+                            value = settings.reminderTime,
+                            enabled = settings.enableNotification,
+                            onClick = { viewModel.showTimePickerDialog() }
+                        )
+                    }
+                }
+
+                // AI功能设置
+                item {
+                    PremiumSettingsSection(
+                        title = "AI功能",
+                        icon = "🤖",
+                        gradientColors = AppColors.GradientCosmic
+                    ) {
+                        PremiumClickableItem(
+                            icon = Icons.Filled.SmartToy,
+                            title = "AI设置",
+                            value = "",
+                            onClick = onNavigateToAISettings
+                        )
+                    }
+                }
+
+                // 数据设置
+                item {
+                    PremiumSettingsSection(
+                        title = "数据",
+                        icon = "💾",
+                        gradientColors = AppColors.GradientSky
+                    ) {
+                        PremiumSwitchItem(
+                            icon = Icons.Outlined.CloudSync,
+                            title = "自动备份",
+                            subtitle = "定期备份到云端",
+                            checked = settings.autoBackup,
+                            onCheckedChange = { viewModel.toggleAutoBackup(it) }
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.CloudUpload,
+                            title = "立即备份",
+                            value = "",
+                            onClick = { viewModel.backupNow() }
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.CloudDownload,
+                            title = "恢复数据",
+                            value = "",
+                            onClick = { viewModel.restoreData() }
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.FileDownload,
+                            title = "导出记账数据",
+                            value = "",
+                            onClick = { viewModel.showExportDialog() }
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.Delete,
+                            title = "清除所有数据",
+                            value = "",
+                            isDanger = true,
+                            onClick = { viewModel.showClearDataConfirmation() }
+                        )
+                    }
+                }
+
+                // 关于
+                item {
+                    PremiumSettingsSection(
+                        title = "关于",
+                        icon = "ℹ️",
+                        gradientColors = AppColors.GradientMint
+                    ) {
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.Info,
+                            title = "版本",
+                            value = BuildConfig.VERSION_NAME,
+                            onClick = { }
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.Description,
+                            title = "隐私政策",
+                            value = "",
+                            onClick = onNavigateToPrivacy
+                        )
+                        PremiumDivider()
+                        PremiumClickableItem(
+                            icon = Icons.Outlined.Gavel,
+                            title = "用户协议",
+                            value = "",
+                            onClick = onNavigateToTerms
+                        )
+                    }
+                }
+
+                // 账户（未登录时显示登录按钮）
+                if (!isLoggedIn) {
+                    item {
+                        PremiumSettingsSection(
+                            title = "账户",
+                            icon = "👤",
+                            gradientColors = AppColors.GradientPurpleHaze
+                        ) {
+                            PremiumClickableItem(
+                                icon = Icons.Outlined.Login,
+                                title = "登录/注册",
+                                value = "",
+                                onClick = onNavigateToLogin
+                            )
+                        }
+                    }
+                }
+
+                // 底部间距
+                item {
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
             }
         }
     }
 
-    // 语言选择对话框
+    // 对话框
     if (showLanguagePicker) {
-        LanguagePickerDialog(
-            currentLanguage = settings.language,
+        PremiumPickerDialog(
+            title = "选择语言",
+            options = listOf("简体中文", "English"),
+            currentValue = settings.language,
             onSelect = { viewModel.setLanguage(it) },
             onDismiss = { viewModel.hideLanguagePickerDialog() }
         )
     }
 
-    // 时间选择对话框
     if (showTimePicker) {
         TimePickerDialog(
             currentTime = settings.reminderTime,
@@ -318,89 +385,70 @@ fun SettingsScreen(
         )
     }
 
-    // 清除数据确认对话框
     if (showClearDataDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.hideClearDataConfirmation() },
-            icon = { Icon(Icons.Default.Warning, contentDescription = null) },
-            title = { Text("清除所有数据") },
-            text = { Text("确定要清除所有数据吗？此操作不可撤销。") },
-            confirmButton = {
-                TextButton(
-                    onClick = { viewModel.clearAllData() },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
-                ) {
-                    Text("确定清除")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.hideClearDataConfirmation() }) {
-                    Text("取消")
-                }
-            }
+        PremiumAlertDialog(
+            icon = "⚠️",
+            title = "清除所有数据",
+            message = "确定要清除所有数据吗？此操作不可撤销。",
+            confirmText = "确定清除",
+            isDanger = true,
+            onConfirm = { viewModel.clearAllData() },
+            onDismiss = { viewModel.hideClearDataConfirmation() }
         )
     }
 
-    // 备份成功对话框
     showBackupSuccessDialog?.let { backupPath ->
-        AlertDialog(
-            onDismissRequest = { viewModel.hideBackupSuccessDialog() },
-            icon = { Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            title = { Text("备份成功") },
-            text = { Text("数据已备份到:\n$backupPath") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.hideBackupSuccessDialog() }) {
-                    Text("确定")
-                }
-            }
+        PremiumAlertDialog(
+            icon = "✅",
+            title = "备份成功",
+            message = "数据已备份到:\n$backupPath",
+            confirmText = "确定",
+            onConfirm = { viewModel.hideBackupSuccessDialog() },
+            onDismiss = { viewModel.hideBackupSuccessDialog() }
         )
     }
 
-    // 加载指示器
     if (uiState is SettingsUiState.Loading) {
-        AlertDialog(
-            onDismissRequest = { },
-            title = { Text((uiState as SettingsUiState.Loading).message) },
-            text = {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            ) {
+                Column(
+                    modifier = Modifier.padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    CircularProgressIndicator()
-                }
-            },
-            confirmButton = { }
-        )
-    }
-
-    // 退出登录确认对话框
-    if (showLogoutDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.hideLogoutConfirmation() },
-            icon = { Icon(Icons.Outlined.Logout, contentDescription = null) },
-            title = { Text("退出登录") },
-            text = { Text("确定要退出当前账号吗？") },
-            confirmButton = {
-                TextButton(
-                    onClick = { viewModel.confirmLogout() },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                    CircularProgressIndicator(
+                        color = AppColors.Primary,
+                        strokeWidth = 3.dp
                     )
-                ) {
-                    Text("退出")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.hideLogoutConfirmation() }) {
-                    Text("取消")
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = (uiState as SettingsUiState.Loading).message,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
             }
+        }
+    }
+
+    if (showLogoutDialog) {
+        PremiumAlertDialog(
+            icon = "👋",
+            title = "退出登录",
+            message = "确定要退出当前账号吗？",
+            confirmText = "退出",
+            isDanger = true,
+            onConfirm = { viewModel.confirmLogout() },
+            onDismiss = { viewModel.hideLogoutConfirmation() }
         )
     }
 
-    // 数据导出对话框
     if (showExportDialog) {
         ExportDataDialog(
             startDate = exportStartDate,
@@ -412,58 +460,63 @@ fun SettingsScreen(
         )
     }
 
-    // 导出成功对话框
     showExportSuccessDialog?.let { exportPath ->
-        AlertDialog(
-            onDismissRequest = { viewModel.hideExportSuccessDialog() },
-            icon = { Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-            title = { Text("导出成功") },
-            text = { Text("数据已导出到:\n$exportPath") },
-            confirmButton = {
-                TextButton(onClick = { viewModel.hideExportSuccessDialog() }) {
-                    Text("确定")
-                }
-            }
+        PremiumAlertDialog(
+            icon = "✅",
+            title = "导出成功",
+            message = "数据已导出到:\n$exportPath",
+            confirmText = "确定",
+            onConfirm = { viewModel.hideExportSuccessDialog() },
+            onDismiss = { viewModel.hideExportSuccessDialog() }
         )
     }
 
-    // 货币符号选择对话框
     if (showCurrencyPicker) {
-        CurrencyPickerDialog(
-            currentSymbol = settings.currencySymbol,
+        PremiumEnumPickerDialog(
+            title = "选择货币符号",
+            options = CurrencySymbol.entries,
+            currentValue = settings.currencySymbol,
+            displayName = { it.displayName },
             onSelect = { viewModel.setCurrencySymbol(it) },
             onDismiss = { viewModel.hideCurrencyPickerDialog() }
         )
     }
 
-    // 日期格式选择对话框
     if (showDateFormatPicker) {
-        DateFormatPickerDialog(
-            currentFormat = settings.dateFormat,
+        PremiumEnumPickerDialog(
+            title = "选择日期格式",
+            options = DateFormat.entries,
+            currentValue = settings.dateFormat,
+            displayName = { it.displayName },
             onSelect = { viewModel.setDateFormat(it) },
             onDismiss = { viewModel.hideDateFormatPickerDialog() }
         )
     }
 
-    // 周起始日选择对话框
     if (showWeekStartPicker) {
-        WeekStartPickerDialog(
-            currentDay = settings.weekStartDay,
+        PremiumEnumPickerDialog(
+            title = "选择周起始日",
+            options = WeekStartDay.entries,
+            currentValue = settings.weekStartDay,
+            displayName = { it.displayName },
             onSelect = { viewModel.setWeekStartDay(it) },
             onDismiss = { viewModel.hideWeekStartPickerDialog() }
         )
     }
 
-    // 小数位数选择对话框
     if (showDecimalPlacesPicker) {
-        DecimalPlacesPickerDialog(
-            currentPlaces = settings.decimalPlaces,
-            onSelect = { viewModel.setDecimalPlaces(it) },
+        PremiumPickerDialog(
+            title = "选择小数位数",
+            options = listOf("0位小数", "1位小数", "2位小数", "3位小数", "4位小数"),
+            currentValue = "${settings.decimalPlaces}位小数",
+            onSelect = { selected ->
+                val places = selected.replace("位小数", "").toIntOrNull() ?: 2
+                viewModel.setDecimalPlaces(places)
+            },
             onDismiss = { viewModel.hideDecimalPlacesPickerDialog() }
         )
     }
 
-    // 首页卡片设置对话框
     if (showHomeCardSettings) {
         HomeCardSettingsDialog(
             config = settings.homeCardConfig,
@@ -475,32 +528,207 @@ fun SettingsScreen(
 }
 
 /**
- * 设置分组
+ * 高级顶部栏
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PremiumSettingsTopBar(onNavigateBack: () -> Unit) {
+    TopAppBar(
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("⚙️", fontSize = 24.sp)
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "设置",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        navigationIcon = {
+            IconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier
+                    .padding(4.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = CircleShape
+                    )
+            ) {
+                Icon(
+                    Icons.Default.ArrowBack,
+                    contentDescription = "返回"
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Transparent
+        )
+    )
+}
+
+/**
+ * 用户头像卡片
  */
 @Composable
-private fun SettingsSection(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
+private fun UserProfileCard(
+    nickname: String,
+    email: String,
+    onLogoutClick: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(16.dp)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 16.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = AppColors.GradientCosmic.first().copy(alpha = 0.3f)
             )
-            content()
+            .clip(RoundedCornerShape(24.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = AppColors.GradientCosmic.map { it.copy(alpha = 0.9f) }
+                )
+            )
+            .padding(20.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // 头像
+            Box(
+                modifier = Modifier
+                    .size(60.dp)
+                    .background(
+                        color = Color.White.copy(alpha = 0.2f),
+                        shape = CircleShape
+                    )
+                    .border(
+                        width = 2.dp,
+                        color = Color.White.copy(alpha = 0.5f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = nickname.firstOrNull()?.uppercase() ?: "U",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+            }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = nickname,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
+                )
+                if (email.isNotEmpty()) {
+                    Text(
+                        text = email,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                }
+            }
+
+            IconButton(
+                onClick = onLogoutClick,
+                modifier = Modifier
+                    .background(
+                        color = Color.White.copy(alpha = 0.2f),
+                        shape = CircleShape
+                    )
+            ) {
+                Icon(
+                    Icons.Outlined.Logout,
+                    contentDescription = "退出",
+                    tint = Color.White
+                )
+            }
         }
     }
 }
 
 /**
- * 开关设置项
+ * 高级设置分组
  */
 @Composable
-private fun SwitchSettingItem(
+private fun PremiumSettingsSection(
+    title: String,
+    icon: String,
+    gradientColors: List<Color>,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 12.dp,
+                shape = RoundedCornerShape(20.dp),
+                spotColor = gradientColors.first().copy(alpha = 0.2f)
+            )
+            .clip(RoundedCornerShape(20.dp))
+            .background(
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        AppColors.GlassWhite,
+                        Color.White.copy(alpha = 0.95f)
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                brush = Brush.linearGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.8f),
+                        Color.White.copy(alpha = 0.3f)
+                    )
+                ),
+                shape = RoundedCornerShape(20.dp)
+            )
+    ) {
+        // 标题栏
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        brush = Brush.linearGradient(gradientColors.map { it.copy(alpha = 0.15f) }),
+                        shape = RoundedCornerShape(10.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(icon, fontSize = 18.sp)
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = gradientColors.first()
+            )
+        }
+
+        content()
+    }
+}
+
+/**
+ * 高级开关设置项
+ */
+@Composable
+private fun PremiumSwitchItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
@@ -511,20 +739,21 @@ private fun SwitchSettingItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onCheckedChange(!checked) }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
+            tint = AppColors.Primary,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
             )
             Text(
                 text = subtitle,
@@ -534,16 +763,22 @@ private fun SwitchSettingItem(
         }
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = AppColors.Primary,
+                uncheckedThumbColor = Color.White,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
         )
     }
 }
 
 /**
- * 可点击设置项
+ * 高级可点击设置项
  */
 @Composable
-private fun ClickableSettingItem(
+private fun PremiumClickableItem(
     icon: ImageVector,
     title: String,
     value: String,
@@ -561,12 +796,10 @@ private fun ClickableSettingItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = if (isDanger) {
-                MaterialTheme.colorScheme.error
-            } else if (enabled) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            tint = when {
+                isDanger -> MaterialTheme.colorScheme.error
+                enabled -> AppColors.Primary
+                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             },
             modifier = Modifier.size(24.dp)
         )
@@ -574,12 +807,11 @@ private fun ClickableSettingItem(
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
-            color = if (isDanger) {
-                MaterialTheme.colorScheme.error
-            } else if (enabled) {
-                MaterialTheme.colorScheme.onSurface
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+            fontWeight = FontWeight.Medium,
+            color = when {
+                isDanger -> MaterialTheme.colorScheme.error
+                enabled -> MaterialTheme.colorScheme.onSurface
+                else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             },
             modifier = Modifier.weight(1f)
         )
@@ -589,52 +821,196 @@ private fun ClickableSettingItem(
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(modifier = Modifier.width(4.dp))
         }
         Icon(
             imageVector = Icons.Default.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
-                alpha = if (enabled) 1f else 0.5f
-            )
+                alpha = if (enabled) 0.6f else 0.3f
+            ),
+            modifier = Modifier.size(20.dp)
         )
     }
 }
 
 /**
- * 语言选择对话框
+ * 分隔线
  */
 @Composable
-private fun LanguagePickerDialog(
-    currentLanguage: String,
+private fun PremiumDivider() {
+    Divider(
+        modifier = Modifier.padding(start = 56.dp, end = 16.dp),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+    )
+}
+
+/**
+ * 高级选择对话框
+ */
+@Composable
+private fun PremiumPickerDialog(
+    title: String,
+    options: List<String>,
+    currentValue: String,
     onSelect: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val languages = listOf("简体中文", "English")
-
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("选择语言") },
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold
+            )
+        },
         text = {
             Column {
-                languages.forEach { language ->
+                options.forEach { option ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onSelect(language) }
-                            .padding(vertical = 12.dp),
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onSelect(option) }
+                            .background(
+                                if (option == currentValue)
+                                    AppColors.Primary.copy(alpha = 0.1f)
+                                else Color.Transparent
+                            )
+                            .padding(vertical = 14.dp, horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
-                            selected = language == currentLanguage,
-                            onClick = { onSelect(language) }
+                            selected = option == currentValue,
+                            onClick = { onSelect(option) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = AppColors.Primary
+                            )
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = language)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = option,
+                            fontWeight = if (option == currentValue) FontWeight.Medium else FontWeight.Normal
+                        )
                     }
                 }
             }
         },
         confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消", color = AppColors.Primary)
+            }
+        }
+    )
+}
+
+/**
+ * 泛型枚举选择对话框
+ */
+@Composable
+private fun <T> PremiumEnumPickerDialog(
+    title: String,
+    options: List<T>,
+    currentValue: T,
+    displayName: (T) -> String,
+    onSelect: (T) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column {
+                options.forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onSelect(option) }
+                            .background(
+                                if (option == currentValue)
+                                    AppColors.Primary.copy(alpha = 0.1f)
+                                else Color.Transparent
+                            )
+                            .padding(vertical = 14.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = option == currentValue,
+                            onClick = { onSelect(option) },
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = AppColors.Primary
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = displayName(option),
+                            fontWeight = if (option == currentValue) FontWeight.Medium else FontWeight.Normal
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消", color = AppColors.Primary)
+            }
+        }
+    )
+}
+
+/**
+ * 高级警告对话框
+ */
+@Composable
+private fun PremiumAlertDialog(
+    icon: String,
+    title: String,
+    message: String,
+    confirmText: String,
+    isDanger: Boolean = false,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        icon = {
+            Text(icon, fontSize = 40.sp)
+        },
+        title = {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+        },
+        text = {
+            Text(
+                text = message,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isDanger) MaterialTheme.colorScheme.error else AppColors.Primary
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(confirmText)
+            }
+        },
+        dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("取消")
             }
@@ -664,7 +1040,8 @@ private fun TimePickerDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("选择提醒时间") },
+        shape = RoundedCornerShape(24.dp),
+        title = { Text("选择提醒时间", fontWeight = FontWeight.Bold) },
         text = {
             Box(
                 modifier = Modifier.fillMaxWidth(),
@@ -674,12 +1051,14 @@ private fun TimePickerDialog(
             }
         },
         confirmButton = {
-            TextButton(
+            Button(
                 onClick = {
                     val hour = String.format("%02d", timePickerState.hour)
                     val minute = String.format("%02d", timePickerState.minute)
                     onConfirm("$hour:$minute")
-                }
+                },
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
             ) {
                 Text("确定")
             }
@@ -711,12 +1090,11 @@ private fun ExportDataDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        icon = { Icon(Icons.Outlined.FileDownload, contentDescription = null) },
-        title = { Text("导出记账数据") },
+        shape = RoundedCornerShape(24.dp),
+        icon = { Text("📊", fontSize = 40.sp) },
+        title = { Text("导出记账数据", fontWeight = FontWeight.Bold) },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(
                     text = "选择导出的日期范围，数据将导出为CSV格式",
                     style = MaterialTheme.typography.bodyMedium,
@@ -726,6 +1104,7 @@ private fun ExportDataDialog(
                 // 开始日期
                 OutlinedCard(
                     onClick = { showStartDatePicker = true },
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -743,13 +1122,14 @@ private fun ExportDataDialog(
                             )
                             Text(
                                 text = startDate.format(dateFormatter),
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
                             )
                         }
                         Icon(
                             Icons.Default.DateRange,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = AppColors.Primary
                         )
                     }
                 }
@@ -757,6 +1137,7 @@ private fun ExportDataDialog(
                 // 结束日期
                 OutlinedCard(
                     onClick = { showEndDatePicker = true },
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -774,13 +1155,14 @@ private fun ExportDataDialog(
                             )
                             Text(
                                 text = endDate.format(dateFormatter),
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
                             )
                         }
                         Icon(
                             Icons.Default.DateRange,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = AppColors.Primary
                         )
                     }
                 }
@@ -790,35 +1172,34 @@ private fun ExportDataDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    AssistChip(
-                        onClick = {
-                            val now = LocalDate.now()
-                            onStartDateChange(now.withDayOfMonth(1))
-                            onEndDateChange(now)
-                        },
-                        label = { Text("本月") }
-                    )
-                    AssistChip(
-                        onClick = {
-                            val now = LocalDate.now()
-                            onStartDateChange(now.minusMonths(3))
-                            onEndDateChange(now)
-                        },
-                        label = { Text("近3月") }
-                    )
-                    AssistChip(
-                        onClick = {
-                            val now = LocalDate.now()
-                            onStartDateChange(now.withDayOfYear(1))
-                            onEndDateChange(now)
-                        },
-                        label = { Text("今年") }
-                    )
+                    listOf("本月" to {
+                        val now = LocalDate.now()
+                        onStartDateChange(now.withDayOfMonth(1))
+                        onEndDateChange(now)
+                    }, "近3月" to {
+                        val now = LocalDate.now()
+                        onStartDateChange(now.minusMonths(3))
+                        onEndDateChange(now)
+                    }, "今年" to {
+                        val now = LocalDate.now()
+                        onStartDateChange(now.withDayOfYear(1))
+                        onEndDateChange(now)
+                    }).forEach { (label, action) ->
+                        AssistChip(
+                            onClick = action,
+                            label = { Text(label) },
+                            shape = RoundedCornerShape(20.dp)
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
-            Button(onClick = onConfirm) {
+            Button(
+                onClick = onConfirm,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+            ) {
                 Text("导出")
             }
         },
@@ -829,7 +1210,7 @@ private fun ExportDataDialog(
         }
     )
 
-    // 开始日期选择器
+    // 日期选择器
     if (showStartDatePicker) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = startDate.toEpochDay() * 24 * 60 * 60 * 1000
@@ -845,21 +1226,14 @@ private fun ExportDataDialog(
                         }
                         showStartDatePicker = false
                     }
-                ) {
-                    Text("确定")
-                }
+                ) { Text("确定") }
             },
             dismissButton = {
-                TextButton(onClick = { showStartDatePicker = false }) {
-                    Text("取消")
-                }
+                TextButton(onClick = { showStartDatePicker = false }) { Text("取消") }
             }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        ) { DatePicker(state = datePickerState) }
     }
 
-    // 结束日期选择器
     if (showEndDatePicker) {
         val datePickerState = rememberDatePickerState(
             initialSelectedDateMillis = endDate.toEpochDay() * 24 * 60 * 60 * 1000
@@ -875,181 +1249,13 @@ private fun ExportDataDialog(
                         }
                         showEndDatePicker = false
                     }
-                ) {
-                    Text("确定")
-                }
+                ) { Text("确定") }
             },
             dismissButton = {
-                TextButton(onClick = { showEndDatePicker = false }) {
-                    Text("取消")
-                }
+                TextButton(onClick = { showEndDatePicker = false }) { Text("取消") }
             }
-        ) {
-            DatePicker(state = datePickerState)
-        }
+        ) { DatePicker(state = datePickerState) }
     }
-}
-
-/**
- * 货币符号选择对话框
- */
-@Composable
-private fun CurrencyPickerDialog(
-    currentSymbol: CurrencySymbol,
-    onSelect: (CurrencySymbol) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("选择货币符号") },
-        text = {
-            Column {
-                CurrencySymbol.entries.forEach { symbol ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(symbol) }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = symbol == currentSymbol,
-                            onClick = { onSelect(symbol) }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = symbol.displayName)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-/**
- * 日期格式选择对话框
- */
-@Composable
-private fun DateFormatPickerDialog(
-    currentFormat: DateFormat,
-    onSelect: (DateFormat) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("选择日期格式") },
-        text = {
-            Column {
-                DateFormat.entries.forEach { format ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(format) }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = format == currentFormat,
-                            onClick = { onSelect(format) }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = format.displayName)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-/**
- * 周起始日选择对话框
- */
-@Composable
-private fun WeekStartPickerDialog(
-    currentDay: WeekStartDay,
-    onSelect: (WeekStartDay) -> Unit,
-    onDismiss: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("选择周起始日") },
-        text = {
-            Column {
-                WeekStartDay.entries.forEach { day ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(day) }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = day == currentDay,
-                            onClick = { onSelect(day) }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = day.displayName)
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
-}
-
-/**
- * 小数位数选择对话框
- */
-@Composable
-private fun DecimalPlacesPickerDialog(
-    currentPlaces: Int,
-    onSelect: (Int) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val options = listOf(0, 1, 2, 3, 4)
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("选择小数位数") },
-        text = {
-            Column {
-                options.forEach { places ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(places) }
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        RadioButton(
-                            selected = places == currentPlaces,
-                            onClick = { onSelect(places) }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(text = "${places}位小数")
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
-            }
-        }
-    )
 }
 
 /**
@@ -1062,22 +1268,34 @@ private fun HomeCardSettingsDialog(
     onReset: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val cardNames = mapOf(
-        "todayStats" to "今日统计",
-        "monthlyFinance" to "月度财务",
-        "topGoals" to "目标进度",
-        "habitProgress" to "习惯打卡",
-        "aiInsight" to "AI 洞察",
-        "quickActions" to "快捷操作"
+    val cardItems = listOf(
+        Triple("todayStats", "今日统计", "📊"),
+        Triple("monthlyFinance", "月度财务", "💰"),
+        Triple("topGoals", "目标进度", "🎯"),
+        Triple("habitProgress", "习惯打卡", "⭐"),
+        Triple("aiInsight", "AI 洞察", "🤖"),
+        Triple("quickActions", "快捷操作", "⚡")
     )
+
+    val getVisibility: (String) -> Boolean = { key ->
+        when (key) {
+            "todayStats" -> config.showTodayStats
+            "monthlyFinance" -> config.showMonthlyFinance
+            "topGoals" -> config.showTopGoals
+            "habitProgress" -> config.showHabitProgress
+            "aiInsight" -> config.showAIInsight
+            "quickActions" -> config.showQuickActions
+            else -> true
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("自定义首页卡片") },
+        shape = RoundedCornerShape(24.dp),
+        icon = { Text("🏠", fontSize = 40.sp) },
+        title = { Text("自定义首页卡片", fontWeight = FontWeight.Bold) },
         text = {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
                     text = "选择要在首页显示的卡片",
                     style = MaterialTheme.typography.bodySmall,
@@ -1085,51 +1303,47 @@ private fun HomeCardSettingsDialog(
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
 
-                // 今日统计
-                SwitchSettingRow(
-                    title = cardNames["todayStats"] ?: "",
-                    checked = config.showTodayStats,
-                    onCheckedChange = { onCardVisibilityChange("todayStats", it) }
-                )
-
-                // 月度财务
-                SwitchSettingRow(
-                    title = cardNames["monthlyFinance"] ?: "",
-                    checked = config.showMonthlyFinance,
-                    onCheckedChange = { onCardVisibilityChange("monthlyFinance", it) }
-                )
-
-                // 目标进度
-                SwitchSettingRow(
-                    title = cardNames["topGoals"] ?: "",
-                    checked = config.showTopGoals,
-                    onCheckedChange = { onCardVisibilityChange("topGoals", it) }
-                )
-
-                // 习惯打卡
-                SwitchSettingRow(
-                    title = cardNames["habitProgress"] ?: "",
-                    checked = config.showHabitProgress,
-                    onCheckedChange = { onCardVisibilityChange("habitProgress", it) }
-                )
-
-                // AI 洞察
-                SwitchSettingRow(
-                    title = cardNames["aiInsight"] ?: "",
-                    checked = config.showAIInsight,
-                    onCheckedChange = { onCardVisibilityChange("aiInsight", it) }
-                )
-
-                // 快捷操作
-                SwitchSettingRow(
-                    title = cardNames["quickActions"] ?: "",
-                    checked = config.showQuickActions,
-                    onCheckedChange = { onCardVisibilityChange("quickActions", it) }
-                )
+                cardItems.forEach { (key, title, emoji) ->
+                    val checked = getVisibility(key)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onCardVisibilityChange(key, !checked) }
+                            .background(
+                                if (checked) AppColors.Primary.copy(alpha = 0.08f)
+                                else Color.Transparent
+                            )
+                            .padding(vertical = 12.dp, horizontal = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(emoji, fontSize = 20.sp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = title,
+                                fontWeight = if (checked) FontWeight.Medium else FontWeight.Normal
+                            )
+                        }
+                        Switch(
+                            checked = checked,
+                            onCheckedChange = { onCardVisibilityChange(key, it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = AppColors.Primary
+                            )
+                        )
+                    }
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+            ) {
                 Text("完成")
             }
         },
@@ -1141,27 +1355,10 @@ private fun HomeCardSettingsDialog(
     )
 }
 
-/**
- * 简单的开关行
- */
-@Composable
-private fun SwitchSettingRow(
-    title: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = title)
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange
-        )
-    }
+// 扩展函数
+private fun Color.luminance(): Float {
+    val r = red
+    val g = green
+    val b = blue
+    return 0.299f * r + 0.587f * g + 0.114f * b
 }
