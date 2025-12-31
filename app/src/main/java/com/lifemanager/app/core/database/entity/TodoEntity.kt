@@ -58,11 +58,26 @@ data class TodoEntity(
     // 截止日期，epochDay格式
     val dueDate: Int? = null,
 
-    // 截止时间，HH:mm格式
+    // 开始时间，HH:mm格式（用于有时间段的事件）
+    val startTime: String? = null,
+
+    // 结束时间，HH:mm格式（用于有时间段的事件）
+    val endTime: String? = null,
+
+    // 截止时间，HH:mm格式（向后兼容，用于简单的截止时间）
     val dueTime: String? = null,
+
+    // 是否全天事件
+    val isAllDay: Boolean = true,
+
+    // 地点
+    val location: String? = null,
 
     // 提醒时间戳
     val reminderAt: Long? = null,
+
+    // 提前提醒分钟数（0=准时，5=提前5分钟，等）
+    val reminderMinutesBefore: Int = 0,
 
     // 重复规则
     // NONE: 不重复
@@ -81,6 +96,12 @@ data class TodoEntity(
 
     // 父任务ID（用于子任务）
     val parentId: Long? = null,
+
+    // 日历事件ID（用于同步系统日历）
+    val calendarEventId: Long? = null,
+
+    // 是否已同步到日历
+    val isSyncedToCalendar: Boolean = false,
 
     // 状态: PENDING(待完成), COMPLETED(已完成), CANCELLED(已取消)
     val status: String = "PENDING",

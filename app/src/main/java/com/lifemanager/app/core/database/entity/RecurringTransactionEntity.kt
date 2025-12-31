@@ -18,11 +18,19 @@ import androidx.room.PrimaryKey
             parentColumns = ["id"],
             childColumns = ["ledgerId"],
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = FundAccountEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["accountId"],
+            onDelete = ForeignKey.SET_NULL
         )
     ],
     indices = [
         Index(value = ["ledgerId"]),
-        Index(value = ["nextDueDate"])
+        Index(value = ["nextDueDate"]),
+        Index(value = ["accountId"]),
+        Index(value = ["isEnabled"])
     ]
 )
 data class RecurringTransactionEntity(
@@ -53,6 +61,16 @@ data class RecurringTransactionEntity(
      * 分类ID
      */
     val categoryId: Long? = null,
+
+    /**
+     * 关联的资金账户ID
+     */
+    val accountId: Long? = null,
+
+    /**
+     * 标签，JSON数组格式
+     */
+    val tags: String = "[]",
 
     /**
      * 备注

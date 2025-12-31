@@ -108,11 +108,23 @@ class AIServiceImpl @Inject constructor(
   "type": "transaction|todo|goal|diary|habit|timetrack|navigate|query|unknown",
   "data": {
     // transaction: transactionType, amount, category, note, date(epochDay整数), time
-    // todo: title, description, dueDate(epochDay整数), dueTime, priority(HIGH/MEDIUM/LOW)
+    // todo: title, description, dueDate(epochDay整数), startTime(HH:mm), endTime(HH:mm), location, priority(HIGH/MEDIUM/LOW), quadrant, isAllDay, reminderMinutesBefore
     // goal: goalName, targetAmount, targetUnit, deadline, category
     // diary: content, mood(1-5)
   }
 }
+
+【待办事项的四象限判断规则】：
+- IMPORTANT_URGENT（重要且紧急）：关键会议、紧急任务、今天必须完成的重要事项
+- IMPORTANT_NOT_URGENT（重要不紧急）：学习计划、健康检查、长期规划相关
+- NOT_IMPORTANT_URGENT（不重要但紧急）：普通会议、一般约会、日常事务
+- NOT_IMPORTANT_NOT_URGENT（不重要不紧急）：娱乐活动、闲聊
+
+【时间段识别规则】：
+- "八点到九点"/"8点-9点" → startTime:"08:00", endTime:"09:00", isAllDay:false
+- "下午两点到四点" → startTime:"14:00", endTime:"16:00", isAllDay:false
+- "上午10点" → startTime:"10:00", isAllDay:false
+- 没有提及具体时间 → isAllDay:true
 
 示例：
 输入："12月1号吃饭100元"
@@ -121,14 +133,14 @@ class AIServiceImpl @Inject constructor(
 输入："这个月减肥10斤"
 输出：{"type":"goal","data":{"goalName":"减肥10斤","targetAmount":10,"targetUnit":"斤","deadline":"${today.year}-${today.monthValue}-${today.lengthOfMonth()}","category":"健身"}}
 
-输入："今年存款5万"
-输出：{"type":"goal","data":{"goalName":"存款5万","targetAmount":50000,"targetUnit":"元","deadline":"${today.year}-12-31","category":"储蓄"}}
+输入："明天八点到九点有一个线上会议"
+输出：{"type":"todo","data":{"title":"线上会议","dueDate":${todayEpochDay + 1},"startTime":"08:00","endTime":"09:00","isAllDay":false,"priority":"HIGH","quadrant":"NOT_IMPORTANT_URGENT","reminderMinutesBefore":15}}
 
-输入："学会弹吉他"
-输出：{"type":"goal","data":{"goalName":"学会弹吉他","category":"学习"}}
+输入："后天下午三点在公司开产品评审会"
+输出：{"type":"todo","data":{"title":"产品评审会","dueDate":${todayEpochDay + 2},"startTime":"15:00","location":"公司","isAllDay":false,"priority":"HIGH","quadrant":"IMPORTANT_URGENT","reminderMinutesBefore":30}}
 
 输入："明天要去北京出差"
-输出：{"type":"todo","data":{"title":"去北京出差","dueDate":${todayEpochDay + 1},"priority":"HIGH"}}
+输出：{"type":"todo","data":{"title":"去北京出差","dueDate":${todayEpochDay + 1},"isAllDay":true,"priority":"HIGH","quadrant":"IMPORTANT_URGENT"}}
 
 输入："今天很开心"
 输出：{"type":"diary","data":{"content":"今天很开心","mood":5}}
@@ -534,14 +546,20 @@ $dataStr
     private fun parseTodoIntent(data: Map<String, Any>): CommandIntent.Todo {
         // 解析日期 - AI返回的是epochDay整数
         val dueDateEpochDay = (data["dueDate"] as? Number)?.toInt()
+        val isAllDay = (data["isAllDay"] as? Boolean) ?: (data["startTime"] == null)
 
         return CommandIntent.Todo(
             title = data["title"] as? String ?: "",
             description = data["description"] as? String,
             dueDate = dueDateEpochDay,
+            startTime = data["startTime"] as? String,
+            endTime = data["endTime"] as? String,
             dueTime = data["dueTime"] as? String,
+            isAllDay = isAllDay,
+            location = data["location"] as? String,
             priority = data["priority"] as? String,
-            quadrant = data["quadrant"] as? String
+            quadrant = data["quadrant"] as? String,
+            reminderMinutesBefore = (data["reminderMinutesBefore"] as? Number)?.toInt() ?: 0
         )
     }
 
