@@ -206,6 +206,12 @@ interface TodoDao {
     fun getOverdueSync(today: Int): List<TodoEntity>
 
     /**
+     * 获取逾期待办数量（同步版本，用于Widget）
+     */
+    @Query("SELECT COUNT(*) FROM todos WHERE status = 'PENDING' AND dueDate < :today")
+    suspend fun getOverdueCountSync(today: Int): Int
+
+    /**
      * 获取日期范围内每天的待办数量
      */
     @Query("""

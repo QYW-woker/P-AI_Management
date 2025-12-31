@@ -42,6 +42,19 @@ import com.lifemanager.app.core.database.entity.*
         InstallmentPaymentEntity::class,
         TransactionTemplateEntity::class,
         SearchPresetEntity::class,
+        // 订阅管理
+        SubscriptionEntity::class,
+        SubscriptionPaymentEntity::class,
+        // 成就系统
+        AchievementEntity::class,
+        UserLevelEntity::class,
+        // 多币种
+        CurrencyRateEntity::class,
+        UserCurrencySettingEntity::class,
+        // 健康追踪增强
+        WaterIntakeEntity::class,
+        SleepRecordEntity::class,
+        HealthGoalEntity::class,
         // 待办记事
         TodoEntity::class,
         // 日记
@@ -60,7 +73,7 @@ import com.lifemanager.app.core.database.entity.*
         // 健康记录
         HealthRecordEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -229,6 +242,53 @@ abstract class AppDatabase : RoomDatabase() {
      * 搜索预设DAO
      */
     abstract fun searchPresetDao(): SearchPresetDao
+
+    // ==================== 扩展功能DAO ====================
+
+    /**
+     * 订阅服务DAO
+     */
+    abstract fun subscriptionDao(): SubscriptionDao
+
+    /**
+     * 订阅付款DAO
+     */
+    abstract fun subscriptionPaymentDao(): SubscriptionPaymentDao
+
+    /**
+     * 成就DAO
+     */
+    abstract fun achievementDao(): AchievementDao
+
+    /**
+     * 用户等级DAO
+     */
+    abstract fun userLevelDao(): UserLevelDao
+
+    /**
+     * 汇率DAO
+     */
+    abstract fun currencyRateDao(): CurrencyRateDao
+
+    /**
+     * 用户货币设置DAO
+     */
+    abstract fun userCurrencySettingDao(): UserCurrencySettingDao
+
+    /**
+     * 饮水记录DAO
+     */
+    abstract fun waterIntakeDao(): WaterIntakeDao
+
+    /**
+     * 睡眠记录DAO
+     */
+    abstract fun sleepRecordDao(): SleepRecordDao
+
+    /**
+     * 健康目标DAO
+     */
+    abstract fun healthGoalDao(): HealthGoalDao
 
     companion object {
         /**
