@@ -2,9 +2,13 @@ package com.lifemanager.app.feature.ai
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -12,14 +16,18 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import com.lifemanager.app.core.floatingball.FloatingBallManager
 import com.lifemanager.app.ui.component.PremiumTextField
 
 /**
@@ -29,7 +37,8 @@ import com.lifemanager.app.ui.component.PremiumTextField
 @Composable
 fun AISettingsScreen(
     onNavigateBack: () -> Unit,
-    viewModel: AISettingsViewModel = hiltViewModel()
+    viewModel: AISettingsViewModel = hiltViewModel(),
+    floatingBallManager: FloatingBallManager? = null
 ) {
     val aiConfig by viewModel.aiConfig.collectAsState()
     val featureConfig by viewModel.featureConfig.collectAsState()
@@ -45,15 +54,39 @@ fun AISettingsScreen(
     // 跟踪用户是否正在等待授予悬浮窗权限
     var pendingFloatingBallEnable by remember { mutableStateOf(false) }
 
+    // 电池优化状态
+    var isBatteryOptimizationDisabled by remember { mutableStateOf(false) }
+    var showBackgroundRunDialog by remember { mutableStateOf(false) }
+
+    // 检查电池优化状态
+    fun checkBatteryOptimization(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val powerManager = context.getSystemService(android.content.Context.POWER_SERVICE) as PowerManager
+            powerManager.isIgnoringBatteryOptimizations(context.packageName)
+        } else {
+            true
+        }
+    }
+
+    // 初始化和刷新电池优化状态
+    LaunchedEffect(Unit) {
+        isBatteryOptimizationDisabled = checkBatteryOptimization()
+    }
+
     // 监听生命周期，当从设置页面返回时检查权限
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && pendingFloatingBallEnable) {
-                // 用户从设置页面返回，检查权限是否已授予
-                if (Settings.canDrawOverlays(context)) {
-                    viewModel.setFloatingBallEnabled(true)
+            if (event == Lifecycle.Event.ON_RESUME) {
+                // 刷新电池优化状态
+                isBatteryOptimizationDisabled = checkBatteryOptimization()
+
+                if (pendingFloatingBallEnable) {
+                    // 用户从设置页面返回，检查权限是否已授予
+                    if (Settings.canDrawOverlays(context)) {
+                        viewModel.setFloatingBallEnabled(true)
+                    }
+                    pendingFloatingBallEnable = false
                 }
-                pendingFloatingBallEnable = false
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -161,6 +194,29 @@ fun AISettingsScreen(
                         }
                     }
                 )
+
+                // 后台常驻设置（仅在悬浮球开启时显示）
+                if (featureConfig.floatingBallEnabled) {
+                    SettingsItem(
+                        icon = Icons.Default.BatteryChargingFull,
+                        title = "后台常驻",
+                        subtitle = if (isBatteryOptimizationDisabled) "已开启" else "未开启，点击设置",
+                        onClick = { showBackgroundRunDialog = true },
+                        trailing = {
+                            Icon(
+                                imageVector = if (isBatteryOptimizationDisabled)
+                                    Icons.Default.CheckCircle
+                                else
+                                    Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = if (isBatteryOptimizationDisabled)
+                                    Color(0xFF4CAF50)
+                                else
+                                    Color(0xFFFFC107)
+                            )
+                        }
+                    )
+                }
             }
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
@@ -265,6 +321,37 @@ fun AISettingsScreen(
             onTest = { viewModel.testConnection() },
             onSave = { viewModel.saveApiKey() },
             onDismiss = { viewModel.hideApiKeyDialog() }
+        )
+    }
+
+    // 后台常驻设置对话框
+    if (showBackgroundRunDialog) {
+        BackgroundRunSettingsDialog(
+            isBatteryOptimizationDisabled = isBatteryOptimizationDisabled,
+            floatingBallManager = floatingBallManager,
+            onRequestBatteryOptimization = {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    @Suppress("BatteryLife")
+                    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                    }
+                    context.startActivity(intent)
+                }
+                showBackgroundRunDialog = false
+            },
+            onOpenAutoStartSettings = {
+                // 使用FloatingBallManager打开自启动设置，如果没有则打开应用详情
+                val intent = floatingBallManager?.getAutoStartSettingsIntent()
+                    ?: Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                        data = Uri.parse("package:${context.packageName}")
+                    }
+                context.startActivity(intent)
+                showBackgroundRunDialog = false
+            },
+            onDismiss = {
+                showBackgroundRunDialog = false
+                isBatteryOptimizationDisabled = checkBatteryOptimization()
+            }
         )
     }
 }
@@ -450,6 +537,151 @@ private fun ApiKeyDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) {
                 Text("取消")
+            }
+        }
+    )
+}
+
+/**
+ * 后台常驻设置对话框
+ */
+@Composable
+private fun BackgroundRunSettingsDialog(
+    isBatteryOptimizationDisabled: Boolean,
+    floatingBallManager: FloatingBallManager?,
+    onRequestBatteryOptimization: () -> Unit,
+    onOpenAutoStartSettings: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🔋", fontSize = 24.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("后台常驻设置", fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = "为确保AI悬浮球在应用退到后台时仍能正常显示，请完成以下设置：",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // 电池优化设置
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isBatteryOptimizationDisabled)
+                            Color(0xFF4CAF50).copy(alpha = 0.1f)
+                        else
+                            Color(0xFFFFC107).copy(alpha = 0.1f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(enabled = !isBatteryOptimizationDisabled) {
+                                onRequestBatteryOptimization()
+                            }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isBatteryOptimizationDisabled)
+                                Icons.Default.CheckCircle
+                            else
+                                Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = if (isBatteryOptimizationDisabled)
+                                Color(0xFF4CAF50)
+                            else
+                                Color(0xFFFFC107),
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "忽略电池优化",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = if (isBatteryOptimizationDisabled)
+                                    "已设置"
+                                else
+                                    "点击设置，防止系统杀死后台服务",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (!isBatteryOptimizationDisabled) {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                // 自启动设置（国产ROM）
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    )
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenAutoStartSettings() }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Autorenew,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "自启动权限",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "部分手机需要开启自启动权限",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // 提示信息
+                Text(
+                    text = "💡 提示：不同品牌手机设置位置可能不同，如小米在\"设置-应用管理-自启动\"，华为在\"设置-应用-应用启动管理\"",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("完成", color = MaterialTheme.colorScheme.primary)
             }
         }
     )

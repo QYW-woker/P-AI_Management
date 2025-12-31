@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.PowerManager
 import android.view.*
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
@@ -50,6 +51,9 @@ class FloatingBallService : Service() {
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
+    // WakeLock 保持服务运行
+    private var wakeLock: PowerManager.WakeLock? = null
+
     companion object {
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "floating_ball_channel"
@@ -81,17 +85,48 @@ class FloatingBallService : Service() {
         super.onCreate()
         windowManager = getSystemService(Context.WINDOW_SERVICE) as WindowManager
         createNotificationChannel()
+        acquireWakeLock()
         observeVoiceState()
+    }
+
+    /**
+     * 获取WakeLock保持服务运行
+     */
+    @Suppress("DEPRECATION")
+    private fun acquireWakeLock() {
+        if (wakeLock == null) {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            wakeLock = powerManager.newWakeLock(
+                PowerManager.PARTIAL_WAKE_LOCK,
+                "LifeManager:FloatingBallWakeLock"
+            )
+            wakeLock?.setReferenceCounted(false)
+        }
+        wakeLock?.acquire(10 * 60 * 1000L) // 10分钟后自动释放，服务会定期续期
+    }
+
+    /**
+     * 释放WakeLock
+     */
+    private fun releaseWakeLock() {
+        wakeLock?.let {
+            if (it.isHeld) {
+                it.release()
+            }
+        }
+        wakeLock = null
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
                 startForeground(NOTIFICATION_ID, createNotification())
+                acquireWakeLock() // 续期WakeLock
                 showFloatingBall()
             }
             ACTION_STOP -> {
                 hideFloatingBall()
+                releaseWakeLock()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }
@@ -101,10 +136,34 @@ class FloatingBallService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    /**
+     * 当任务被移除时（用户从最近任务中滑掉app），重启服务
+     */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        // 设置闹钟在1秒后重启服务
+        val restartIntent = Intent(this, FloatingBallService::class.java).apply {
+            action = ACTION_START
+        }
+        val pendingIntent = PendingIntent.getService(
+            this,
+            1,
+            restartIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_ONE_SHOT
+        )
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        alarmManager.set(
+            AlarmManager.RTC_WAKEUP,
+            System.currentTimeMillis() + 1000,
+            pendingIntent
+        )
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         hideConfirmationDialog()
         hideFloatingBall()
+        releaseWakeLock()
         serviceScope.cancel()
     }
 
