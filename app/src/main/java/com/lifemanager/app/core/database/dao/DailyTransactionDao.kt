@@ -218,6 +218,181 @@ interface DailyTransactionDao {
         ORDER BY date DESC, createdAt DESC
     """)
     suspend fun getByDateRangeForExport(startDate: Int, endDate: Int): List<DailyTransactionEntity>
+
+    // ==================== 高级搜索 ====================
+
+    /**
+     * 高级搜索 - 多条件过滤
+     */
+    @Query("""
+        SELECT * FROM daily_transactions
+        WHERE (:startDate IS NULL OR date >= :startDate)
+        AND (:endDate IS NULL OR date <= :endDate)
+        AND (:minAmount IS NULL OR amount >= :minAmount)
+        AND (:maxAmount IS NULL OR amount <= :maxAmount)
+        AND (:type IS NULL OR type = :type)
+        AND (:categoryId IS NULL OR categoryId = :categoryId)
+        AND (:accountId IS NULL OR accountId = :accountId)
+        AND (:keyword IS NULL OR note LIKE '%' || :keyword || '%')
+        AND (:source IS NULL OR source = :source)
+        AND (:hasAttachments IS NULL OR
+            (CASE WHEN :hasAttachments = 1 THEN attachments != '[]' ELSE attachments = '[]' END))
+        ORDER BY
+            CASE WHEN :sortBy = 'DATE_DESC' THEN date END DESC,
+            CASE WHEN :sortBy = 'DATE_ASC' THEN date END ASC,
+            CASE WHEN :sortBy = 'AMOUNT_DESC' THEN amount END DESC,
+            CASE WHEN :sortBy = 'AMOUNT_ASC' THEN amount END ASC,
+            createdAt DESC
+        LIMIT :limit OFFSET :offset
+    """)
+    suspend fun advancedSearch(
+        startDate: Int?,
+        endDate: Int?,
+        minAmount: Double?,
+        maxAmount: Double?,
+        type: String?,
+        categoryId: Long?,
+        accountId: Long?,
+        keyword: String?,
+        source: String?,
+        hasAttachments: Boolean?,
+        sortBy: String = "DATE_DESC",
+        limit: Int = 50,
+        offset: Int = 0
+    ): List<DailyTransactionEntity>
+
+    /**
+     * 高级搜索计数
+     */
+    @Query("""
+        SELECT COUNT(*) FROM daily_transactions
+        WHERE (:startDate IS NULL OR date >= :startDate)
+        AND (:endDate IS NULL OR date <= :endDate)
+        AND (:minAmount IS NULL OR amount >= :minAmount)
+        AND (:maxAmount IS NULL OR amount <= :maxAmount)
+        AND (:type IS NULL OR type = :type)
+        AND (:categoryId IS NULL OR categoryId = :categoryId)
+        AND (:accountId IS NULL OR accountId = :accountId)
+        AND (:keyword IS NULL OR note LIKE '%' || :keyword || '%')
+        AND (:source IS NULL OR source = :source)
+    """)
+    suspend fun advancedSearchCount(
+        startDate: Int?,
+        endDate: Int?,
+        minAmount: Double?,
+        maxAmount: Double?,
+        type: String?,
+        categoryId: Long?,
+        accountId: Long?,
+        keyword: String?,
+        source: String?
+    ): Int
+
+    /**
+     * 按分类ID列表筛选
+     */
+    @Query("""
+        SELECT * FROM daily_transactions
+        WHERE categoryId IN (:categoryIds)
+        AND date BETWEEN :startDate AND :endDate
+        ORDER BY date DESC
+    """)
+    suspend fun getByCategoryIds(categoryIds: List<Long>, startDate: Int, endDate: Int): List<DailyTransactionEntity>
+
+    /**
+     * 按账户ID列表筛选
+     */
+    @Query("""
+        SELECT * FROM daily_transactions
+        WHERE accountId IN (:accountIds)
+        AND date BETWEEN :startDate AND :endDate
+        ORDER BY date DESC
+    """)
+    suspend fun getByAccountIds(accountIds: List<Long>, startDate: Int, endDate: Int): List<DailyTransactionEntity>
+
+    /**
+     * 按金额范围筛选
+     */
+    @Query("""
+        SELECT * FROM daily_transactions
+        WHERE amount BETWEEN :minAmount AND :maxAmount
+        AND date BETWEEN :startDate AND :endDate
+        ORDER BY amount DESC
+    """)
+    suspend fun getByAmountRange(minAmount: Double, maxAmount: Double, startDate: Int, endDate: Int): List<DailyTransactionEntity>
+
+    /**
+     * 获取有附件的交易
+     */
+    @Query("""
+        SELECT * FROM daily_transactions
+        WHERE attachments != '[]'
+        ORDER BY date DESC
+        LIMIT :limit
+    """)
+    suspend fun getTransactionsWithAttachments(limit: Int = 100): List<DailyTransactionEntity>
+
+    /**
+     * 按标签搜索
+     */
+    @Query("""
+        SELECT * FROM daily_transactions
+        WHERE tags LIKE '%' || :tag || '%'
+        ORDER BY date DESC
+    """)
+    suspend fun getByTag(tag: String): List<DailyTransactionEntity>
+
+    /**
+     * 获取统计汇总
+     */
+    @Query("""
+        SELECT
+            COUNT(*) as count,
+            SUM(CASE WHEN type = 'INCOME' THEN amount ELSE 0 END) as totalIncome,
+            SUM(CASE WHEN type = 'EXPENSE' THEN amount ELSE 0 END) as totalExpense,
+            AVG(CASE WHEN type = 'EXPENSE' THEN amount END) as avgExpense
+        FROM daily_transactions
+        WHERE date BETWEEN :startDate AND :endDate
+    """)
+    suspend fun getStatsSummary(startDate: Int, endDate: Int): TransactionStatsSummary
+
+    /**
+     * 获取每日消费趋势
+     */
+    @Query("""
+        SELECT date, type, SUM(amount) as amount
+        FROM daily_transactions
+        WHERE date BETWEEN :startDate AND :endDate
+        GROUP BY date, type
+        ORDER BY date
+    """)
+    suspend fun getDailyTrend(startDate: Int, endDate: Int): List<DailyTrend>
+
+    /**
+     * 获取消费最高的日期
+     */
+    @Query("""
+        SELECT date, SUM(amount) as total
+        FROM daily_transactions
+        WHERE type = 'EXPENSE' AND date BETWEEN :startDate AND :endDate
+        GROUP BY date
+        ORDER BY total DESC
+        LIMIT :limit
+    """)
+    suspend fun getTopSpendingDays(startDate: Int, endDate: Int, limit: Int = 5): List<DateTotal>
+
+    /**
+     * 获取消费最高的分类
+     */
+    @Query("""
+        SELECT categoryId, SUM(amount) as total, COUNT(*) as count
+        FROM daily_transactions
+        WHERE type = 'EXPENSE' AND date BETWEEN :startDate AND :endDate
+        GROUP BY categoryId
+        ORDER BY total DESC
+        LIMIT :limit
+    """)
+    suspend fun getTopCategories(startDate: Int, endDate: Int, limit: Int = 10): List<CategoryStats>
 }
 
 /**
@@ -235,4 +410,32 @@ data class DailyIncomeExpense(
 data class DateTotal(
     val date: Int,
     val total: Double
+)
+
+/**
+ * 交易统计汇总
+ */
+data class TransactionStatsSummary(
+    val count: Int,
+    val totalIncome: Double,
+    val totalExpense: Double,
+    val avgExpense: Double?
+)
+
+/**
+ * 每日趋势
+ */
+data class DailyTrend(
+    val date: Int,
+    val type: String,
+    val amount: Double
+)
+
+/**
+ * 分类统计
+ */
+data class CategoryStats(
+    val categoryId: Long?,
+    val total: Double,
+    val count: Int
 )

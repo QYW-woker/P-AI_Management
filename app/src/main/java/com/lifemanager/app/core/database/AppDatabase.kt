@@ -33,6 +33,15 @@ import com.lifemanager.app.core.database.entity.*
         RecurringTransactionEntity::class,
         FundAccountEntity::class,
         TransferEntity::class,
+        // 高级记账功能
+        SplitTransactionEntity::class,
+        MerchantEntity::class,
+        BillEntity::class,
+        RefundEntity::class,
+        InstallmentPlanEntity::class,
+        InstallmentPaymentEntity::class,
+        TransactionTemplateEntity::class,
+        SearchPresetEntity::class,
         // 待办记事
         TodoEntity::class,
         // 日记
@@ -51,7 +60,7 @@ import com.lifemanager.app.core.database.entity.*
         // 健康记录
         HealthRecordEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -178,6 +187,48 @@ abstract class AppDatabase : RoomDatabase() {
      * 健康记录DAO
      */
     abstract fun healthRecordDao(): HealthRecordDao
+
+    // ==================== 高级记账DAO ====================
+
+    /**
+     * 拆分交易DAO
+     */
+    abstract fun splitTransactionDao(): SplitTransactionDao
+
+    /**
+     * 商家DAO
+     */
+    abstract fun merchantDao(): MerchantDao
+
+    /**
+     * 账单DAO
+     */
+    abstract fun billDao(): BillDao
+
+    /**
+     * 退款DAO
+     */
+    abstract fun refundDao(): RefundDao
+
+    /**
+     * 分期计划DAO
+     */
+    abstract fun installmentPlanDao(): InstallmentPlanDao
+
+    /**
+     * 分期还款DAO
+     */
+    abstract fun installmentPaymentDao(): InstallmentPaymentDao
+
+    /**
+     * 交易模板DAO
+     */
+    abstract fun transactionTemplateDao(): TransactionTemplateDao
+
+    /**
+     * 搜索预设DAO
+     */
+    abstract fun searchPresetDao(): SearchPresetDao
 
     companion object {
         /**
