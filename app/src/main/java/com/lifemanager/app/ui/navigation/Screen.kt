@@ -107,6 +107,9 @@ sealed class Screen(val route: String) {
     /** 存钱计划 */
     object SavingsPlan : Screen("savings_plan")
 
+    /** 健康记录 */
+    object HealthRecord : Screen("health_record")
+
     // ==================== 设置 ====================
 
     /** 设置页面 */

@@ -29,6 +29,7 @@ data class AIAnalysisEntity(
      * TIME - 时间统计模块
      * DIARY - 日记模块
      * SAVINGS - 存钱计划模块
+     * HEALTH - 健康记录模块
      * OVERALL - 综合分析
      */
     val module: String,
@@ -108,6 +109,7 @@ object AnalysisModule {
     const val TIME = "TIME"
     const val DIARY = "DIARY"
     const val SAVINGS = "SAVINGS"
+    const val HEALTH = "HEALTH"
     const val OVERALL = "OVERALL"
 }
 

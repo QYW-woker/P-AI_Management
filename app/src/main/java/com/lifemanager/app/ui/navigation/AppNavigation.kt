@@ -43,6 +43,7 @@ import com.lifemanager.app.feature.finance.accounting.AccountingSearchScreen
 import com.lifemanager.app.feature.finance.ledger.LedgerManagementScreen
 import com.lifemanager.app.feature.finance.recurring.RecurringTransactionScreen
 import com.lifemanager.app.feature.finance.account.FundAccountScreen
+import com.lifemanager.app.feature.health.HealthRecordScreen
 
 /**
  * 窗口尺寸类型
@@ -436,6 +437,13 @@ fun AppNavHost(
         // 存钱计划
         composable(Screen.SavingsPlan.route) {
             SavingsPlanScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 健康记录
+        composable(Screen.HealthRecord.route) {
+            HealthRecordScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

@@ -47,9 +47,11 @@ import com.lifemanager.app.core.database.entity.*
         SavingsPlanEntity::class,
         SavingsRecordEntity::class,
         // AI分析
-        AIAnalysisEntity::class
+        AIAnalysisEntity::class,
+        // 健康记录
+        HealthRecordEntity::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -171,6 +173,11 @@ abstract class AppDatabase : RoomDatabase() {
      * AI分析DAO
      */
     abstract fun aiAnalysisDao(): AIAnalysisDao
+
+    /**
+     * 健康记录DAO
+     */
+    abstract fun healthRecordDao(): HealthRecordDao
 
     companion object {
         /**

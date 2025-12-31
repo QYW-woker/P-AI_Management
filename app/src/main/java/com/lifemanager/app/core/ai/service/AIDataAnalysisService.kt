@@ -34,6 +34,7 @@ class AIDataAnalysisService @Inject constructor(
     private val habitRecordDao: HabitRecordDao,
     private val budgetDao: BudgetDao,
     private val customFieldDao: CustomFieldDao,
+    private val healthRecordDao: HealthRecordDao,
     private val gson: Gson
 ) {
     companion object {
@@ -416,6 +417,156 @@ $habitSummary
             }
         }
 
+    // ==================== 健康记录分析 ====================
+
+    /**
+     * 获取健康记录分析
+     */
+    fun getHealthAnalysis(): Flow<List<AIAnalysisEntity>> {
+        return aiAnalysisDao.getByModule(AnalysisModule.HEALTH)
+    }
+
+    /**
+     * 分析健康记录数据
+     */
+    suspend fun analyzeHealthData(forceRefresh: Boolean = false): Result<AIAnalysisEntity> =
+        withContext(Dispatchers.IO) {
+            try {
+                val config = configRepository.getConfig()
+                if (!config.isConfigured) {
+                    return@withContext Result.failure(Exception("AI未配置"))
+                }
+
+                val today = LocalDate.now()
+                val weekStart = today.minusDays(6).toEpochDay().toInt()
+                val todayEpoch = today.toEpochDay().toInt()
+
+                // 获取最近7天的健康记录
+                val records = healthRecordDao.getByDateRangeSync(weekStart, todayEpoch)
+                if (records.isEmpty()) {
+                    return@withContext Result.failure(Exception("暂无健康数据"))
+                }
+
+                val dataStr = records.map { "${it.id}:${it.recordType}:${it.value}" }.joinToString(",")
+                val dataHash = calculateHash(dataStr)
+
+                if (!forceRefresh && !needsUpdate(AnalysisModule.HEALTH, AnalysisType.WEEKLY_SUMMARY, dataHash)) {
+                    val cached = aiAnalysisDao.getByModuleAndType(AnalysisModule.HEALTH, AnalysisType.WEEKLY_SUMMARY)
+                    if (cached != null) {
+                        return@withContext Result.success(cached)
+                    }
+                }
+
+                // 按类型统计健康数据
+                val weightRecords = records.filter { it.recordType == "WEIGHT" }
+                val sleepRecords = records.filter { it.recordType == "SLEEP" }
+                val exerciseRecords = records.filter { it.recordType == "EXERCISE" }
+                val moodRecords = records.filter { it.recordType == "MOOD" }
+                val waterRecords = records.filter { it.recordType == "WATER" }
+                val stepsRecords = records.filter { it.recordType == "STEPS" }
+
+                // 构建健康数据摘要
+                val healthSummary = buildString {
+                    // 体重
+                    if (weightRecords.isNotEmpty()) {
+                        val latestWeight = weightRecords.maxByOrNull { it.date }?.value
+                        val avgWeight = weightRecords.map { it.value }.average()
+                        appendLine("- 体重: 最新${String.format("%.1f", latestWeight)}kg, 平均${String.format("%.1f", avgWeight)}kg")
+                    }
+
+                    // 睡眠
+                    if (sleepRecords.isNotEmpty()) {
+                        val avgSleep = sleepRecords.map { it.value }.average()
+                        val avgQuality = sleepRecords.mapNotNull { it.rating }.takeIf { it.isNotEmpty() }?.average()
+                        appendLine("- 睡眠: 平均${String.format("%.1f", avgSleep)}小时" +
+                                (avgQuality?.let { ", 质量评分${String.format("%.1f", it)}/5" } ?: ""))
+                    }
+
+                    // 运动
+                    if (exerciseRecords.isNotEmpty()) {
+                        val totalExercise = exerciseRecords.sumOf { it.value }
+                        val exerciseDays = exerciseRecords.map { it.date }.distinct().size
+                        appendLine("- 运动: 总计${totalExercise.toInt()}分钟, ${exerciseDays}天有运动")
+                    }
+
+                    // 心情
+                    if (moodRecords.isNotEmpty()) {
+                        val avgMood = moodRecords.mapNotNull { it.rating }.average()
+                        val moodTrend = when {
+                            avgMood >= 4.0 -> "积极"
+                            avgMood >= 3.0 -> "平稳"
+                            else -> "需关注"
+                        }
+                        appendLine("- 心情: 平均评分${String.format("%.1f", avgMood)}/5 ($moodTrend)")
+                    }
+
+                    // 饮水
+                    if (waterRecords.isNotEmpty()) {
+                        val dailyWater = waterRecords.groupBy { it.date }.map { it.value.sumOf { r -> r.value } }
+                        val avgWater = dailyWater.average()
+                        appendLine("- 饮水: 日均${avgWater.toInt()}ml")
+                    }
+
+                    // 步数
+                    if (stepsRecords.isNotEmpty()) {
+                        val dailySteps = stepsRecords.groupBy { it.date }.map { it.value.sumOf { r -> r.value } }
+                        val avgSteps = dailySteps.average()
+                        appendLine("- 步数: 日均${avgSteps.toInt()}步")
+                    }
+                }
+
+                val prompt = """
+作为健康管理顾问，请分析以下近7天的健康数据并给出建议：
+
+📊 健康数据概览：
+$healthSummary
+
+请按以下JSON格式返回：
+{
+  "title": "简短标题（10字以内）",
+  "content": "核心洞察（50字以内，突出健康状态和需要改进的方面）",
+  "suggestions": ["建议1", "建议2", "建议3"],
+  "score": 健康评分(0-100),
+  "sentiment": "POSITIVE/NEUTRAL/NEGATIVE",
+  "highlights": ["表现好的方面1", "表现好的方面2"],
+  "warnings": ["需要注意的问题"],
+  "focusArea": "最需要关注的健康领域"
+}
+
+只返回JSON，不要其他文字。
+""".trimIndent()
+
+                val request = ChatRequest(
+                    model = config.model,
+                    messages = listOf(ChatMessage("user", prompt)),
+                    temperature = 0.3,
+                    maxTokens = 500
+                )
+
+                val response = api.chatCompletion(
+                    authorization = "Bearer ${config.apiKey}",
+                    request = request
+                )
+
+                val content = response.choices?.firstOrNull()?.message?.content as? String
+                    ?: return@withContext Result.failure(Exception("AI响应为空"))
+
+                val analysis = parseAnalysisResponse(
+                    content = content,
+                    module = AnalysisModule.HEALTH,
+                    type = AnalysisType.WEEKLY_SUMMARY,
+                    dataHash = dataHash,
+                    periodStart = weekStart,
+                    periodEnd = todayEpoch
+                )
+
+                aiAnalysisDao.insertOrUpdate(analysis)
+                Result.success(analysis)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
     // ==================== 综合分析 ====================
 
     /**
@@ -440,9 +591,10 @@ $habitSummary
                 val financeAnalysis = aiAnalysisDao.getByModuleSync(AnalysisModule.FINANCE).firstOrNull()
                 val goalAnalysis = aiAnalysisDao.getByModuleSync(AnalysisModule.GOAL).firstOrNull()
                 val habitAnalysis = aiAnalysisDao.getByModuleSync(AnalysisModule.HABIT).firstOrNull()
+                val healthAnalysis = aiAnalysisDao.getByModuleSync(AnalysisModule.HEALTH).firstOrNull()
 
                 val dataHash = calculateHash(
-                    "${financeAnalysis?.dataHash}:${goalAnalysis?.dataHash}:${habitAnalysis?.dataHash}"
+                    "${financeAnalysis?.dataHash}:${goalAnalysis?.dataHash}:${habitAnalysis?.dataHash}:${healthAnalysis?.dataHash}"
                 )
 
                 if (!forceRefresh && !needsUpdate(AnalysisModule.OVERALL, AnalysisType.HEALTH_SCORE, dataHash)) {
@@ -456,6 +608,7 @@ $habitSummary
                 financeAnalysis?.let { moduleScores.add("财务: ${it.score ?: "未知"}分 - ${it.content}") }
                 goalAnalysis?.let { moduleScores.add("目标: ${it.score ?: "未知"}分 - ${it.content}") }
                 habitAnalysis?.let { moduleScores.add("习惯: ${it.score ?: "未知"}分 - ${it.content}") }
+                healthAnalysis?.let { moduleScores.add("健康: ${it.score ?: "未知"}分 - ${it.content}") }
 
                 if (moduleScores.isEmpty()) {
                     return@withContext Result.failure(Exception("缺少模块分析数据"))
@@ -528,6 +681,7 @@ ${moduleScores.joinToString("\n")}
                 analyzeFinanceData()
                 analyzeGoalData()
                 analyzeHabitData()
+                analyzeHealthData()
                 generateOverallHealthScore()
             } catch (e: Exception) {
                 // 静默失败，不影响应用运行

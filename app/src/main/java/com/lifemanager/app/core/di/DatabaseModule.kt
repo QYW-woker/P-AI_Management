@@ -201,4 +201,10 @@ object DatabaseModule {
     fun provideAIAnalysisDao(database: AppDatabase): AIAnalysisDao {
         return database.aiAnalysisDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideHealthRecordDao(database: AppDatabase): HealthRecordDao {
+        return database.healthRecordDao()
+    }
 }
