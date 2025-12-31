@@ -71,4 +71,12 @@ class DiaryRepositoryImpl @Inject constructor(
     override suspend fun getStreak(today: Int): Int {
         return dao.getStreak(today)
     }
+
+    override fun getFavoriteDiaries(): Flow<List<DiaryEntity>> {
+        return dao.getFavoriteDiaries()
+    }
+
+    override suspend fun setFavorite(id: Long, isFavorite: Boolean) {
+        dao.setFavorite(id, isFavorite)
+    }
 }

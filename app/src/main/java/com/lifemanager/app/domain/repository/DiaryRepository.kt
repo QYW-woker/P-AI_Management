@@ -78,4 +78,14 @@ interface DiaryRepository {
      * 获取连续写日记天数
      */
     suspend fun getStreak(today: Int): Int
+
+    /**
+     * 获取收藏的日记
+     */
+    fun getFavoriteDiaries(): Flow<List<DiaryEntity>>
+
+    /**
+     * 设置收藏状态
+     */
+    suspend fun setFavorite(id: Long, isFavorite: Boolean)
 }

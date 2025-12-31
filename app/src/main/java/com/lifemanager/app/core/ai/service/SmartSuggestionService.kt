@@ -309,6 +309,7 @@ class SmartSuggestionService @Inject constructor(
                             )
                         )
                     }
+                    else -> { /* No action needed for other cases */ }
                 }
             }
 

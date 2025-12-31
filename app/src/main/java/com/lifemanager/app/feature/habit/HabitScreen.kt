@@ -855,7 +855,7 @@ private fun WeeklyStatsCard(weeklyStats: WeeklyHabitStats) {
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
-                    progress = { weeklyStats.completionRate },
+                    progress = weeklyStats.completionRate,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
@@ -1006,7 +1006,7 @@ private fun HabitRankingCard(ranking: List<HabitRankItem>) {
             ranking.take(5).forEachIndexed { index, item ->
                 HabitRankingItem(rank = index + 1, item = item)
                 if (index < ranking.size - 1 && index < 4) {
-                    HorizontalDivider(
+                    Divider(
                         modifier = Modifier.padding(vertical = 8.dp),
                         color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
                     )

@@ -322,6 +322,10 @@ private fun FinanceChartCard(
                         )
                     }
                 }
+                else -> {
+                    // 其他图表类型暂不支持，显示占位符
+                    EmptyChartPlaceholder()
+                }
             }
         }
     }

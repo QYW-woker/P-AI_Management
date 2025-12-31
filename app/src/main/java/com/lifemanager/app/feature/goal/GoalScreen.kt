@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.lifemanager.app.feature.goal
 
 import androidx.compose.animation.*
@@ -14,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -1229,7 +1232,7 @@ private fun DeadlineWarningsCard(
             if (upcomingDeadlines.isNotEmpty()) {
                 if (overdueGoals.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
-                    HorizontalDivider(color = Color(0xFFFBBF24).copy(alpha = 0.3f))
+                    Divider(color = Color(0xFFFBBF24).copy(alpha = 0.3f))
                     Spacer(modifier = Modifier.height(12.dp))
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -1497,7 +1500,7 @@ private fun CategoryStatItem(stats: CategoryGoalStats) {
             }
             Spacer(modifier = Modifier.height(6.dp))
             LinearProgressIndicator(
-                progress = { stats.completionRate },
+                progress = stats.completionRate,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)

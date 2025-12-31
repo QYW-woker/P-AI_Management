@@ -117,8 +117,8 @@ class WidgetDataProvider @Inject constructor(
         val todos = database.todoDao().getByDateSync(today)
 
         val total = todos.size
-        val completed = todos.count { it.isCompleted }
-        val pending = todos.filter { !it.isCompleted }
+        val completed = todos.count { it.status == "COMPLETED" }
+        val pending = todos.filter { it.status != "COMPLETED" }
             .sortedBy { it.priority }
             .take(5)
 
@@ -147,7 +147,7 @@ class WidgetDataProvider @Inject constructor(
 
         return TodoStatsWidgetData(
             todayTotal = todayTodos.size,
-            todayCompleted = todayTodos.count { it.isCompleted },
+            todayCompleted = todayTodos.count { it.status == "COMPLETED" },
             overdueCount = overdueTodos
         )
     }
@@ -195,7 +195,8 @@ class WidgetDataProvider @Inject constructor(
 
         // 睡眠数据
         val sleepRecord = database.sleepRecordDao().getByDate(today)
-        val sleepGoal = database.healthGoalDao().getGoalsSync()?.dailySleepGoal ?: 480
+        val sleepGoalHours = database.healthGoalDao().getGoalsSync()?.dailySleepGoal ?: 8.0
+        val sleepGoal = (sleepGoalHours * 60).toInt() // 转换为分钟
 
         return HealthWidgetData(
             waterCurrent = waterTotal,
@@ -307,7 +308,7 @@ data class TodoWidgetData(
 data class TodoWidgetItem(
     val id: Long,
     val title: String,
-    val priority: Int,
+    val priority: String,
     val dueTime: String?
 )
 

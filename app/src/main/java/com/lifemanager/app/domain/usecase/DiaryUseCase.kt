@@ -210,4 +210,52 @@ class DiaryUseCase @Inject constructor(
             else -> ""
         }
     }
+
+    // ==================== 筛选和收藏功能 ====================
+
+    /**
+     * 根据情绪和收藏状态筛选日记
+     */
+    fun filterDiaries(
+        moodScore: Int? = null,
+        favoritesOnly: Boolean = false
+    ): Flow<List<DiaryEntity>> {
+        return when {
+            favoritesOnly -> repository.getFavoriteDiaries()
+            moodScore != null -> repository.getByMoodScore(moodScore)
+            else -> getRecentDiaries()
+        }
+    }
+
+    /**
+     * 切换收藏状态
+     */
+    suspend fun toggleFavorite(diaryId: Long) {
+        val diary = repository.getById(diaryId)
+        if (diary != null) {
+            repository.setFavorite(diaryId, !diary.isFavorite)
+        }
+    }
+
+    /**
+     * 根据ID获取日记
+     */
+    suspend fun getDiaryById(id: Long): DiaryEntity? {
+        return repository.getById(id)
+    }
+
+    /**
+     * 同步获取指定月份的日记列表
+     */
+    suspend fun getDiariesByMonthSync(yearMonth: Int): List<DiaryEntity> {
+        val year = yearMonth / 100
+        val month = yearMonth % 100
+        val startDate = LocalDate.of(year, month, 1)
+        val endDate = startDate.withDayOfMonth(startDate.lengthOfMonth())
+
+        return repository.getByDateRange(
+            startDate.toEpochDay().toInt(),
+            endDate.toEpochDay().toInt()
+        ).first()
+    }
 }
