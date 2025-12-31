@@ -245,7 +245,20 @@ fun AppNavHost(
         composable(Screen.Home.route) {
             HomeScreen(
                 onNavigateToModule = { route ->
-                    navController.navigate(route)
+                    // 检查是否是底部导航栏的主页面路由
+                    val isMainScreenRoute = bottomNavItems.any { it.route == route }
+                    if (isMainScreenRoute) {
+                        // 使用与底部导航栏一致的导航方式
+                        navController.navigate(route) {
+                            popUpTo(Screen.Home.route) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    } else {
+                        navController.navigate(route)
+                    }
                 }
             )
         }
@@ -315,7 +328,16 @@ fun AppNavHost(
                 },
                 onNavigateToCalendar = { navController.navigate(Screen.AccountingCalendar.route) },
                 onNavigateToSearch = { navController.navigate(Screen.AccountingSearch.route) },
-                onNavigateToStatistics = { navController.navigate(Screen.DataCenter.route) },
+                onNavigateToStatistics = {
+                    // 使用与底部导航栏一致的导航方式
+                    navController.navigate(Screen.DataCenter.route) {
+                        popUpTo(Screen.Home.route) {
+                            saveState = true
+                        }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
                 onNavigateToLedgerManagement = { navController.navigate(Screen.LedgerManagement.route) },
                 onNavigateToAssetManagement = { navController.navigate(Screen.MonthlyAsset.route) },
                 onNavigateToRecurringTransaction = { navController.navigate(Screen.RecurringTransaction.route) },
