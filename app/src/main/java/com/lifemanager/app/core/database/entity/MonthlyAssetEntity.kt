@@ -20,13 +20,20 @@ import androidx.room.PrimaryKey
             parentColumns = ["id"],
             childColumns = ["fieldId"],
             onDelete = ForeignKey.SET_NULL
+        ),
+        ForeignKey(
+            entity = FundAccountEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["accountId"],
+            onDelete = ForeignKey.SET_NULL
         )
     ],
     indices = [
         Index(value = ["yearMonth", "fieldId"]),
         Index(value = ["yearMonth"]),
         Index(value = ["fieldId"]),
-        Index(value = ["type"])
+        Index(value = ["type"]),
+        Index(value = ["accountId"])
     ]
 )
 data class MonthlyAssetEntity(
@@ -40,11 +47,23 @@ data class MonthlyAssetEntity(
     // 类型: ASSET(资产) 或 LIABILITY(负债)
     val type: String,
 
-    // 关联的自定义字段ID
+    // 关联的自定义字段ID（资产/负债分类）
     val fieldId: Long?,
+
+    // 关联的资金账户ID（可选，用于关联银行卡、信用卡等）
+    val accountId: Long? = null,
 
     // 金额
     val amount: Double,
+
+    // 负债名称（仅负债使用，如"房贷"、"车贷"）
+    val liabilityName: String? = null,
+
+    // 利率（仅负债使用，年化利率百分比）
+    val interestRate: Double? = null,
+
+    // 到期日（仅负债使用，epochDay格式）
+    val dueDate: Int? = null,
 
     // 备注
     val note: String = "",

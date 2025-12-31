@@ -36,6 +36,12 @@ data class FundAccountEntity(
     // 账户类型
     val accountType: String,
 
+    // 银行代码（用于银行卡/信用卡，如 ICBC, CCB 等）
+    val bankCode: String? = null,
+
+    // 卡号（后4位或完整卡号，用于区分同银行多张卡）
+    val cardNumber: String? = null,
+
     // 账户图标
     val iconName: String = "account_balance_wallet",
 
@@ -117,4 +123,144 @@ object AccountType {
         CREDIT_CARD, CREDIT_LOAN -> true
         else -> false
     }
+
+    /**
+     * 是否需要卡号输入
+     */
+    fun needsCardNumber(type: String): Boolean = when (type) {
+        BANK_CARD, CREDIT_CARD, CREDIT_LOAN, INVESTMENT -> true
+        else -> false
+    }
+}
+
+/**
+ * 中国银行预设
+ */
+object ChineseBank {
+    // 国有大型商业银行
+    const val ICBC = "ICBC"         // 中国工商银行
+    const val CCB = "CCB"           // 中国建设银行
+    const val ABC = "ABC"           // 中国农业银行
+    const val BOC = "BOC"           // 中国银行
+    const val BOCOM = "BOCOM"       // 交通银行
+    const val PSBC = "PSBC"         // 中国邮政储蓄银行
+
+    // 股份制商业银行
+    const val CMB = "CMB"           // 招商银行
+    const val SPDB = "SPDB"         // 浦发银行
+    const val CIB = "CIB"           // 兴业银行
+    const val CMBC = "CMBC"         // 民生银行
+    const val CITIC = "CITIC"       // 中信银行
+    const val CEB = "CEB"           // 光大银行
+    const val HXB = "HXB"           // 华夏银行
+    const val PAB = "PAB"           // 平安银行
+    const val GDB = "GDB"           // 广发银行
+    const val BOB = "BOB"           // 北京银行
+    const val BOS = "BOS"           // 上海银行
+    const val NBCB = "NBCB"         // 宁波银行
+
+    // 其他
+    const val OTHER = "OTHER"       // 其他银行
+
+    /**
+     * 获取银行显示名称
+     */
+    fun getDisplayName(code: String): String = when (code) {
+        ICBC -> "中国工商银行"
+        CCB -> "中国建设银行"
+        ABC -> "中国农业银行"
+        BOC -> "中国银行"
+        BOCOM -> "交通银行"
+        PSBC -> "中国邮政储蓄银行"
+        CMB -> "招商银行"
+        SPDB -> "浦发银行"
+        CIB -> "兴业银行"
+        CMBC -> "民生银行"
+        CITIC -> "中信银行"
+        CEB -> "光大银行"
+        HXB -> "华夏银行"
+        PAB -> "平安银行"
+        GDB -> "广发银行"
+        BOB -> "北京银行"
+        BOS -> "上海银行"
+        NBCB -> "宁波银行"
+        OTHER -> "其他银行"
+        else -> code
+    }
+
+    /**
+     * 获取银行简称
+     */
+    fun getShortName(code: String): String = when (code) {
+        ICBC -> "工商"
+        CCB -> "建设"
+        ABC -> "农业"
+        BOC -> "中行"
+        BOCOM -> "交通"
+        PSBC -> "邮储"
+        CMB -> "招商"
+        SPDB -> "浦发"
+        CIB -> "兴业"
+        CMBC -> "民生"
+        CITIC -> "中信"
+        CEB -> "光大"
+        HXB -> "华夏"
+        PAB -> "平安"
+        GDB -> "广发"
+        BOB -> "北京"
+        BOS -> "上海"
+        NBCB -> "宁波"
+        OTHER -> "其他"
+        else -> code
+    }
+
+    /**
+     * 获取银行颜色
+     */
+    fun getColor(code: String): String = when (code) {
+        ICBC -> "#C41230"       // 工商银行红色
+        CCB -> "#003C8B"        // 建设银行蓝色
+        ABC -> "#009A61"        // 农业银行绿色
+        BOC -> "#C41230"        // 中国银行红色
+        BOCOM -> "#003C8B"      // 交通银行蓝色
+        PSBC -> "#007F3E"       // 邮储银行绿色
+        CMB -> "#C41230"        // 招商银行红色
+        SPDB -> "#003C8B"       // 浦发银行蓝色
+        CIB -> "#003C8B"        // 兴业银行蓝色
+        CMBC -> "#00A0E9"       // 民生银行蓝色
+        CITIC -> "#C41230"      // 中信银行红色
+        CEB -> "#9E1F63"        // 光大银行紫色
+        HXB -> "#C41230"        // 华夏银行红色
+        PAB -> "#FA6400"        // 平安银行橙色
+        GDB -> "#C41230"        // 广发银行红色
+        BOB -> "#C41230"        // 北京银行红色
+        BOS -> "#003C8B"        // 上海银行蓝色
+        NBCB -> "#F57C00"       // 宁波银行橙色
+        else -> "#607D8B"
+    }
+
+    /**
+     * 获取所有银行列表（用于下拉选择）
+     */
+    fun getAllBanks(): List<Pair<String, String>> = listOf(
+        ICBC to "中国工商银行",
+        CCB to "中国建设银行",
+        ABC to "中国农业银行",
+        BOC to "中国银行",
+        BOCOM to "交通银行",
+        PSBC to "中国邮政储蓄银行",
+        CMB to "招商银行",
+        SPDB to "浦发银行",
+        CIB to "兴业银行",
+        CMBC to "民生银行",
+        CITIC to "中信银行",
+        CEB to "光大银行",
+        HXB to "华夏银行",
+        PAB to "平安银行",
+        GDB to "广发银行",
+        BOB to "北京银行",
+        BOS to "上海银行",
+        NBCB to "宁波银行",
+        OTHER to "其他银行"
+    )
 }

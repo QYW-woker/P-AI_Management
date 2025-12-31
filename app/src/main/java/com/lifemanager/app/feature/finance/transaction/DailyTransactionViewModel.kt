@@ -3,7 +3,9 @@ package com.lifemanager.app.feature.finance.transaction
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifemanager.app.core.database.entity.CustomFieldEntity
+import com.lifemanager.app.core.database.entity.FundAccountEntity
 import com.lifemanager.app.domain.model.*
+import com.lifemanager.app.domain.repository.FundAccountRepository
 import com.lifemanager.app.domain.usecase.CustomFieldUseCase
 import com.lifemanager.app.domain.usecase.DailyTransactionUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +21,8 @@ import javax.inject.Inject
 @HiltViewModel
 class DailyTransactionViewModel @Inject constructor(
     private val transactionUseCase: DailyTransactionUseCase,
-    private val fieldUseCase: CustomFieldUseCase
+    private val fieldUseCase: CustomFieldUseCase,
+    private val fundAccountRepository: FundAccountRepository
 ) : ViewModel() {
 
     // UI状态
@@ -55,6 +58,10 @@ class DailyTransactionViewModel @Inject constructor(
     // 可用分类
     private val _categories = MutableStateFlow<List<CustomFieldEntity>>(emptyList())
     val categories: StateFlow<List<CustomFieldEntity>> = _categories.asStateFlow()
+
+    // 可用账户
+    private val _accounts = MutableStateFlow<List<FundAccountEntity>>(emptyList())
+    val accounts: StateFlow<List<FundAccountEntity>> = _accounts.asStateFlow()
 
     // 显示添加/编辑对话框
     private val _showEditDialog = MutableStateFlow(false)
@@ -172,6 +179,7 @@ class DailyTransactionViewModel @Inject constructor(
     init {
         loadData()
         observeCategories()
+        loadAccounts()
     }
 
     /**
@@ -250,6 +258,19 @@ class DailyTransactionViewModel @Inject constructor(
                     if (_editState.value.type == TransactionType.EXPENSE) {
                         _categories.value = fields
                     }
+                }
+        }
+    }
+
+    /**
+     * 加载可用账户
+     */
+    private fun loadAccounts() {
+        viewModelScope.launch {
+            fundAccountRepository.getAllEnabled()
+                .catch { /* 忽略错误 */ }
+                .collect { accountList ->
+                    _accounts.value = accountList
                 }
         }
     }
@@ -346,6 +367,7 @@ class DailyTransactionViewModel @Inject constructor(
                         type = transaction.transaction.type,
                         amount = transaction.transaction.amount,
                         categoryId = transaction.transaction.categoryId,
+                        accountId = transaction.transaction.accountId,
                         date = transaction.transaction.date,
                         time = transaction.transaction.time,
                         note = transaction.transaction.note
@@ -400,6 +422,13 @@ class DailyTransactionViewModel @Inject constructor(
     }
 
     /**
+     * 更新编辑账户
+     */
+    fun updateEditAccount(accountId: Long?) {
+        _editState.value = _editState.value.copy(accountId = accountId)
+    }
+
+    /**
      * 更新编辑日期
      */
     fun updateEditDate(date: Int) {
@@ -442,7 +471,8 @@ class DailyTransactionViewModel @Inject constructor(
                         categoryId = state.categoryId,
                         date = state.date,
                         time = state.time,
-                        note = state.note
+                        note = state.note,
+                        accountId = state.accountId
                     )
                 } else {
                     transactionUseCase.addTransaction(
@@ -451,7 +481,8 @@ class DailyTransactionViewModel @Inject constructor(
                         categoryId = state.categoryId,
                         date = state.date,
                         time = state.time,
-                        note = state.note
+                        note = state.note,
+                        accountId = state.accountId
                     )
                 }
 

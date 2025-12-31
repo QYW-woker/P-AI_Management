@@ -77,6 +77,7 @@ data class TransactionEditState(
     val type: String = "EXPENSE",
     val amount: Double = 0.0,
     val categoryId: Long? = null,
+    val accountId: Long? = null,
     val date: Int = 0,
     val time: String = "",
     val note: String = "",

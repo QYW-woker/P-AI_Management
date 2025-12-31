@@ -212,12 +212,14 @@ class DailyTransactionUseCase @Inject constructor(
         date: Int,
         time: String = "",
         note: String = "",
-        source: String = "MANUAL"
+        source: String = "MANUAL",
+        accountId: Long? = null
     ): Long {
         val transaction = DailyTransactionEntity(
             type = type,
             amount = amount,
             categoryId = categoryId,
+            accountId = accountId,
             date = date,
             time = time,
             note = note,
@@ -236,13 +238,15 @@ class DailyTransactionUseCase @Inject constructor(
         categoryId: Long?,
         date: Int,
         time: String = "",
-        note: String = ""
+        note: String = "",
+        accountId: Long? = null
     ) {
         val existing = transactionRepository.getById(id) ?: return
         val updated = existing.copy(
             type = type,
             amount = amount,
             categoryId = categoryId,
+            accountId = accountId,
             date = date,
             time = time,
             note = note

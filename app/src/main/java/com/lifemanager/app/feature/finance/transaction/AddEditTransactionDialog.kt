@@ -24,7 +24,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.lifemanager.app.core.database.entity.AccountType
+import com.lifemanager.app.core.database.entity.ChineseBank
 import com.lifemanager.app.core.database.entity.CustomFieldEntity
+import com.lifemanager.app.core.database.entity.FundAccountEntity
 import com.lifemanager.app.domain.model.TransactionType
 import com.lifemanager.app.ui.component.DatePickerButton
 import com.lifemanager.app.ui.component.DatePickerDialog
@@ -47,6 +50,7 @@ fun AddEditTransactionDialog(
 ) {
     val editState by viewModel.editState.collectAsState()
     val categories by viewModel.categories.collectAsState()
+    val accounts by viewModel.accounts.collectAsState()
 
     var amountText by remember(editState.amount) {
         mutableStateOf(if (editState.amount > 0) editState.amount.toString() else "")
@@ -292,6 +296,100 @@ fun AddEditTransactionDialog(
                                     selected = editState.categoryId == category.id,
                                     onClick = { viewModel.updateEditCategory(category.id) }
                                 )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // 账户选择
+                    Text(
+                        text = "账户",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    if (accounts.isEmpty()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            )
+                        ) {
+                            Text(
+                                text = "暂无账户（可选）",
+                                modifier = Modifier.padding(16.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        // 账户选择下拉菜单
+                        var accountExpanded by remember { mutableStateOf(false) }
+                        val selectedAccount = accounts.find { it.id == editState.accountId }
+
+                        ExposedDropdownMenuBox(
+                            expanded = accountExpanded,
+                            onExpandedChange = { accountExpanded = it }
+                        ) {
+                            OutlinedTextField(
+                                value = selectedAccount?.let {
+                                    "${AccountType.getIcon(it.accountType)} ${it.name}"
+                                } ?: "",
+                                onValueChange = {},
+                                readOnly = true,
+                                placeholder = { Text("选择账户（可选）") },
+                                trailingIcon = {
+                                    Row {
+                                        if (selectedAccount != null) {
+                                            IconButton(
+                                                onClick = { viewModel.updateEditAccount(null) }
+                                            ) {
+                                                Icon(
+                                                    Icons.Default.Clear,
+                                                    contentDescription = "清除",
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                            }
+                                        }
+                                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = accountExpanded)
+                                    }
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .menuAnchor()
+                            )
+                            ExposedDropdownMenu(
+                                expanded = accountExpanded,
+                                onDismissRequest = { accountExpanded = false }
+                            ) {
+                                accounts.forEach { account ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Text(AccountType.getIcon(account.accountType))
+                                                Column {
+                                                    Text(account.name)
+                                                    if (account.cardNumber != null) {
+                                                        Text(
+                                                            text = "尾号 ${account.cardNumber.takeLast(4)}",
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        onClick = {
+                                            viewModel.updateEditAccount(account.id)
+                                            accountExpanded = false
+                                        }
+                                    )
+                                }
                             }
                         }
                     }

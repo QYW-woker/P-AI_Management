@@ -120,6 +120,8 @@ class FundAccountViewModel @Inject constructor(
                     id = account.id,
                     name = account.name,
                     accountType = account.accountType,
+                    bankCode = account.bankCode ?: "",
+                    cardNumber = account.cardNumber ?: "",
                     balance = account.balance.toString(),
                     creditLimit = account.creditLimit?.toString() ?: "",
                     billDay = account.billDay?.toString() ?: "",
@@ -150,6 +152,14 @@ class FundAccountViewModel @Inject constructor(
 
     fun updateEditAccountType(type: String) {
         _editState.value = _editState.value.copy(accountType = type)
+    }
+
+    fun updateEditBankCode(bankCode: String) {
+        _editState.value = _editState.value.copy(bankCode = bankCode)
+    }
+
+    fun updateEditCardNumber(cardNumber: String) {
+        _editState.value = _editState.value.copy(cardNumber = cardNumber)
     }
 
     fun updateEditBalance(balance: String) {
@@ -207,6 +217,8 @@ class FundAccountViewModel @Inject constructor(
                     id = state.id,
                     name = state.name.trim(),
                     accountType = state.accountType,
+                    bankCode = state.bankCode.ifBlank { null },
+                    cardNumber = state.cardNumber.ifBlank { null },
                     balance = balance,
                     creditLimit = state.creditLimit.toDoubleOrNull(),
                     billDay = state.billDay.toIntOrNull()?.coerceIn(1, 31),
@@ -316,6 +328,8 @@ data class FundAccountEditState(
     val id: Long = 0,
     val name: String = "",
     val accountType: String = AccountType.BANK_CARD,
+    val bankCode: String = "",
+    val cardNumber: String = "",
     val balance: String = "0",
     val creditLimit: String = "",
     val billDay: String = "",

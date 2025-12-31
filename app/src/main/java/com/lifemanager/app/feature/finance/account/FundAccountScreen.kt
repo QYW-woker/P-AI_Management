@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -22,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifemanager.app.core.database.entity.AccountType
+import com.lifemanager.app.core.database.entity.ChineseBank
 import com.lifemanager.app.core.database.entity.FundAccountEntity
 import com.lifemanager.app.ui.component.PremiumTextField
 import java.text.NumberFormat
@@ -147,6 +150,8 @@ fun FundAccountScreen(
             onSave = { viewModel.saveAccount() },
             onNameChange = { viewModel.updateEditName(it) },
             onTypeChange = { viewModel.updateEditAccountType(it) },
+            onBankCodeChange = { viewModel.updateEditBankCode(it) },
+            onCardNumberChange = { viewModel.updateEditCardNumber(it) },
             onBalanceChange = { viewModel.updateEditBalance(it) },
             onCreditLimitChange = { viewModel.updateEditCreditLimit(it) },
             onBillDayChange = { viewModel.updateEditBillDay(it) },
@@ -479,6 +484,8 @@ private fun EditAccountDialog(
     onSave: () -> Unit,
     onNameChange: (String) -> Unit,
     onTypeChange: (String) -> Unit,
+    onBankCodeChange: (String) -> Unit,
+    onCardNumberChange: (String) -> Unit,
     onBalanceChange: (String) -> Unit,
     onCreditLimitChange: (String) -> Unit,
     onBillDayChange: (String) -> Unit,
@@ -487,6 +494,11 @@ private fun EditAccountDialog(
     onIncludeInTotalChange: (Boolean) -> Unit
 ) {
     val isDebt = AccountType.isDebtAccount(editState.accountType)
+    val needsCardNumber = AccountType.needsCardNumber(editState.accountType)
+    val needsBankSelection = editState.accountType in listOf(
+        AccountType.BANK_CARD, AccountType.CREDIT_CARD
+    )
+
     val accountTypes = listOf(
         AccountType.CASH to "现金",
         AccountType.BANK_CARD to "银行卡",
@@ -503,18 +515,9 @@ private fun EditAccountDialog(
         title = { Text(if (editState.isEditing) "编辑账户" else "添加账户") },
         text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.verticalScroll(rememberScrollState())
             ) {
-                // 账户名称
-                PremiumTextField(
-                    value = editState.name,
-                    onValueChange = onNameChange,
-                    label = "账户名称",
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = editState.error != null && editState.name.isBlank()
-                )
-
                 // 账户类型
                 var typeExpanded by remember { mutableStateOf(false) }
                 ExposedDropdownMenuBox(
@@ -545,6 +548,76 @@ private fun EditAccountDialog(
                             )
                         }
                     }
+                }
+
+                // 银行选择（仅银行卡/信用卡）
+                if (needsBankSelection) {
+                    var bankExpanded by remember { mutableStateOf(false) }
+                    val banks = ChineseBank.getAllBanks()
+                    ExposedDropdownMenuBox(
+                        expanded = bankExpanded,
+                        onExpandedChange = { bankExpanded = it }
+                    ) {
+                        OutlinedTextField(
+                            value = if (editState.bankCode.isNotBlank())
+                                ChineseBank.getDisplayName(editState.bankCode) else "",
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text("选择银行") },
+                            placeholder = { Text("请选择银行") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bankExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = bankExpanded,
+                            onDismissRequest = { bankExpanded = false }
+                        ) {
+                            banks.forEach { (code, name) ->
+                                DropdownMenuItem(
+                                    text = { Text(name) },
+                                    onClick = {
+                                        onBankCodeChange(code)
+                                        // 自动填充账户名称
+                                        if (editState.name.isBlank()) {
+                                            val suffix = if (editState.accountType == AccountType.CREDIT_CARD) "信用卡" else "储蓄卡"
+                                            onNameChange("${ChineseBank.getShortName(code)}$suffix")
+                                        }
+                                        bankExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // 账户名称
+                PremiumTextField(
+                    value = editState.name,
+                    onValueChange = onNameChange,
+                    label = "账户名称",
+                    placeholder = if (needsBankSelection) "如：工商储蓄卡" else "请输入账户名称",
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = editState.error != null && editState.name.isBlank()
+                )
+
+                // 卡号输入（银行卡/信用卡/信贷账户/投资账户）
+                if (needsCardNumber) {
+                    PremiumTextField(
+                        value = editState.cardNumber,
+                        onValueChange = { value ->
+                            // 只保留数字，限制长度
+                            val filtered = value.filter { it.isDigit() }.take(19)
+                            onCardNumberChange(filtered)
+                        },
+                        label = "卡号",
+                        placeholder = "输入卡号后4位或完整卡号",
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    )
                 }
 
                 // 余额/欠款
