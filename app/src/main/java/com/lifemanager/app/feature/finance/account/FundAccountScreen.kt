@@ -352,7 +352,7 @@ private fun AccountTypeSection(
                         onDelete = { onDelete(account) }
                     )
                     if (index < accounts.lastIndex) {
-                        HorizontalDivider(
+                        Divider(
                             modifier = Modifier.padding(horizontal = 16.dp),
                             color = MaterialTheme.colorScheme.outlineVariant
                         )

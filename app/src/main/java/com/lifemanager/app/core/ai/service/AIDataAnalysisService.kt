@@ -138,7 +138,7 @@ class AIDataAnalysisService @Inject constructor(
                 // 获取预算信息
                 val budgets = budgetDao.getAllSync()
                 val budgetInfo = if (budgets.isNotEmpty()) {
-                    val totalBudget = budgets.sumOf { it.amount }
+                    val totalBudget = budgets.sumOf { it.totalBudget }
                     val usageRate = if (totalBudget > 0) (expense / totalBudget * 100) else 0.0
                     "预算总额: ¥${String.format("%.2f", totalBudget)}, 使用率: ${String.format("%.1f", usageRate)}%"
                 } else {
@@ -228,7 +228,7 @@ $categoryBreakdown
                     return@withContext Result.failure(Exception("暂无活跃目标"))
                 }
 
-                val dataStr = goals.map { "${it.id}:${it.currentProgress}:${it.status}" }.joinToString(",")
+                val dataStr = goals.map { "${it.id}:${it.currentValue}:${it.status}" }.joinToString(",")
                 val dataHash = calculateHash(dataStr)
 
                 if (!forceRefresh && !needsUpdate(AnalysisModule.GOAL, AnalysisType.WEEKLY_SUMMARY, dataHash)) {
@@ -240,15 +240,14 @@ $categoryBreakdown
 
                 val today = LocalDate.now()
                 val goalsSummary = goals.take(5).joinToString("\n") { goal ->
-                    val progress = if (goal.targetAmount > 0) {
-                        (goal.currentProgress / goal.targetAmount * 100).toInt()
+                    val progress = if ((goal.targetValue ?: 0.0) > 0) {
+                        (goal.currentValue / goal.targetValue!! * 100).toInt()
                     } else 0
-                    val deadline = goal.deadline?.let {
-                        val deadlineDate = LocalDate.parse(it)
-                        val daysLeft = deadlineDate.toEpochDay() - today.toEpochDay()
+                    val deadline = goal.endDate?.let { endDateEpoch ->
+                        val daysLeft = endDateEpoch - today.toEpochDay().toInt()
                         if (daysLeft > 0) "剩余${daysLeft}天" else "已过期"
                     } ?: "无截止日期"
-                    "- ${goal.name}: 进度${progress}%, $deadline"
+                    "- ${goal.title}: 进度${progress}%, $deadline"
                 }
 
                 val prompt = """
@@ -335,7 +334,7 @@ $goalsSummary
                 // 获取最近7天的打卡记录
                 val records = habitRecordDao.getRecordsInRangeSync(weekStart, todayEpoch)
 
-                val dataStr = habits.map { "${it.id}:${it.currentStreak}" }.joinToString(",") +
+                val dataStr = habits.map { "${it.id}:${it.name}" }.joinToString(",") +
                         records.map { "${it.habitId}:${it.date}" }.joinToString(",")
                 val dataHash = calculateHash(dataStr)
 
@@ -346,18 +345,23 @@ $goalsSummary
                     }
                 }
 
-                // 计算完成率
+                // 计算完成率和连续天数
                 val habitStats = habits.map { habit ->
-                    val checkins = records.count { it.habitId == habit.id }
+                    val habitRecords = records.filter { it.habitId == habit.id }
+                    val checkins = habitRecords.size
                     val completionRate = (checkins.toDouble() / 7 * 100).toInt()
-                    Triple(habit.name, completionRate, habit.currentStreak)
+                    // 计算连续打卡天数
+                    val streak = calculateStreak(habitRecords.map { it.date }, todayEpoch)
+                    Triple(habit.name, completionRate, streak)
                 }
 
-                val habitSummary = habitStats.joinToString("\n") { (name, rate, streak) ->
-                    "- $name: 本周完成率${rate}%, 连续${streak}天"
+                val habitSummary = habitStats.joinToString("\n") { stats ->
+                    "- ${stats.first}: 本周完成率${stats.second}%, 连续${stats.third}天"
                 }
 
-                val avgCompletion = habitStats.map { it.second }.average().toInt()
+                val avgCompletion = if (habitStats.isNotEmpty()) {
+                    habitStats.map { it.second }.average().toInt()
+                } else 0
 
                 val prompt = """
 作为习惯养成教练，请分析以下习惯打卡数据：
@@ -590,5 +594,22 @@ ${moduleScores.joinToString("\n")}
         } else {
             text
         }
+    }
+
+    /**
+     * 计算连续打卡天数
+     */
+    private fun calculateStreak(dates: List<Int>, today: Int): Int {
+        if (dates.isEmpty()) return 0
+        val sortedDates = dates.sorted().distinct()
+        var streak = 0
+        var currentDate = today
+
+        // 从今天往前数，检查连续天数
+        while (sortedDates.contains(currentDate)) {
+            streak++
+            currentDate--
+        }
+        return streak
     }
 }
