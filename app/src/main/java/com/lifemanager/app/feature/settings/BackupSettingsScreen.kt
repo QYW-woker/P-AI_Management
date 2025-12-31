@@ -822,6 +822,7 @@ private fun ProviderPickerDialog(
     )
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun RestoreDialog(
     backups: List<BackupInfo>,
