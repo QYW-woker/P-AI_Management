@@ -395,20 +395,21 @@ private fun AttachmentItem(
             }
         }
 
-        // 删除按钮
-        IconButton(
-            onClick = onRemove,
+        // 删除按钮 - 调小尺寸
+        Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .size(24.dp)
-                .offset(x = 6.dp, y = (-6).dp)
+                .offset(x = 4.dp, y = (-4).dp)
+                .size(18.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.error)
+                .clickable(onClick = onRemove),
+            contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Filled.Close,
                 contentDescription = "删除",
-                modifier = Modifier.size(14.dp),
+                modifier = Modifier.size(12.dp),
                 tint = Color.White
             )
         }
