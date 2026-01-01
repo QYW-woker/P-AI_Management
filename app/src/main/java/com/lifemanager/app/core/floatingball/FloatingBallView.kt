@@ -3,22 +3,16 @@ package com.lifemanager.app.core.floatingball
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.*
-import android.graphics.drawable.Drawable
 import android.util.AttributeSet
-import android.view.animation.AccelerateDecelerateInterpolator
 import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
-import android.widget.Toast
-import androidx.core.content.ContextCompat
-import com.lifemanager.app.R
-import java.io.File
 import kotlin.math.sin
 import kotlin.math.cos
 
 /**
- * 白衣小仙女风格AI悬浮球视图
+ * iOS Siri风格AI悬浮球视图
  *
- * 使用图片资源显示可爱的小仙女形象
+ * 使用彩色渐变波浪动画，模拟Siri的经典视觉效果
  */
 class FloatingBallView @JvmOverloads constructor(
     context: Context,
@@ -27,15 +21,8 @@ class FloatingBallView @JvmOverloads constructor(
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
     companion object {
-        private const val BALL_SIZE_DP = 72
-        private const val RIPPLE_MAX_SCALE = 1.4f
-
-        // 心情等级
-        const val MOOD_VERY_BAD = 1
-        const val MOOD_BAD = 2
-        const val MOOD_NORMAL = 3
-        const val MOOD_GOOD = 4
-        const val MOOD_VERY_GOOD = 5
+        private const val BALL_SIZE_DP = 64
+        private const val OUTER_GLOW_SCALE = 1.5f
 
         // 状态
         const val STATE_IDLE = 0
@@ -43,6 +30,20 @@ class FloatingBallView @JvmOverloads constructor(
         const val STATE_THINKING = 2
         const val STATE_SUCCESS = 3
         const val STATE_ERROR = 4
+
+        // Siri渐变颜色
+        private val SIRI_COLORS = intArrayOf(
+            Color.parseColor("#FF2D55"),  // 粉红
+            Color.parseColor("#FF3B30"),  // 红色
+            Color.parseColor("#FF9500"),  // 橙色
+            Color.parseColor("#FFCC00"),  // 黄色
+            Color.parseColor("#34C759"),  // 绿色
+            Color.parseColor("#00C7BE"),  // 青色
+            Color.parseColor("#007AFF"),  // 蓝色
+            Color.parseColor("#5856D6"),  // 紫色
+            Color.parseColor("#AF52DE"),  // 洋红
+            Color.parseColor("#FF2D55")   // 循环回粉红
+        )
     }
 
     // 状态
@@ -50,176 +51,60 @@ class FloatingBallView @JvmOverloads constructor(
     private var isProcessing = false
     private var hasError = false
     private var volumeLevel = 0f
-    private var currentMood = MOOD_NORMAL
     private var currentState = STATE_IDLE
 
     // 动画参数
-    private var floatOffset = 0f
-    private var breathScale = 1f
-    private var glowPulse = 0f
-    private var rippleScale = 1f
+    private var wavePhase = 0f
+    private var colorRotation = 0f
+    private var pulseScale = 1f
+    private var glowIntensity = 0.3f
+    private var waveAmplitude = 0.05f
 
     // 画笔
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-
-    // 仙女图片
-    private var fairyDrawable: Drawable? = null
-    private var customAvatarBitmap: Bitmap? = null
-    private var customAvatarPath: String? = null
+    private val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val wavePaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     // 尺寸
     private val ballSizePx: Int
     private val totalSizePx: Int
     private val centerX: Float
     private val centerY: Float
+    private val ballRadius: Float
 
     // 动画器
-    private var breathAnimator: ValueAnimator? = null
-    private var floatAnimator: ValueAnimator? = null
-    private var glowAnimator: ValueAnimator? = null
+    private var waveAnimator: ValueAnimator? = null
+    private var colorAnimator: ValueAnimator? = null
     private var pulseAnimator: ValueAnimator? = null
+    private var glowAnimator: ValueAnimator? = null
+
+    // 波浪路径
+    private val wavePath = Path()
 
     init {
         val density = context.resources.displayMetrics.density
         ballSizePx = (BALL_SIZE_DP * density).toInt()
-        totalSizePx = (ballSizePx * RIPPLE_MAX_SCALE * 1.2f).toInt()
+        totalSizePx = (ballSizePx * OUTER_GLOW_SCALE * 1.2f).toInt()
         layoutParams = LayoutParams(totalSizePx, totalSizePx)
 
         centerX = totalSizePx / 2f
         centerY = totalSizePx / 2f
+        ballRadius = ballSizePx / 2f
 
         setWillNotDraw(false)
         isClickable = true
         isFocusable = true
         setBackgroundColor(Color.TRANSPARENT)
 
-        // 加载仙女图片
-        loadFairyImage()
-
+        setupPaints()
         startIdleAnimations()
     }
 
-    /**
-     * 加载仙女图片资源
-     */
-    private fun loadFairyImage() {
-        // 先尝试加载自定义头像
-        loadCustomAvatarFromPrefs()
-
-        // 如果没有自定义头像，加载默认图片
-        if (customAvatarBitmap == null) {
-            try {
-                fairyDrawable = ContextCompat.getDrawable(context, R.drawable.ic_fairy_assistant)
-            } catch (e: Exception) {
-                fairyDrawable = null
-            }
-        }
-    }
-
-    /**
-     * 从配置中加载自定义头像
-     */
-    private fun loadCustomAvatarFromPrefs() {
-        try {
-            val prefs = context.getSharedPreferences("ai_settings", Context.MODE_PRIVATE)
-            val path = prefs.getString("custom_avatar_path", null)
-            if (path != null) {
-                setCustomAvatar(path)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    /**
-     * 设置自定义头像
-     * @param path 图片文件路径
-     */
-    fun setCustomAvatar(path: String?) {
-        if (path == customAvatarPath) return
-
-        customAvatarPath = path
-
-        // 回收旧的bitmap
-        customAvatarBitmap?.recycle()
-        customAvatarBitmap = null
-
-        if (path != null) {
-            try {
-                val file = File(path)
-                if (file.exists()) {
-                    // 加载并缩放图片
-                    val options = BitmapFactory.Options().apply {
-                        inJustDecodeBounds = true
-                    }
-                    BitmapFactory.decodeFile(path, options)
-
-                    // 计算缩放比例
-                    val targetSize = ballSizePx
-                    val sampleSize = calculateInSampleSize(options, targetSize, targetSize)
-
-                    options.inJustDecodeBounds = false
-                    options.inSampleSize = sampleSize
-
-                    val bitmap = BitmapFactory.decodeFile(path, options)
-                    if (bitmap != null) {
-                        // 缩放到目标尺寸
-                        customAvatarBitmap = Bitmap.createScaledBitmap(
-                            bitmap,
-                            targetSize,
-                            targetSize,
-                            true
-                        )
-                        if (bitmap != customAvatarBitmap) {
-                            bitmap.recycle()
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                customAvatarBitmap = null
-            }
-        }
-
-        invalidate()
-    }
-
-    /**
-     * 计算图片采样率
-     */
-    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
-        val height = options.outHeight
-        val width = options.outWidth
-        var inSampleSize = 1
-
-        if (height > reqHeight || width > reqWidth) {
-            val halfHeight = height / 2
-            val halfWidth = width / 2
-
-            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
-                inSampleSize *= 2
-            }
-        }
-
-        return inSampleSize
-    }
-
-    /**
-     * 清除自定义头像，使用默认形象
-     */
-    fun clearCustomAvatar() {
-        customAvatarPath = null
-        customAvatarBitmap?.recycle()
-        customAvatarBitmap = null
-
-        // 重新加载默认图片
-        try {
-            fairyDrawable = ContextCompat.getDrawable(context, R.drawable.ic_fairy_assistant)
-        } catch (e: Exception) {
-            fairyDrawable = null
-        }
-
-        invalidate()
+    private fun setupPaints() {
+        paint.style = Paint.Style.FILL
+        glowPaint.style = Paint.Style.FILL
+        wavePaint.style = Paint.Style.FILL
+        wavePaint.xfermode = PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -229,263 +114,254 @@ class FloatingBallView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
 
-        val floatY = centerY + floatOffset
+        // 1. 绘制外发光
+        drawOuterGlow(canvas)
 
-        canvas.save()
-        canvas.scale(breathScale, breathScale, centerX, floatY)
+        // 2. 绘制主体圆形背景
+        drawMainOrb(canvas)
 
-        // 1. 绘制光晕背景
-        drawGlow(canvas, centerX, floatY)
+        // 3. 绘制Siri彩色波浪
+        drawSiriWaves(canvas)
 
-        // 2. 绘制波纹（录音时）
-        if (isListening && rippleScale > 1f) {
-            drawRipples(canvas, centerX, floatY)
+        // 4. 绘制状态指示
+        drawStateIndicator(canvas)
+    }
+
+    /**
+     * 绘制外发光效果
+     */
+    private fun drawOuterGlow(canvas: Canvas) {
+        val glowRadius = ballRadius * (1.2f + glowIntensity * 0.3f) * pulseScale
+
+        // 根据状态选择发光颜色
+        val glowColor = when (currentState) {
+            STATE_LISTENING -> Color.parseColor("#007AFF")
+            STATE_THINKING -> Color.parseColor("#AF52DE")
+            STATE_SUCCESS -> Color.parseColor("#34C759")
+            STATE_ERROR -> Color.parseColor("#FF3B30")
+            else -> Color.parseColor("#8E8E93")
         }
 
-        // 3. 绘制仙女图片或备用图形
-        drawFairy(canvas, centerX, floatY)
+        val alpha = (glowIntensity * 80).toInt()
+        glowPaint.shader = RadialGradient(
+            centerX, centerY, glowRadius,
+            intArrayOf(
+                Color.argb(alpha, Color.red(glowColor), Color.green(glowColor), Color.blue(glowColor)),
+                Color.argb(alpha / 2, Color.red(glowColor), Color.green(glowColor), Color.blue(glowColor)),
+                Color.TRANSPARENT
+            ),
+            floatArrayOf(0.4f, 0.7f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawCircle(centerX, centerY, glowRadius, glowPaint)
+    }
 
-        // 4. 绘制状态效果
-        drawStatusEffect(canvas, centerX, floatY)
+    /**
+     * 绘制主体圆形（深色背景）
+     */
+    private fun drawMainOrb(canvas: Canvas) {
+        val radius = ballRadius * pulseScale
+
+        // 深色渐变背景
+        paint.shader = RadialGradient(
+            centerX, centerY - radius * 0.3f, radius * 1.2f,
+            intArrayOf(
+                Color.parseColor("#3A3A3C"),
+                Color.parseColor("#2C2C2E"),
+                Color.parseColor("#1C1C1E")
+            ),
+            floatArrayOf(0f, 0.5f, 1f),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawCircle(centerX, centerY, radius, paint)
+        paint.shader = null
+
+        // 内边缘高光
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1.5f
+        paint.shader = LinearGradient(
+            centerX, centerY - radius,
+            centerX, centerY + radius,
+            Color.argb(60, 255, 255, 255),
+            Color.argb(20, 255, 255, 255),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawCircle(centerX, centerY, radius - 1f, paint)
+        paint.shader = null
+        paint.style = Paint.Style.FILL
+    }
+
+    /**
+     * 绘制Siri风格的彩色波浪
+     */
+    private fun drawSiriWaves(canvas: Canvas) {
+        val radius = ballRadius * pulseScale * 0.85f
+        val amplitude = radius * waveAmplitude * (1f + volumeLevel * 2f)
+
+        // 保存画布状态，设置圆形裁剪区域
+        canvas.save()
+        val clipPath = Path()
+        clipPath.addCircle(centerX, centerY, ballRadius * pulseScale * 0.95f, Path.Direction.CW)
+        canvas.clipPath(clipPath)
+
+        // 绘制多层波浪
+        val layerCount = if (isListening || isProcessing) 4 else 2
+        for (layer in 0 until layerCount) {
+            drawWaveLayer(canvas, radius, amplitude, layer, layerCount)
+        }
 
         canvas.restore()
     }
 
     /**
-     * 绘制光晕背景
+     * 绘制单层波浪
      */
-    private fun drawGlow(canvas: Canvas, cx: Float, cy: Float) {
-        val glowRadius = ballSizePx * 0.55f * (1f + glowPulse * 0.1f)
-
-        paint.shader = RadialGradient(
-            cx, cy, glowRadius,
-            intArrayOf(
-                Color.argb(60, 255, 255, 255),
-                Color.argb(25, 255, 255, 255),
-                Color.argb(0, 255, 255, 255)
-            ),
-            floatArrayOf(0f, 0.6f, 1f),
-            Shader.TileMode.CLAMP
-        )
-        canvas.drawCircle(cx, cy, glowRadius, paint)
-        paint.shader = null
-    }
-
-    /**
-     * 绘制波纹（录音时）
-     */
-    private fun drawRipples(canvas: Canvas, cx: Float, cy: Float) {
-        for (i in 0..2) {
-            val scale = rippleScale + i * 0.1f
-            val alpha = ((1f - (scale - 1f) / (RIPPLE_MAX_SCALE - 1f)) * 0.15f * 255).toInt()
-            paint.color = Color.argb(alpha.coerceIn(0, 255), 200, 220, 255)
-            paint.style = Paint.Style.FILL
-            canvas.drawCircle(cx, cy, ballSizePx * 0.4f * scale, paint)
-        }
-    }
-
-    /**
-     * 绘制仙女（图片或备用方案）
-     */
-    private fun drawFairy(canvas: Canvas, cx: Float, cy: Float) {
-        val imgSize = (ballSizePx * 0.85f).toInt()
-        val left = (cx - imgSize / 2f).toInt()
-        val top = (cy - imgSize / 2f).toInt()
-
-        // 优先使用自定义头像
-        val customBitmap = customAvatarBitmap
-        if (customBitmap != null && !customBitmap.isRecycled) {
-            val destRect = RectF(left.toFloat(), top.toFloat(), (left + imgSize).toFloat(), (top + imgSize).toFloat())
-            paint.isFilterBitmap = true
-            canvas.drawBitmap(customBitmap, null, destRect, paint)
-            return
-        }
-
-        // 其次使用默认drawable
-        val drawable = fairyDrawable
-        if (drawable != null) {
-            drawable.setBounds(left, top, left + imgSize, top + imgSize)
-            drawable.draw(canvas)
+    private fun drawWaveLayer(canvas: Canvas, radius: Float, amplitude: Float, layer: Int, totalLayers: Int) {
+        val phaseOffset = layer * (Math.PI / totalLayers).toFloat()
+        val colorOffset = (colorRotation + layer * 0.25f) % 1f
+        val layerAlpha = if (isListening || isProcessing) {
+            (0.6f - layer * 0.1f)
         } else {
-            // 备用方案：简单的卡通形象
-            drawFallbackFairy(canvas, cx, cy)
+            (0.3f - layer * 0.08f)
         }
+
+        wavePath.reset()
+
+        // 创建波浪形状
+        val segments = 60
+        for (i in 0..segments) {
+            val angle = (i.toFloat() / segments) * 2 * Math.PI
+            val waveOffset = sin(angle * 3 + wavePhase + phaseOffset) * amplitude +
+                    sin(angle * 5 + wavePhase * 1.3f + phaseOffset) * amplitude * 0.5f
+
+            val r = radius + waveOffset
+            val x = centerX + (r * cos(angle)).toFloat()
+            val y = centerY + (r * sin(angle)).toFloat()
+
+            if (i == 0) {
+                wavePath.moveTo(x, y)
+            } else {
+                wavePath.lineTo(x, y)
+            }
+        }
+        wavePath.close()
+
+        // 创建扫描渐变
+        val colors = IntArray(SIRI_COLORS.size)
+        val positions = FloatArray(SIRI_COLORS.size)
+        for (i in SIRI_COLORS.indices) {
+            val colorIndex = ((i + (colorOffset * SIRI_COLORS.size).toInt()) % SIRI_COLORS.size)
+            val color = SIRI_COLORS[colorIndex]
+            colors[i] = Color.argb(
+                (layerAlpha * 255).toInt(),
+                Color.red(color),
+                Color.green(color),
+                Color.blue(color)
+            )
+            positions[i] = i.toFloat() / (SIRI_COLORS.size - 1)
+        }
+
+        wavePaint.shader = SweepGradient(centerX, centerY, colors, positions)
+        canvas.drawPath(wavePath, wavePaint)
     }
 
     /**
-     * 备用绘制方案（当图片资源不存在时）
+     * 绘制状态指示器
      */
-    private fun drawFallbackFairy(canvas: Canvas, cx: Float, cy: Float) {
-        // 头发（后面）
-        paint.color = Color.parseColor("#2D2D2D")
-        paint.style = Paint.Style.FILL
-
-        // 左侧长发
-        val leftHair = Path().apply {
-            moveTo(cx - ballSizePx * 0.15f, cy - ballSizePx * 0.15f)
-            quadTo(cx - ballSizePx * 0.25f, cy + ballSizePx * 0.1f,
-                   cx - ballSizePx * 0.2f, cy + ballSizePx * 0.3f)
-            lineTo(cx - ballSizePx * 0.1f, cy + ballSizePx * 0.25f)
-            close()
-        }
-        canvas.drawPath(leftHair, paint)
-
-        // 右侧长发
-        val rightHair = Path().apply {
-            moveTo(cx + ballSizePx * 0.15f, cy - ballSizePx * 0.15f)
-            quadTo(cx + ballSizePx * 0.25f, cy + ballSizePx * 0.1f,
-                   cx + ballSizePx * 0.2f, cy + ballSizePx * 0.3f)
-            lineTo(cx + ballSizePx * 0.1f, cy + ballSizePx * 0.25f)
-            close()
-        }
-        canvas.drawPath(rightHair, paint)
-
-        // 白色裙子
-        paint.color = Color.WHITE
-        val dress = Path().apply {
-            moveTo(cx - ballSizePx * 0.08f, cy + ballSizePx * 0.02f)
-            lineTo(cx + ballSizePx * 0.08f, cy + ballSizePx * 0.02f)
-            lineTo(cx + ballSizePx * 0.18f, cy + ballSizePx * 0.35f)
-            quadTo(cx, cy + ballSizePx * 0.37f, cx - ballSizePx * 0.18f, cy + ballSizePx * 0.35f)
-            close()
-        }
-        canvas.drawPath(dress, paint)
-
-        // 腰带
-        paint.color = Color.parseColor("#9E9E9E")
-        canvas.drawRect(
-            cx - ballSizePx * 0.1f, cy + ballSizePx * 0.08f,
-            cx + ballSizePx * 0.1f, cy + ballSizePx * 0.11f,
-            paint
-        )
-
-        // 金色挂坠
-        paint.color = Color.parseColor("#DAA520")
-        canvas.drawCircle(cx, cy + ballSizePx * 0.14f, ballSizePx * 0.015f, paint)
-
-        // 脸部
-        paint.color = Color.parseColor("#FFEEE6")
-        canvas.drawOval(
-            cx - ballSizePx * 0.17f, cy - ballSizePx * 0.28f,
-            cx + ballSizePx * 0.17f, cy + ballSizePx * 0.08f,
-            paint
-        )
-
-        // 头发（前面）
-        paint.color = Color.parseColor("#2D2D2D")
-        val frontHair = Path().apply {
-            moveTo(cx - ballSizePx * 0.17f, cy - ballSizePx * 0.05f)
-            quadTo(cx - ballSizePx * 0.19f, cy - ballSizePx * 0.25f, cx - ballSizePx * 0.08f, cy - ballSizePx * 0.3f)
-            quadTo(cx, cy - ballSizePx * 0.32f, cx + ballSizePx * 0.08f, cy - ballSizePx * 0.3f)
-            quadTo(cx + ballSizePx * 0.19f, cy - ballSizePx * 0.25f, cx + ballSizePx * 0.17f, cy - ballSizePx * 0.05f)
-            lineTo(cx + ballSizePx * 0.12f, cy - ballSizePx * 0.02f)
-            lineTo(cx + ballSizePx * 0.01f, cy - ballSizePx * 0.18f)
-            lineTo(cx - ballSizePx * 0.01f, cy - ballSizePx * 0.18f)
-            lineTo(cx - ballSizePx * 0.12f, cy - ballSizePx * 0.02f)
-            close()
-        }
-        canvas.drawPath(frontHair, paint)
-
-        // 头冠
-        paint.color = Color.parseColor("#D0D0D0")
-        val tiara = Path().apply {
-            moveTo(cx - ballSizePx * 0.07f, cy - ballSizePx * 0.26f)
-            lineTo(cx - ballSizePx * 0.05f, cy - ballSizePx * 0.3f)
-            lineTo(cx, cy - ballSizePx * 0.34f)
-            lineTo(cx + ballSizePx * 0.05f, cy - ballSizePx * 0.3f)
-            lineTo(cx + ballSizePx * 0.07f, cy - ballSizePx * 0.26f)
-            close()
-        }
-        canvas.drawPath(tiara, paint)
-
-        // 头冠中心
-        paint.color = Color.parseColor("#4A4A4A")
-        val tiaraCenter = Path().apply {
-            moveTo(cx, cy - ballSizePx * 0.32f)
-            lineTo(cx - ballSizePx * 0.02f, cy - ballSizePx * 0.27f)
-            lineTo(cx + ballSizePx * 0.02f, cy - ballSizePx * 0.27f)
-            close()
-        }
-        canvas.drawPath(tiaraCenter, paint)
-
-        // 眼睛
-        paint.color = Color.parseColor("#3D3D3D")
-        canvas.drawCircle(cx - ballSizePx * 0.07f, cy - ballSizePx * 0.08f, ballSizePx * 0.028f, paint)
-        canvas.drawCircle(cx + ballSizePx * 0.07f, cy - ballSizePx * 0.08f, ballSizePx * 0.028f, paint)
-
-        // 眼睛高光
-        paint.color = Color.WHITE
-        canvas.drawCircle(cx - ballSizePx * 0.075f, cy - ballSizePx * 0.088f, ballSizePx * 0.01f, paint)
-        canvas.drawCircle(cx + ballSizePx * 0.065f, cy - ballSizePx * 0.088f, ballSizePx * 0.01f, paint)
-
-        // 腮红
-        paint.color = Color.argb(50, 255, 180, 180)
-        canvas.drawCircle(cx - ballSizePx * 0.11f, cy - ballSizePx * 0.02f, ballSizePx * 0.03f, paint)
-        canvas.drawCircle(cx + ballSizePx * 0.11f, cy - ballSizePx * 0.02f, ballSizePx * 0.03f, paint)
-
-        // 嘴巴
-        paint.color = Color.parseColor("#E8A0A0")
-        canvas.drawOval(
-            cx - ballSizePx * 0.015f, cy + ballSizePx * 0.0f,
-            cx + ballSizePx * 0.015f, cy + ballSizePx * 0.015f,
-            paint
-        )
-
-        // 小手
-        paint.color = Color.parseColor("#FFEEE6")
-        canvas.drawCircle(cx - ballSizePx * 0.18f, cy + ballSizePx * 0.18f, ballSizePx * 0.02f, paint)
-        canvas.drawCircle(cx + ballSizePx * 0.18f, cy + ballSizePx * 0.18f, ballSizePx * 0.02f, paint)
-    }
-
-    /**
-     * 绘制状态效果
-     */
-    private fun drawStatusEffect(canvas: Canvas, cx: Float, cy: Float) {
+    private fun drawStateIndicator(canvas: Canvas) {
         when (currentState) {
-            STATE_LISTENING -> {
-                paint.color = Color.parseColor("#90CAF9")
-                paint.textSize = ballSizePx * 0.1f
-                val offset = sin(glowPulse * 2) * ballSizePx * 0.02f
-                canvas.drawText("♪", cx + ballSizePx * 0.32f, cy - ballSizePx * 0.28f + offset, paint)
-            }
-            STATE_THINKING -> {
-                paint.color = Color.WHITE
-                val offset = sin(glowPulse) * ballSizePx * 0.01f
-                canvas.drawCircle(cx + ballSizePx * 0.28f, cy - ballSizePx * 0.32f + offset, ballSizePx * 0.02f, paint)
-                canvas.drawCircle(cx + ballSizePx * 0.34f, cy - ballSizePx * 0.4f + offset, ballSizePx * 0.03f, paint)
-                canvas.drawCircle(cx + ballSizePx * 0.4f, cy - ballSizePx * 0.48f + offset, ballSizePx * 0.04f, paint)
-            }
-            STATE_SUCCESS -> {
-                paint.color = Color.parseColor("#FFD700")
-                val offset = sin(glowPulse * 4) * ballSizePx * 0.015f
-                drawStar(canvas, cx - ballSizePx * 0.3f, cy - ballSizePx * 0.35f + offset, ballSizePx * 0.04f)
-                drawStar(canvas, cx + ballSizePx * 0.32f, cy - ballSizePx * 0.32f - offset, ballSizePx * 0.03f)
-            }
-            STATE_ERROR -> {
-                paint.color = Color.parseColor("#FFCDD2")
-                paint.textSize = ballSizePx * 0.1f
-                canvas.drawText("?", cx + ballSizePx * 0.28f, cy - ballSizePx * 0.28f, paint)
-            }
+            STATE_LISTENING -> drawListeningIndicator(canvas)
+            STATE_THINKING -> drawThinkingIndicator(canvas)
+            STATE_SUCCESS -> drawSuccessIndicator(canvas)
+            STATE_ERROR -> drawErrorIndicator(canvas)
         }
     }
 
-    private fun drawStar(canvas: Canvas, cx: Float, cy: Float, size: Float) {
-        val path = Path()
-        for (i in 0 until 10) {
-            val r = if (i % 2 == 0) size else size * 0.4f
-            val angle = Math.PI / 5 * i - Math.PI / 2
-            val x = cx + (r * cos(angle)).toFloat()
-            val y = cy + (r * sin(angle)).toFloat()
-            if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
+    private fun drawListeningIndicator(canvas: Canvas) {
+        // 绘制麦克风图标样式的音量条
+        val barCount = 5
+        val barWidth = ballRadius * 0.08f
+        val barSpacing = ballRadius * 0.12f
+        val maxHeight = ballRadius * 0.5f
+        val startX = centerX - (barCount - 1) * barSpacing / 2
+
+        paint.color = Color.WHITE
+
+        for (i in 0 until barCount) {
+            val heightFactor = when (i) {
+                0, 4 -> 0.3f + volumeLevel * 0.3f + sin(wavePhase + i) * 0.1f
+                1, 3 -> 0.5f + volumeLevel * 0.4f + sin(wavePhase + i * 0.8f) * 0.15f
+                else -> 0.7f + volumeLevel * 0.3f + sin(wavePhase + i * 0.6f) * 0.2f
+            }
+            val barHeight = maxHeight * heightFactor
+
+            val x = startX + i * barSpacing
+            val rect = RectF(
+                x - barWidth / 2,
+                centerY - barHeight / 2,
+                x + barWidth / 2,
+                centerY + barHeight / 2
+            )
+            canvas.drawRoundRect(rect, barWidth / 2, barWidth / 2, paint)
         }
-        path.close()
+    }
+
+    private fun drawThinkingIndicator(canvas: Canvas) {
+        // 绘制旋转的点
+        val dotCount = 3
+        val dotRadius = ballRadius * 0.06f
+        val orbitRadius = ballRadius * 0.25f
+
+        for (i in 0 until dotCount) {
+            val angle = colorRotation * 2 * Math.PI + i * (2 * Math.PI / dotCount)
+            val x = centerX + (orbitRadius * cos(angle)).toFloat()
+            val y = centerY + (orbitRadius * sin(angle)).toFloat()
+
+            val alpha = (0.5f + 0.5f * sin(colorRotation * 4 * Math.PI + i)).toInt() * 255
+            paint.color = Color.argb(alpha.coerceIn(100, 255), 255, 255, 255)
+            canvas.drawCircle(x, y, dotRadius, paint)
+        }
+    }
+
+    private fun drawSuccessIndicator(canvas: Canvas) {
+        // 绘制对勾
+        paint.color = Color.WHITE
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = ballRadius * 0.1f
+        paint.strokeCap = Paint.Cap.ROUND
+        paint.strokeJoin = Paint.Join.ROUND
+
+        val path = Path()
+        path.moveTo(centerX - ballRadius * 0.25f, centerY)
+        path.lineTo(centerX - ballRadius * 0.05f, centerY + ballRadius * 0.2f)
+        path.lineTo(centerX + ballRadius * 0.25f, centerY - ballRadius * 0.15f)
+
         canvas.drawPath(path, paint)
+        paint.style = Paint.Style.FILL
+    }
+
+    private fun drawErrorIndicator(canvas: Canvas) {
+        // 绘制感叹号
+        paint.color = Color.WHITE
+
+        // 圆点
+        canvas.drawCircle(centerX, centerY + ballRadius * 0.2f, ballRadius * 0.06f, paint)
+
+        // 竖线
+        val rect = RectF(
+            centerX - ballRadius * 0.05f,
+            centerY - ballRadius * 0.25f,
+            centerX + ballRadius * 0.05f,
+            centerY + ballRadius * 0.08f
+        )
+        canvas.drawRoundRect(rect, ballRadius * 0.05f, ballRadius * 0.05f, paint)
     }
 
     // ==================== 状态更新方法 ====================
 
     fun updateState(isListening: Boolean, isProcessing: Boolean, hasError: Boolean) {
         val wasListening = this.isListening
+        val wasProcessing = this.isProcessing
 
         this.isListening = isListening
         this.isProcessing = isProcessing
@@ -498,70 +374,81 @@ class FloatingBallView @JvmOverloads constructor(
             else -> STATE_IDLE
         }
 
-        if (isListening && !wasListening) {
-            startListeningAnimations()
-        } else if (!isListening && wasListening) {
-            stopListeningAnimations()
+        // 根据状态调整动画参数
+        when (currentState) {
+            STATE_LISTENING -> {
+                waveAmplitude = 0.12f
+                startPulseAnimation(1f, 1.05f, 800)
+            }
+            STATE_THINKING -> {
+                waveAmplitude = 0.08f
+                startPulseAnimation(1f, 1.03f, 1200)
+            }
+            STATE_SUCCESS, STATE_ERROR -> {
+                waveAmplitude = 0.05f
+                pulseScale = 1f
+            }
+            else -> {
+                waveAmplitude = 0.05f
+                startPulseAnimation(1f, 1.02f, 2000)
+            }
         }
 
         invalidate()
     }
 
     fun setMood(mood: Int) {
-        currentMood = mood.coerceIn(MOOD_VERY_BAD, MOOD_VERY_GOOD)
+        // Siri风格不使用心情，保留接口兼容性
         invalidate()
     }
 
     fun updateVolumeLevel(level: Float) {
         this.volumeLevel = level.coerceIn(0f, 1f)
+        waveAmplitude = 0.08f + level * 0.15f
         invalidate()
     }
 
     fun showResult(text: String) {
         currentState = STATE_SUCCESS
-        currentMood = MOOD_VERY_GOOD
         invalidate()
 
         postDelayed({
             currentState = STATE_IDLE
-            currentMood = MOOD_NORMAL
             invalidate()
-        }, 2500)
-
-        Toast.makeText(context, "识别结果: $text", Toast.LENGTH_SHORT).show()
+        }, 2000)
     }
 
     // ==================== 动画控制 ====================
 
     private fun startIdleAnimations() {
-        startBreathAnimation()
-        startFloatAnimation()
+        startWaveAnimation()
+        startColorAnimation()
         startGlowAnimation()
+        startPulseAnimation(1f, 1.02f, 2000)
     }
 
-    private fun startBreathAnimation() {
-        breathAnimator?.cancel()
-        breathAnimator = ValueAnimator.ofFloat(1f, 1.02f, 1f).apply {
-            duration = 3000
+    private fun startWaveAnimation() {
+        waveAnimator?.cancel()
+        waveAnimator = ValueAnimator.ofFloat(0f, (2 * Math.PI).toFloat()).apply {
+            duration = 2000
             repeatCount = ValueAnimator.INFINITE
-            interpolator = AccelerateDecelerateInterpolator()
+            interpolator = LinearInterpolator()
             addUpdateListener {
-                breathScale = it.animatedValue as Float
+                wavePhase = it.animatedValue as Float
                 invalidate()
             }
             start()
         }
     }
 
-    private fun startFloatAnimation() {
-        floatAnimator?.cancel()
-        floatAnimator = ValueAnimator.ofFloat(-ballSizePx * 0.02f, ballSizePx * 0.02f).apply {
-            duration = 2000
+    private fun startColorAnimation() {
+        colorAnimator?.cancel()
+        colorAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 4000
             repeatCount = ValueAnimator.INFINITE
-            repeatMode = ValueAnimator.REVERSE
-            interpolator = AccelerateDecelerateInterpolator()
+            interpolator = LinearInterpolator()
             addUpdateListener {
-                floatOffset = it.animatedValue as Float
+                colorRotation = it.animatedValue as Float
                 invalidate()
             }
             start()
@@ -570,55 +457,62 @@ class FloatingBallView @JvmOverloads constructor(
 
     private fun startGlowAnimation() {
         glowAnimator?.cancel()
-        glowAnimator = ValueAnimator.ofFloat(0f, (2 * Math.PI).toFloat()).apply {
-            duration = 3000
+        glowAnimator = ValueAnimator.ofFloat(0.3f, 0.6f).apply {
+            duration = 1500
             repeatCount = ValueAnimator.INFINITE
+            repeatMode = ValueAnimator.REVERSE
             interpolator = LinearInterpolator()
             addUpdateListener {
-                glowPulse = sin(it.animatedValue as Float)
+                glowIntensity = it.animatedValue as Float
                 invalidate()
             }
             start()
         }
     }
 
-    private fun startListeningAnimations() {
+    private fun startPulseAnimation(from: Float, to: Float, duration: Long) {
         pulseAnimator?.cancel()
-        pulseAnimator = ValueAnimator.ofFloat(1f, RIPPLE_MAX_SCALE).apply {
-            duration = 1000
+        pulseAnimator = ValueAnimator.ofFloat(from, to).apply {
+            this.duration = duration
             repeatCount = ValueAnimator.INFINITE
-            interpolator = AccelerateDecelerateInterpolator()
+            repeatMode = ValueAnimator.REVERSE
+            interpolator = LinearInterpolator()
             addUpdateListener {
-                rippleScale = it.animatedValue as Float
+                pulseScale = it.animatedValue as Float
                 invalidate()
             }
             start()
         }
-    }
-
-    private fun stopListeningAnimations() {
-        pulseAnimator?.cancel()
-        rippleScale = 1f
-        invalidate()
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        breathAnimator?.cancel()
-        floatAnimator?.cancel()
-        glowAnimator?.cancel()
+        waveAnimator?.cancel()
+        colorAnimator?.cancel()
         pulseAnimator?.cancel()
+        glowAnimator?.cancel()
+    }
 
-        // 回收自定义头像bitmap
-        customAvatarBitmap?.recycle()
-        customAvatarBitmap = null
+    // ==================== 兼容性方法 ====================
+
+    /**
+     * 设置自定义头像（Siri风格不使用头像，保留接口兼容性）
+     */
+    fun setCustomAvatar(path: String?) {
+        // Siri风格不支持自定义头像
     }
 
     /**
-     * 刷新头像（当设置更改时调用）
+     * 清除自定义头像
+     */
+    fun clearCustomAvatar() {
+        // Siri风格不使用头像
+    }
+
+    /**
+     * 刷新头像（保留接口兼容性）
      */
     fun refreshAvatar() {
-        loadCustomAvatarFromPrefs()
         invalidate()
     }
 }
