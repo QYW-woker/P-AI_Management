@@ -20,7 +20,7 @@ import com.lifemanager.app.feature.finance.asset.MonthlyAssetScreen
 import com.lifemanager.app.feature.finance.expense.MonthlyExpenseScreen
 import com.lifemanager.app.feature.finance.transaction.DailyTransactionScreen
 import com.lifemanager.app.feature.todo.CleanTodoScreen
-import com.lifemanager.app.feature.todo.TodoDetailScreen
+import com.lifemanager.app.feature.todo.CleanTodoDetailScreen
 import com.lifemanager.app.feature.diary.CleanDiaryScreen
 import com.lifemanager.app.feature.timetrack.TimeTrackScreen
 import com.lifemanager.app.feature.habit.CleanHabitScreen
@@ -458,13 +458,13 @@ fun AppNavHost(
             )
         }
 
-        // 待办详情
+        // 待办详情 - 使用简洁设计版本
         composable(
             route = Screen.TodoDetail.route,
             arguments = listOf(navArgument("id") { type = NavType.LongType })
         ) { backStackEntry ->
             val todoId = backStackEntry.arguments?.getLong("id") ?: 0L
-            TodoDetailScreen(
+            CleanTodoDetailScreen(
                 todoId = todoId,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToGoal = { goalId ->
