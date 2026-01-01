@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+
+    <!-- 左侧长发 -->
+    <path
+        android:fillColor="#2D2D2D"
+        android:pathData="M65,70 Q45,110 50,155 Q55,165 70,160 L75,100 Z" />
+
+    <!-- 右侧长发 -->
+    <path
+        android:fillColor="#2D2D2D"
+        android:pathData="M135,70 Q155,110 150,155 Q145,165 130,160 L125,100 Z" />
+
+    <!-- 白色裙子主体 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M82,108 L118,108 L140,175 Q100,182 60,175 Z" />
+
+    <!-- 裙子左侧阴影 -->
+    <path
+        android:fillColor="#F0F0F0"
+        android:pathData="M82,108 L92,108 L75,175 L60,175 Z" />
+
+    <!-- 灰色腰带 -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M75,118 L125,118 L125,126 L75,126 Z" />
+
+    <!-- 金色挂坠 -->
+    <path
+        android:fillColor="#DAA520"
+        android:pathData="M100,138 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0" />
+
+    <!-- 脸部 (椭圆) -->
+    <path
+        android:fillColor="#FFEEE6"
+        android:pathData="M100,72 m-35,0 a35,40 0 1,1 70,0 a35,40 0 1,1 -70,0" />
+
+    <!-- 头发上部 - 整体覆盖 -->
+    <path
+        android:fillColor="#2D2D2D"
+        android:pathData="M65,75
+            Q63,45 80,32
+            Q100,25 120,32
+            Q137,45 135,75
+            L130,85
+            L115,55
+            Q100,48 85,55
+            L70,85
+            Z" />
+
+    <!-- 左侧刘海延伸 -->
+    <path
+        android:fillColor="#2D2D2D"
+        android:pathData="M65,75 L70,85 L75,70 Q68,55 65,75" />
+
+    <!-- 右侧刘海延伸 -->
+    <path
+        android:fillColor="#2D2D2D"
+        android:pathData="M135,75 L130,85 L125,70 Q132,55 135,75" />
+
+    <!-- 头冠底座 -->
+    <path
+        android:fillColor="#D0D0D0"
+        android:pathData="M80,38 L85,28 L100,18 L115,28 L120,38 Z" />
+
+    <!-- 头冠中心装饰 -->
+    <path
+        android:fillColor="#4A4A4A"
+        android:pathData="M100,22 L92,36 L108,36 Z" />
+
+    <!-- 左眼 -->
+    <path
+        android:fillColor="#3D3D3D"
+        android:pathData="M82,75 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0" />
+
+    <!-- 右眼 -->
+    <path
+        android:fillColor="#3D3D3D"
+        android:pathData="M118,75 m-8,0 a8,8 0 1,1 16,0 a8,8 0 1,1 -16,0" />
+
+    <!-- 左眼高光 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M79,72 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0" />
+
+    <!-- 右眼高光 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M115,72 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0" />
+
+    <!-- 左腮红 -->
+    <path
+        android:fillColor="#FFCCCC"
+        android:fillAlpha="0.4"
+        android:pathData="M70,88 m-8,0 a8,6 0 1,1 16,0 a8,6 0 1,1 -16,0" />
+
+    <!-- 右腮红 -->
+    <path
+        android:fillColor="#FFCCCC"
+        android:fillAlpha="0.4"
+        android:pathData="M130,88 m-8,0 a8,6 0 1,1 16,0 a8,6 0 1,1 -16,0" />
+
+    <!-- 嘴巴 -->
+    <path
+        android:fillColor="#E8A0A0"
+        android:pathData="M100,95 m-4,0 a4,3 0 1,1 8,0 a4,3 0 1,1 -8,0" />
+
+    <!-- 左手 -->
+    <path
+        android:fillColor="#FFEEE6"
+        android:pathData="M55,145 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0" />
+
+    <!-- 右手 -->
+    <path
+        android:fillColor="#FFEEE6"
+        android:pathData="M145,145 m-6,0 a6,6 0 1,1 12,0 a6,6 0 1,1 -12,0" />
+
+    <!-- 左袖 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M72,115 Q55,125 55,140 L62,142 Q65,130 75,122 Z" />
+
+    <!-- 右袖 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M128,115 Q145,125 145,140 L138,142 Q135,130 125,122 Z" />
+
+</vector>
