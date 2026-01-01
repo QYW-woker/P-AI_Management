@@ -11,6 +11,7 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.lifemanager.app.R
+import java.io.File
 import kotlin.math.sin
 import kotlin.math.cos
 
@@ -63,6 +64,8 @@ class FloatingBallView @JvmOverloads constructor(
 
     // 仙女图片
     private var fairyDrawable: Drawable? = null
+    private var customAvatarBitmap: Bitmap? = null
+    private var customAvatarPath: String? = null
 
     // 尺寸
     private val ballSizePx: Int
@@ -100,12 +103,123 @@ class FloatingBallView @JvmOverloads constructor(
      * 加载仙女图片资源
      */
     private fun loadFairyImage() {
+        // 先尝试加载自定义头像
+        loadCustomAvatarFromPrefs()
+
+        // 如果没有自定义头像，加载默认图片
+        if (customAvatarBitmap == null) {
+            try {
+                fairyDrawable = ContextCompat.getDrawable(context, R.drawable.ic_fairy_assistant)
+            } catch (e: Exception) {
+                fairyDrawable = null
+            }
+        }
+    }
+
+    /**
+     * 从配置中加载自定义头像
+     */
+    private fun loadCustomAvatarFromPrefs() {
+        try {
+            val prefs = context.getSharedPreferences("ai_settings", Context.MODE_PRIVATE)
+            val path = prefs.getString("custom_avatar_path", null)
+            if (path != null) {
+                setCustomAvatar(path)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * 设置自定义头像
+     * @param path 图片文件路径
+     */
+    fun setCustomAvatar(path: String?) {
+        if (path == customAvatarPath) return
+
+        customAvatarPath = path
+
+        // 回收旧的bitmap
+        customAvatarBitmap?.recycle()
+        customAvatarBitmap = null
+
+        if (path != null) {
+            try {
+                val file = File(path)
+                if (file.exists()) {
+                    // 加载并缩放图片
+                    val options = BitmapFactory.Options().apply {
+                        inJustDecodeBounds = true
+                    }
+                    BitmapFactory.decodeFile(path, options)
+
+                    // 计算缩放比例
+                    val targetSize = ballSizePx
+                    val sampleSize = calculateInSampleSize(options, targetSize, targetSize)
+
+                    options.inJustDecodeBounds = false
+                    options.inSampleSize = sampleSize
+
+                    val bitmap = BitmapFactory.decodeFile(path, options)
+                    if (bitmap != null) {
+                        // 缩放到目标尺寸
+                        customAvatarBitmap = Bitmap.createScaledBitmap(
+                            bitmap,
+                            targetSize,
+                            targetSize,
+                            true
+                        )
+                        if (bitmap != customAvatarBitmap) {
+                            bitmap.recycle()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                customAvatarBitmap = null
+            }
+        }
+
+        invalidate()
+    }
+
+    /**
+     * 计算图片采样率
+     */
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val height = options.outHeight
+        val width = options.outWidth
+        var inSampleSize = 1
+
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight = height / 2
+            val halfWidth = width / 2
+
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+
+        return inSampleSize
+    }
+
+    /**
+     * 清除自定义头像，使用默认形象
+     */
+    fun clearCustomAvatar() {
+        customAvatarPath = null
+        customAvatarBitmap?.recycle()
+        customAvatarBitmap = null
+
+        // 重新加载默认图片
         try {
             fairyDrawable = ContextCompat.getDrawable(context, R.drawable.ic_fairy_assistant)
         } catch (e: Exception) {
-            // 如果图片资源不存在，使用备用绘制方案
             fairyDrawable = null
         }
+
+        invalidate()
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
@@ -174,12 +288,22 @@ class FloatingBallView @JvmOverloads constructor(
      * 绘制仙女（图片或备用方案）
      */
     private fun drawFairy(canvas: Canvas, cx: Float, cy: Float) {
+        val imgSize = (ballSizePx * 0.85f).toInt()
+        val left = (cx - imgSize / 2f).toInt()
+        val top = (cy - imgSize / 2f).toInt()
+
+        // 优先使用自定义头像
+        val customBitmap = customAvatarBitmap
+        if (customBitmap != null && !customBitmap.isRecycled) {
+            val destRect = RectF(left.toFloat(), top.toFloat(), (left + imgSize).toFloat(), (top + imgSize).toFloat())
+            paint.isFilterBitmap = true
+            canvas.drawBitmap(customBitmap, null, destRect, paint)
+            return
+        }
+
+        // 其次使用默认drawable
         val drawable = fairyDrawable
         if (drawable != null) {
-            // 使用图片资源
-            val imgSize = (ballSizePx * 0.85f).toInt()
-            val left = (cx - imgSize / 2f).toInt()
-            val top = (cy - imgSize / 2f).toInt()
             drawable.setBounds(left, top, left + imgSize, top + imgSize)
             drawable.draw(canvas)
         } else {
@@ -484,5 +608,17 @@ class FloatingBallView @JvmOverloads constructor(
         floatAnimator?.cancel()
         glowAnimator?.cancel()
         pulseAnimator?.cancel()
+
+        // 回收自定义头像bitmap
+        customAvatarBitmap?.recycle()
+        customAvatarBitmap = null
+    }
+
+    /**
+     * 刷新头像（当设置更改时调用）
+     */
+    fun refreshAvatar() {
+        loadCustomAvatarFromPrefs()
+        invalidate()
     }
 }

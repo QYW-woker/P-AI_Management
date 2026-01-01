@@ -1,7 +1,12 @@
 package com.lifemanager.app.feature.settings
 
 import android.content.Intent
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,13 +23,19 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.lifemanager.app.R
 import com.lifemanager.app.core.floatingball.FloatingBallManager
 import com.lifemanager.app.ui.theme.AppColors
+import java.io.File
 
 /**
  * AI设置页面
@@ -47,6 +58,14 @@ fun AISettingsScreen(
     // 悬浮球权限状态
     var permissionStatus by remember { mutableStateOf(floatingBallManager.getPermissionStatus()) }
     var showBackgroundRunDialog by remember { mutableStateOf(false) }
+    var showAvatarDialog by remember { mutableStateOf(false) }
+
+    // 图片选择器
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.setCustomAvatar(it) }
+    }
 
     // 刷新权限状态
     LaunchedEffect(Unit) {
@@ -192,6 +211,11 @@ fun AISettingsScreen(
                             title = "透明度",
                             value = settings.floatingBallOpacity,
                             onValueChange = { viewModel.setFloatingBallOpacity(it) }
+                        )
+                        Divider(modifier = Modifier.padding(start = 56.dp))
+                        AISettingsAvatarItem(
+                            customAvatarPath = settings.customAvatarPath,
+                            onSelectImage = { showAvatarDialog = true }
                         )
                     }
                 }
@@ -399,6 +423,23 @@ fun AISettingsScreen(
                 // 刷新权限状态
                 permissionStatus = floatingBallManager.getPermissionStatus()
             }
+        )
+    }
+
+    // 悬浮球形象选择对话框
+    if (showAvatarDialog) {
+        AvatarSelectorDialog(
+            hasCustomAvatar = settings.hasCustomAvatar,
+            customAvatarPath = settings.customAvatarPath,
+            onSelectFromGallery = {
+                imagePickerLauncher.launch("image/*")
+                showAvatarDialog = false
+            },
+            onResetToDefault = {
+                viewModel.clearCustomAvatar()
+                showAvatarDialog = false
+            },
+            onDismiss = { showAvatarDialog = false }
         )
     }
 }
@@ -881,6 +922,187 @@ private fun BackgroundRunDialog(
         confirmButton = {
             TextButton(onClick = onDismiss) {
                 Text("完成", color = AppColors.Primary)
+            }
+        }
+    )
+}
+
+/**
+ * 悬浮球形象设置项
+ */
+@Composable
+private fun AISettingsAvatarItem(
+    customAvatarPath: String?,
+    onSelectImage: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onSelectImage)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.Face,
+            contentDescription = null,
+            tint = AppColors.Primary,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "悬浮球形象",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = if (customAvatarPath != null) "已自定义" else "使用默认形象",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        // 预览图
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            if (customAvatarPath != null) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(File(customAvatarPath))
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "自定义形象",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_fairy_assistant),
+                    contentDescription = "默认形象",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(4.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+/**
+ * 悬浮球形象选择对话框
+ */
+@Composable
+private fun AvatarSelectorDialog(
+    hasCustomAvatar: Boolean,
+    customAvatarPath: String?,
+    onSelectFromGallery: () -> Unit,
+    onResetToDefault: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🎨", fontSize = 24.sp)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("悬浮球形象", fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // 当前形象预览
+                Box(
+                    modifier = Modifier
+                        .size(100.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .border(2.dp, AppColors.Primary, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (customAvatarPath != null) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(File(customAvatarPath))
+                                .crossfade(true)
+                                .build(),
+                            contentDescription = "当前形象",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_fairy_assistant),
+                            contentDescription = "默认形象",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp)
+                        )
+                    }
+                }
+
+                Text(
+                    text = if (hasCustomAvatar) "当前使用自定义形象" else "当前使用默认形象",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Text(
+                    text = "建议使用正方形PNG图片，推荐尺寸256x256像素",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // 选择按钮
+                Button(
+                    onClick = onSelectFromGallery,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = AppColors.Primary)
+                ) {
+                    Icon(Icons.Default.PhotoLibrary, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("从相册选择")
+                }
+
+                // 恢复默认按钮
+                if (hasCustomAvatar) {
+                    OutlinedButton(
+                        onClick = onResetToDefault,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("恢复默认形象")
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭", color = AppColors.Primary)
             }
         }
     )
