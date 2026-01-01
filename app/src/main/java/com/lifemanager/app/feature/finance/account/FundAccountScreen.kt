@@ -37,6 +37,7 @@ import java.util.Locale
 @Composable
 fun FundAccountScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToDetail: (Long) -> Unit = {},
     viewModel: FundAccountViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -130,6 +131,7 @@ fun FundAccountScreen(
                                         type = type,
                                         accounts = accountsOfType,
                                         viewModel = viewModel,
+                                        onAccountClick = { onNavigateToDetail(it.id) },
                                         onEdit = { viewModel.showEditDialog(it.id) },
                                         onDelete = { viewModel.showDeleteConfirm(it.id) }
                                     )
@@ -311,6 +313,7 @@ private fun AccountTypeSection(
     type: String,
     accounts: List<FundAccountEntity>,
     viewModel: FundAccountViewModel,
+    onAccountClick: (FundAccountEntity) -> Unit,
     onEdit: (FundAccountEntity) -> Unit,
     onDelete: (FundAccountEntity) -> Unit
 ) {
@@ -354,6 +357,7 @@ private fun AccountTypeSection(
                     AccountItem(
                         account = account,
                         isDebt = viewModel.isDebtAccount(type),
+                        onClick = { onAccountClick(account) },
                         onEdit = { onEdit(account) },
                         onDelete = { onDelete(account) }
                     )
@@ -376,6 +380,7 @@ private fun AccountTypeSection(
 private fun AccountItem(
     account: FundAccountEntity,
     isDebt: Boolean,
+    onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -385,7 +390,7 @@ private fun AccountItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onEdit() }
+            .clickable { onClick() }
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

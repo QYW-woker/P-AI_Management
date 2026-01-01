@@ -63,6 +63,11 @@ sealed class Screen(val route: String) {
     /** 资金账户 */
     object FundAccount : Screen("fund_account")
 
+    /** 资金账户详情 */
+    object FundAccountDetail : Screen("fund_account_detail/{accountId}") {
+        fun createRoute(accountId: Long) = "fund_account_detail/$accountId"
+    }
+
     /** 统计分析 */
     object Statistics : Screen("statistics")
 

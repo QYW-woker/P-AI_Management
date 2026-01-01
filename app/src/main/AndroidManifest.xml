@@ -90,6 +90,17 @@
                 android:value="floating_ball_voice_assistant" />
         </service>
 
+        <!-- 悬浮球重启接收器 -->
+        <receiver
+            android:name=".core.floatingball.FloatingBallRestartReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.USER_PRESENT" />
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
         <!-- 支付通知监听服务 -->
         <service
             android:name=".core.notification.PaymentNotificationService"

@@ -109,4 +109,9 @@ interface DailyTransactionRepository {
         amount: Double,
         timeWindowMinutes: Int = 5
     ): List<DailyTransactionEntity>
+
+    /**
+     * 获取指定账户的交易记录
+     */
+    suspend fun getByAccountId(accountId: Long, startDate: Int, endDate: Int): List<DailyTransactionEntity>
 }

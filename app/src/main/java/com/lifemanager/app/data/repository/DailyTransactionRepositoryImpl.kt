@@ -106,4 +106,8 @@ class DailyTransactionRepositoryImpl @Inject constructor(
             maxCreatedAt = now + windowMs
         )
     }
+
+    override suspend fun getByAccountId(accountId: Long, startDate: Int, endDate: Int): List<DailyTransactionEntity> {
+        return dao.getByAccountIds(listOf(accountId), startDate, endDate)
+    }
 }

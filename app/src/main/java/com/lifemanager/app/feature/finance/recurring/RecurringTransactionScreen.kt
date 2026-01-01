@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -501,8 +503,12 @@ private fun EditRecurringDialog(
                             style = MaterialTheme.typography.labelMedium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(categories) { category ->
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            categories.forEach { category ->
                                 val isSelected = editState.categoryId == category.id
                                 val emoji = com.lifemanager.app.ui.component.CategoryIcons.getIcon(
                                     name = category.name,
@@ -526,15 +532,17 @@ private fun EditRecurringDialog(
                         style = MaterialTheme.typography.labelMedium
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        items(
-                            listOf(
-                                RecurringFrequency.DAILY to "每天",
-                                RecurringFrequency.WEEKLY to "每周",
-                                RecurringFrequency.MONTHLY to "每月",
-                                RecurringFrequency.YEARLY to "每年"
-                            )
-                        ) { (frequency, label) ->
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf(
+                            RecurringFrequency.DAILY to "每天",
+                            RecurringFrequency.WEEKLY to "每周",
+                            RecurringFrequency.MONTHLY to "每月",
+                            RecurringFrequency.YEARLY to "每年"
+                        ).forEach { (frequency, label) ->
                             val isSelected = editState.frequency == frequency
                             FilterChip(
                                 selected = isSelected,
@@ -553,8 +561,12 @@ private fun EditRecurringDialog(
                             style = MaterialTheme.typography.labelMedium
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            items(listOf("一" to 1, "二" to 2, "三" to 3, "四" to 4, "五" to 5, "六" to 6, "日" to 7)) { (label, day) ->
+                        @OptIn(ExperimentalLayoutApi::class)
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            listOf("一" to 1, "二" to 2, "三" to 3, "四" to 4, "五" to 5, "六" to 6, "日" to 7).forEach { (label, day) ->
                                 val isSelected = editState.dayOfWeek == day
                                 FilterChip(
                                     selected = isSelected,

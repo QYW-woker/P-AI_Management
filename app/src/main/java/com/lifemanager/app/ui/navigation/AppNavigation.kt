@@ -43,6 +43,7 @@ import com.lifemanager.app.feature.finance.accounting.AccountingSearchScreen
 import com.lifemanager.app.feature.finance.ledger.LedgerManagementScreen
 import com.lifemanager.app.feature.finance.recurring.RecurringTransactionScreen
 import com.lifemanager.app.feature.finance.account.FundAccountScreen
+import com.lifemanager.app.feature.finance.account.FundAccountDetailScreen
 import com.lifemanager.app.feature.finance.statistics.StatisticsScreen
 import com.lifemanager.app.feature.health.HealthRecordScreen
 import com.lifemanager.app.ui.reading.ReadingScreen
@@ -378,6 +379,21 @@ fun AppNavHost(
         // 资金账户
         composable(Screen.FundAccount.route) {
             FundAccountScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { accountId ->
+                    navController.navigate(Screen.FundAccountDetail.createRoute(accountId))
+                }
+            )
+        }
+
+        // 资金账户详情
+        composable(
+            route = Screen.FundAccountDetail.route,
+            arguments = listOf(navArgument("accountId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val accountId = backStackEntry.arguments?.getLong("accountId") ?: 0L
+            FundAccountDetailScreen(
+                accountId = accountId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

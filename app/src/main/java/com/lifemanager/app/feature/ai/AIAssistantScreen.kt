@@ -1,6 +1,8 @@
 package com.lifemanager.app.feature.ai
 
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -483,13 +485,38 @@ private fun IdleStateContent(
     imageRecognitionEnabled: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    var hasPermission by remember { mutableStateOf(false) }
+
+    // 权限请求
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasPermission = granted
+        if (granted) {
+            onStartListening()
+        }
+    }
+
+    // 检查权限
+    LaunchedEffect(Unit) {
+        hasPermission = context.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) ==
+                android.content.pm.PackageManager.PERMISSION_GRANTED
+    }
+
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 大麦克风图标 - 点击开始语音识别
+        // 大麦克风图标 - 点击开始语音识别（带权限检查）
         FilledIconButton(
-            onClick = onStartListening,
+            onClick = {
+                if (!hasPermission) {
+                    permissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                } else {
+                    onStartListening()
+                }
+            },
             modifier = Modifier.size(96.dp),
             colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -497,8 +524,8 @@ private fun IdleStateContent(
             )
         ) {
             Icon(
-                imageVector = Icons.Default.Mic,
-                contentDescription = "点击开始语音输入",
+                imageVector = if (hasPermission) Icons.Default.Mic else Icons.Default.MicOff,
+                contentDescription = if (hasPermission) "点击开始语音输入" else "点击授权麦克风",
                 modifier = Modifier.size(48.dp)
             )
         }
