@@ -45,6 +45,7 @@ import java.util.Locale
 @Composable
 fun TodoScreen(
     onNavigateBack: () -> Unit,
+    onNavigateToDetail: (Long) -> Unit = {},
     viewModel: TodoViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -199,11 +200,13 @@ fun TodoScreen(
                             groups = todoGroups,
                             viewModel = viewModel,
                             isSelectionMode = isSelectionMode,
-                            selectedIds = selectedIds
+                            selectedIds = selectedIds,
+                            onNavigateToDetail = onNavigateToDetail
                         )
                         "QUADRANT" -> QuadrantView(
                             data = quadrantData,
-                            viewModel = viewModel
+                            viewModel = viewModel,
+                            onNavigateToDetail = onNavigateToDetail
                         )
                         "CALENDAR" -> CalendarView(
                             selectedDate = selectedDate,
@@ -212,7 +215,8 @@ fun TodoScreen(
                             onDateSelect = { viewModel.selectDate(it) },
                             onPreviousMonth = { viewModel.previousMonth() },
                             onNextMonth = { viewModel.nextMonth() },
-                            viewModel = viewModel
+                            viewModel = viewModel,
+                            onNavigateToDetail = onNavigateToDetail
                         )
                     }
                 }
@@ -487,7 +491,8 @@ private fun TodoListView(
     groups: List<TodoGroup>,
     viewModel: TodoViewModel,
     isSelectionMode: Boolean = false,
-    selectedIds: Set<Long> = emptySet()
+    selectedIds: Set<Long> = emptySet(),
+    onNavigateToDetail: (Long) -> Unit = {}
 ) {
     if (groups.isEmpty()) {
         EmptyState()
@@ -518,7 +523,7 @@ private fun TodoListView(
                             if (isSelectionMode) {
                                 viewModel.toggleSelection(todo.id)
                             } else {
-                                viewModel.showEditDialog(todo.id)
+                                onNavigateToDetail(todo.id)
                             }
                         },
                         onDelete = { viewModel.showDeleteConfirm(todo.id) },
@@ -539,7 +544,8 @@ private fun TodoListView(
 @Composable
 private fun QuadrantView(
     data: QuadrantData,
-    viewModel: TodoViewModel
+    viewModel: TodoViewModel,
+    onNavigateToDetail: (Long) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -559,7 +565,7 @@ private fun QuadrantView(
                 todos = data.importantUrgent,
                 modifier = Modifier.weight(1f),
                 onAddClick = { viewModel.showAddDialogWithQuadrant("IMPORTANT_URGENT") },
-                onTodoClick = { viewModel.showEditDialog(it) },
+                onTodoClick = { onNavigateToDetail(it) },
                 onToggleComplete = { viewModel.toggleComplete(it) }
             )
             QuadrantCard(
@@ -568,7 +574,7 @@ private fun QuadrantView(
                 todos = data.importantNotUrgent,
                 modifier = Modifier.weight(1f),
                 onAddClick = { viewModel.showAddDialogWithQuadrant("IMPORTANT_NOT_URGENT") },
-                onTodoClick = { viewModel.showEditDialog(it) },
+                onTodoClick = { onNavigateToDetail(it) },
                 onToggleComplete = { viewModel.toggleComplete(it) }
             )
         }
@@ -584,7 +590,7 @@ private fun QuadrantView(
                 todos = data.notImportantUrgent,
                 modifier = Modifier.weight(1f),
                 onAddClick = { viewModel.showAddDialogWithQuadrant("NOT_IMPORTANT_URGENT") },
-                onTodoClick = { viewModel.showEditDialog(it) },
+                onTodoClick = { onNavigateToDetail(it) },
                 onToggleComplete = { viewModel.toggleComplete(it) }
             )
             QuadrantCard(
@@ -593,7 +599,7 @@ private fun QuadrantView(
                 todos = data.notImportantNotUrgent,
                 modifier = Modifier.weight(1f),
                 onAddClick = { viewModel.showAddDialogWithQuadrant("NOT_IMPORTANT_NOT_URGENT") },
-                onTodoClick = { viewModel.showEditDialog(it) },
+                onTodoClick = { onNavigateToDetail(it) },
                 onToggleComplete = { viewModel.toggleComplete(it) }
             )
         }
@@ -896,7 +902,8 @@ private fun CalendarView(
     onDateSelect: (LocalDate) -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
-    viewModel: TodoViewModel
+    viewModel: TodoViewModel,
+    onNavigateToDetail: (Long) -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -953,7 +960,7 @@ private fun CalendarView(
                         todo = todo,
                         isOverdue = viewModel.isOverdue(todo),
                         onToggleComplete = { viewModel.toggleComplete(todo.id) },
-                        onClick = { viewModel.showEditDialog(todo.id) },
+                        onClick = { onNavigateToDetail(todo.id) },
                         onDelete = { viewModel.showDeleteConfirm(todo.id) },
                         formatDueDate = { viewModel.formatDueDate(it) }
                     )

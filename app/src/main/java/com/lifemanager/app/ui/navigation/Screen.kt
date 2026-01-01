@@ -103,20 +103,50 @@ sealed class Screen(val route: String) {
     /** 待办记事 */
     object Todo : Screen("todo")
 
+    /** 待办详情 */
+    object TodoDetail : Screen("todo_detail/{id}") {
+        fun createRoute(id: Long) = "todo_detail/$id"
+    }
+
     /** 日记 */
     object Diary : Screen("diary")
+
+    /** 日记详情 */
+    object DiaryDetail : Screen("diary_detail/{id}") {
+        fun createRoute(id: Long) = "diary_detail/$id"
+    }
 
     /** 时间统计 */
     object TimeTrack : Screen("time_track")
 
+    /** 时间记录详情 */
+    object TimeTrackDetail : Screen("time_track_detail/{id}") {
+        fun createRoute(id: Long) = "time_track_detail/$id"
+    }
+
     /** 习惯打卡 */
     object Habit : Screen("habit")
+
+    /** 习惯详情 */
+    object HabitDetail : Screen("habit_detail/{id}") {
+        fun createRoute(id: Long) = "habit_detail/$id"
+    }
 
     /** 存钱计划 */
     object SavingsPlan : Screen("savings_plan")
 
+    /** 存钱计划详情 */
+    object SavingsPlanDetail : Screen("savings_plan_detail/{id}") {
+        fun createRoute(id: Long) = "savings_plan_detail/$id"
+    }
+
     /** 健康记录 */
     object HealthRecord : Screen("health_record")
+
+    /** 健康记录详情 */
+    object HealthRecordDetail : Screen("health_record_detail/{id}") {
+        fun createRoute(id: Long) = "health_record_detail/$id"
+    }
 
     /** 阅读 */
     object Reading : Screen("reading")
@@ -124,6 +154,11 @@ sealed class Screen(val route: String) {
     /** 书籍详情 */
     object BookDetail : Screen("book_detail/{bookId}") {
         fun createRoute(bookId: Long) = "book_detail/$bookId"
+    }
+
+    /** 交易详情 */
+    object TransactionDetail : Screen("transaction_detail/{id}") {
+        fun createRoute(id: Long) = "transaction_detail/$id"
     }
 
     // ==================== 设置 ====================

@@ -5,9 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifemanager.app.core.database.dao.DailyTransactionDao
 import com.lifemanager.app.core.database.dao.GoalDao
-import com.lifemanager.app.core.database.dao.HabitDao
 import com.lifemanager.app.core.database.dao.TodoDao
 import com.lifemanager.app.core.database.entity.GoalEntity
+import com.lifemanager.app.domain.repository.HabitRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -26,7 +26,7 @@ class HomeViewModel @Inject constructor(
     private val transactionDao: DailyTransactionDao,
     private val todoDao: TodoDao,
     private val goalDao: GoalDao,
-    private val habitDao: HabitDao
+    private val habitRepository: HabitRepository
 ) : ViewModel() {
 
     // 加载状态
@@ -131,6 +131,53 @@ class HomeViewModel @Inject constructor(
                     }
                 }
         }
+
+        // 观察今日待办变化
+        viewModelScope.launch {
+            todoDao.getTodayTodos(today)
+                .drop(1) // 跳过初始值
+                .debounce(300)
+                .collectLatest {
+                    // 当今日待办变化时，重新获取统计数据
+                    val todoStats = todoDao.getTodayStats(today)
+                    _todayStats.value = _todayStats.value.copy(
+                        completedTodos = todoStats.completed,
+                        totalTodos = todoStats.total
+                    )
+                }
+        }
+
+        // 观察习惯打卡变化
+        viewModelScope.launch {
+            habitRepository.getActiveHabits()
+                .drop(1)
+                .debounce(300)
+                .collectLatest { habits ->
+                    val totalHabits = habits.size
+                    // 统计今日已打卡的习惯数量
+                    val completedHabits = habitRepository.countTodayCheckins(today)
+                    _todayStats.value = _todayStats.value.copy(
+                        completedHabits = completedHabits,
+                        totalHabits = totalHabits
+                    )
+                }
+        }
+
+        // 观察今日打卡记录变化
+        viewModelScope.launch {
+            habitRepository.getRecordsByDate(today)
+                .drop(1)
+                .debounce(300)
+                .collectLatest {
+                    // 当打卡记录变化时，重新统计
+                    val totalHabits = habitRepository.countActiveHabits()
+                    val completedHabits = habitRepository.countTodayCheckins(today)
+                    _todayStats.value = _todayStats.value.copy(
+                        completedHabits = completedHabits,
+                        totalHabits = totalHabits
+                    )
+                }
+        }
     }
 
     /**
@@ -142,14 +189,15 @@ class HomeViewModel @Inject constructor(
             val todayExpense = transactions.filter { it.type == "EXPENSE" }.sumOf { it.amount }
             val todayIncome = transactions.filter { it.type == "INCOME" }.sumOf { it.amount }
             val todoStats = todoDao.getTodayStats(today)
-            val totalHabits = habitDao.countActive()
+            val totalHabits = habitRepository.countActiveHabits()
+            val completedHabits = habitRepository.countTodayCheckins(today)
 
             TodayStatsData(
                 completedTodos = todoStats.completed,
                 totalTodos = todoStats.total,
                 todayExpense = todayExpense,
                 todayIncome = todayIncome,
-                completedHabits = 0,
+                completedHabits = completedHabits,
                 totalHabits = totalHabits,
                 focusMinutes = 0
             )

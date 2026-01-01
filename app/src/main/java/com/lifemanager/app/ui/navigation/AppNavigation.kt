@@ -20,6 +20,7 @@ import com.lifemanager.app.feature.finance.asset.MonthlyAssetScreen
 import com.lifemanager.app.feature.finance.expense.MonthlyExpenseScreen
 import com.lifemanager.app.feature.finance.transaction.DailyTransactionScreen
 import com.lifemanager.app.feature.todo.TodoScreen
+import com.lifemanager.app.feature.todo.TodoDetailScreen
 import com.lifemanager.app.feature.diary.DiaryScreen
 import com.lifemanager.app.feature.timetrack.TimeTrackScreen
 import com.lifemanager.app.feature.habit.HabitScreen
@@ -450,7 +451,25 @@ fun AppNavHost(
         // 待办
         composable(Screen.Todo.route) {
             TodoScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { todoId ->
+                    navController.navigate(Screen.TodoDetail.createRoute(todoId))
+                }
+            )
+        }
+
+        // 待办详情
+        composable(
+            route = Screen.TodoDetail.route,
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val todoId = backStackEntry.arguments?.getLong("id") ?: 0L
+            TodoDetailScreen(
+                todoId = todoId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToGoal = { goalId ->
+                    navController.navigate(Screen.GoalDetail.createRoute(goalId))
+                }
             )
         }
 
