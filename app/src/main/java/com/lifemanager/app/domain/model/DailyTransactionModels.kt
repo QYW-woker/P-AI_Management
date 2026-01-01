@@ -118,3 +118,23 @@ data class QuickInputTemplate(
     val note: String = "",
     val usageCount: Int = 0
 )
+
+/**
+ * 添加交易结果（带重复检测）
+ */
+data class AddTransactionResult(
+    val success: Boolean,
+    val transactionId: Long? = null,
+    val duplicateType: DuplicateType? = null,
+    val potentialDuplicates: List<DailyTransactionEntity> = emptyList()
+)
+
+/**
+ * 重复类型
+ */
+enum class DuplicateType {
+    /** 最近时间窗口内的重复（5分钟内） */
+    RECENT,
+    /** 同一天的潜在重复 */
+    SAME_DAY
+}

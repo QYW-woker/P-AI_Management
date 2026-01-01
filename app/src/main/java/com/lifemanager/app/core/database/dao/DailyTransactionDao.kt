@@ -393,6 +393,49 @@ interface DailyTransactionDao {
         LIMIT :limit
     """)
     suspend fun getTopCategories(startDate: Int, endDate: Int, limit: Int = 10): List<CategoryStats>
+
+    // ==================== 重复检测 ====================
+
+    /**
+     * 查找潜在的重复交易
+     * 检查同一天、相同类型、相同金额、相同分类的交易
+     */
+    @Query("""
+        SELECT * FROM daily_transactions
+        WHERE date = :date
+        AND type = :type
+        AND amount = :amount
+        AND (:categoryId IS NULL OR categoryId = :categoryId)
+        ORDER BY createdAt DESC
+        LIMIT 5
+    """)
+    suspend fun findPotentialDuplicates(
+        date: Int,
+        type: String,
+        amount: Double,
+        categoryId: Long?
+    ): List<DailyTransactionEntity>
+
+    /**
+     * 查找时间窗口内的重复交易（更严格）
+     * 检查同一天、相同类型、相同金额，且创建时间在指定时间窗口内
+     */
+    @Query("""
+        SELECT * FROM daily_transactions
+        WHERE date = :date
+        AND type = :type
+        AND amount = :amount
+        AND createdAt >= :minCreatedAt
+        AND createdAt <= :maxCreatedAt
+        ORDER BY createdAt DESC
+    """)
+    suspend fun findDuplicatesInTimeWindow(
+        date: Int,
+        type: String,
+        amount: Double,
+        minCreatedAt: Long,
+        maxCreatedAt: Long
+    ): List<DailyTransactionEntity>
 }
 
 /**

@@ -89,4 +89,24 @@ interface DailyTransactionRepository {
      * 获取指定日期范围内指定分类的支出总额
      */
     suspend fun getTotalByCategoryInRange(startDate: Int, endDate: Int, categoryId: Long): Double
+
+    /**
+     * 查找潜在的重复交易
+     */
+    suspend fun findPotentialDuplicates(
+        date: Int,
+        type: String,
+        amount: Double,
+        categoryId: Long?
+    ): List<DailyTransactionEntity>
+
+    /**
+     * 查找时间窗口内的重复交易
+     */
+    suspend fun findDuplicatesInTimeWindow(
+        date: Int,
+        type: String,
+        amount: Double,
+        timeWindowMinutes: Int = 5
+    ): List<DailyTransactionEntity>
 }

@@ -229,6 +229,93 @@ class DailyTransactionUseCase @Inject constructor(
     }
 
     /**
+     * 添加交易（带重复检测）
+     *
+     * @return AddTransactionResult 包含是否成功、交易ID和潜在重复交易
+     */
+    suspend fun addTransactionWithDuplicateCheck(
+        type: String,
+        amount: Double,
+        categoryId: Long?,
+        date: Int,
+        time: String = "",
+        note: String = "",
+        source: String = "MANUAL",
+        accountId: Long? = null,
+        skipDuplicateCheck: Boolean = false
+    ): AddTransactionResult {
+        // 如果跳过重复检测，直接添加
+        if (skipDuplicateCheck) {
+            val id = addTransaction(type, amount, categoryId, date, time, note, source, accountId)
+            return AddTransactionResult(success = true, transactionId = id)
+        }
+
+        // 检查时间窗口内的重复（5分钟内相同金额相同类型）
+        val recentDuplicates = transactionRepository.findDuplicatesInTimeWindow(
+            date = date,
+            type = type,
+            amount = amount,
+            timeWindowMinutes = 5
+        )
+
+        if (recentDuplicates.isNotEmpty()) {
+            return AddTransactionResult(
+                success = false,
+                duplicateType = DuplicateType.RECENT,
+                potentialDuplicates = recentDuplicates
+            )
+        }
+
+        // 检查同一天的潜在重复
+        val potentialDuplicates = transactionRepository.findPotentialDuplicates(
+            date = date,
+            type = type,
+            amount = amount,
+            categoryId = categoryId
+        )
+
+        if (potentialDuplicates.isNotEmpty()) {
+            return AddTransactionResult(
+                success = false,
+                duplicateType = DuplicateType.SAME_DAY,
+                potentialDuplicates = potentialDuplicates
+            )
+        }
+
+        // 无重复，正常添加
+        val id = addTransaction(type, amount, categoryId, date, time, note, source, accountId)
+        return AddTransactionResult(success = true, transactionId = id)
+    }
+
+    /**
+     * 强制添加交易（忽略重复检测）
+     */
+    suspend fun forceAddTransaction(
+        type: String,
+        amount: Double,
+        categoryId: Long?,
+        date: Int,
+        time: String = "",
+        note: String = "",
+        source: String = "MANUAL",
+        accountId: Long? = null
+    ): Long {
+        return addTransaction(type, amount, categoryId, date, time, note, source, accountId)
+    }
+
+    /**
+     * 检查是否存在重复交易
+     */
+    suspend fun checkForDuplicates(
+        type: String,
+        amount: Double,
+        categoryId: Long?,
+        date: Int
+    ): List<DailyTransactionEntity> {
+        return transactionRepository.findPotentialDuplicates(date, type, amount, categoryId)
+    }
+
+    /**
      * 更新交易
      */
     suspend fun updateTransaction(

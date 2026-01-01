@@ -80,4 +80,30 @@ class DailyTransactionRepositoryImpl @Inject constructor(
     override suspend fun getTotalByCategoryInRange(startDate: Int, endDate: Int, categoryId: Long): Double {
         return dao.getTotalByCategoryInRange(startDate, endDate, categoryId)
     }
+
+    override suspend fun findPotentialDuplicates(
+        date: Int,
+        type: String,
+        amount: Double,
+        categoryId: Long?
+    ): List<DailyTransactionEntity> {
+        return dao.findPotentialDuplicates(date, type, amount, categoryId)
+    }
+
+    override suspend fun findDuplicatesInTimeWindow(
+        date: Int,
+        type: String,
+        amount: Double,
+        timeWindowMinutes: Int
+    ): List<DailyTransactionEntity> {
+        val now = System.currentTimeMillis()
+        val windowMs = timeWindowMinutes * 60 * 1000L
+        return dao.findDuplicatesInTimeWindow(
+            date = date,
+            type = type,
+            amount = amount,
+            minCreatedAt = now - windowMs,
+            maxCreatedAt = now + windowMs
+        )
+    }
 }
