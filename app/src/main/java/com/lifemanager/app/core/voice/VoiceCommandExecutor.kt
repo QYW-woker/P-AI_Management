@@ -10,10 +10,13 @@ import com.lifemanager.app.core.database.entity.GoalCategory
 import com.lifemanager.app.core.database.entity.ProgressType
 import com.lifemanager.app.core.database.entity.TransactionSource
 import com.lifemanager.app.core.database.entity.Priority
+import com.lifemanager.app.core.database.entity.HabitRecordEntity
 import com.lifemanager.app.domain.repository.DailyTransactionRepository
 import com.lifemanager.app.domain.repository.TodoRepository
 import com.lifemanager.app.domain.repository.DiaryRepository
 import com.lifemanager.app.domain.repository.GoalRepository
+import com.lifemanager.app.domain.repository.HabitRepository
+import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
@@ -29,7 +32,8 @@ class VoiceCommandExecutor @Inject constructor(
     private val transactionRepository: DailyTransactionRepository,
     private val todoRepository: TodoRepository,
     private val diaryRepository: DiaryRepository,
-    private val goalRepository: GoalRepository
+    private val goalRepository: GoalRepository,
+    private val habitRepository: HabitRepository
 ) {
 
     /**
@@ -166,12 +170,92 @@ class VoiceCommandExecutor @Inject constructor(
      * 执行习惯打卡
      */
     private suspend fun executeHabitCheckin(intent: CommandIntent.HabitCheckin): ExecutionResult {
-        // TODO: 实现习惯打卡逻辑
-        return ExecutionResult.NeedMoreInfo(
-            intent = intent,
-            missingFields = listOf("habitId"),
-            prompt = "请确认要打卡的习惯名称"
+        val habitName = intent.habitName.trim()
+
+        // 获取所有活跃习惯
+        val activeHabits = habitRepository.getActiveHabits().first()
+
+        if (activeHabits.isEmpty()) {
+            return ExecutionResult.Failure("您还没有添加任何习惯，请先在习惯页面添加习惯")
+        }
+
+        // 查找匹配的习惯（支持模糊匹配）
+        val matchedHabit = activeHabits.find { habit ->
+            habit.name.equals(habitName, ignoreCase = true) ||
+            habit.name.contains(habitName, ignoreCase = true) ||
+            habitName.contains(habit.name, ignoreCase = true)
+        }
+
+        if (matchedHabit == null) {
+            // 返回可用的习惯列表提示
+            val habitList = activeHabits.take(5).joinToString("、") { it.name }
+            return ExecutionResult.NeedMoreInfo(
+                intent = intent,
+                missingFields = listOf("habitName"),
+                prompt = "未找到习惯「$habitName」，您的习惯有: $habitList"
+            )
+        }
+
+        val today = LocalDate.now().toEpochDay().toInt()
+
+        // 检查今日是否已打卡
+        val existingRecord = habitRepository.getRecordByHabitAndDate(matchedHabit.id, today)
+
+        if (existingRecord != null && existingRecord.isCompleted) {
+            return ExecutionResult.Success(
+                message = "「${matchedHabit.name}」今日已打卡",
+                data = mapOf(
+                    "habitId" to matchedHabit.id,
+                    "habitName" to matchedHabit.name,
+                    "alreadyChecked" to true
+                )
+            )
+        }
+
+        // 执行打卡
+        val record = HabitRecordEntity(
+            habitId = matchedHabit.id,
+            date = today,
+            isCompleted = true,
+            value = intent.value,
+            note = "语音打卡"
         )
+        habitRepository.saveRecord(record)
+
+        // 计算连续打卡天数
+        val streak = calculateHabitStreak(matchedHabit.id, today)
+
+        val valueMsg = if (intent.value != null) "，数值: ${intent.value}" else ""
+        val streakMsg = if (streak > 1) "，已连续 $streak 天" else ""
+
+        return ExecutionResult.Success(
+            message = "「${matchedHabit.name}」打卡成功$valueMsg$streakMsg",
+            data = mapOf(
+                "habitId" to matchedHabit.id,
+                "habitName" to matchedHabit.name,
+                "streak" to streak,
+                "value" to (intent.value ?: 0.0)
+            )
+        )
+    }
+
+    /**
+     * 计算习惯连续打卡天数
+     */
+    private suspend fun calculateHabitStreak(habitId: Long, today: Int): Int {
+        var streak = 0
+        var checkDate = today
+
+        while (true) {
+            val isChecked = habitRepository.isCheckedIn(habitId, checkDate)
+            if (isChecked) {
+                streak++
+                checkDate--
+            } else {
+                break
+            }
+        }
+        return streak
     }
 
     /**
@@ -270,9 +354,47 @@ class VoiceCommandExecutor @Inject constructor(
      * 查询习惯
      */
     private suspend fun queryHabit(timePeriod: String?): ExecutionResult {
+        val today = LocalDate.now().toEpochDay().toInt()
+        val activeHabits = habitRepository.getActiveHabits().first()
+
+        if (activeHabits.isEmpty()) {
+            return ExecutionResult.Success(
+                message = "您还没有添加任何习惯",
+                data = emptyMap<String, Any>()
+            )
+        }
+
+        // 统计今日打卡情况
+        var todayCheckedCount = 0
+        val habitStatusList = mutableListOf<String>()
+
+        for (habit in activeHabits) {
+            val isChecked = habitRepository.isCheckedIn(habit.id, today)
+            if (isChecked) {
+                todayCheckedCount++
+                val streak = calculateHabitStreak(habit.id, today)
+                habitStatusList.add("${habit.name}(连续${streak}天)")
+            }
+        }
+
+        val totalHabits = activeHabits.size
+        val uncheckedCount = totalHabits - todayCheckedCount
+
+        val message = if (todayCheckedCount == 0) {
+            "今日${totalHabits}个习惯都还未打卡"
+        } else if (uncheckedCount == 0) {
+            "太棒了！今日${totalHabits}个习惯已全部打卡: ${habitStatusList.joinToString("、")}"
+        } else {
+            "今日已打卡${todayCheckedCount}/${totalHabits}个习惯: ${habitStatusList.joinToString("、")}"
+        }
+
         return ExecutionResult.Success(
-            message = "习惯查询功能开发中",
-            data = emptyMap<String, Any>()
+            message = message,
+            data = mapOf(
+                "totalHabits" to totalHabits,
+                "checkedCount" to todayCheckedCount,
+                "habits" to habitStatusList
+            )
         )
     }
 
