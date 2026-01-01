@@ -8,7 +8,7 @@ import com.lifemanager.app.domain.model.EditRecordState
 import com.lifemanager.app.domain.model.FieldStats
 import com.lifemanager.app.domain.model.IncomeExpenseUiState
 import com.lifemanager.app.domain.model.MonthlyIncomeExpenseWithField
-import com.lifemanager.app.domain.model.MonthlyStats
+import com.lifemanager.app.domain.model.IncomeExpenseMonthlyStats
 import com.lifemanager.app.domain.model.MonthlyTrendPoint
 import com.lifemanager.app.domain.usecase.MonthlyIncomeExpenseUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,8 +45,8 @@ class MonthlyIncomeExpenseViewModel @Inject constructor(
     val records: StateFlow<List<MonthlyIncomeExpenseWithField>> = _records.asStateFlow()
 
     // 月度统计数据
-    private val _monthlyStats = MutableStateFlow(MonthlyStats(0, 0.0, 0.0))
-    val monthlyStats: StateFlow<MonthlyStats> = _monthlyStats.asStateFlow()
+    private val _monthlyStats = MutableStateFlow(IncomeExpenseMonthlyStats(0, 0.0, 0.0))
+    val monthlyStats: StateFlow<IncomeExpenseMonthlyStats> = _monthlyStats.asStateFlow()
 
     // 收入字段统计
     private val _incomeFieldStats = MutableStateFlow<List<FieldStats>>(emptyList())

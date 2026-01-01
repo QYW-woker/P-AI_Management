@@ -23,7 +23,7 @@ import com.lifemanager.app.core.database.entity.IncomeExpenseType
 import com.lifemanager.app.domain.model.FieldStats
 import com.lifemanager.app.domain.model.IncomeExpenseUiState
 import com.lifemanager.app.domain.model.MonthlyIncomeExpenseWithField
-import com.lifemanager.app.domain.model.MonthlyStats
+import com.lifemanager.app.domain.model.IncomeExpenseMonthlyStats
 import com.lifemanager.app.ui.component.charts.PieChartView
 import com.lifemanager.app.ui.component.charts.PieChartData
 import java.text.NumberFormat
@@ -277,7 +277,7 @@ private fun MonthSelector(
  * 统计卡片
  */
 @Composable
-private fun StatsCard(stats: MonthlyStats) {
+private fun StatsCard(stats: IncomeExpenseMonthlyStats) {
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
 
     Card(

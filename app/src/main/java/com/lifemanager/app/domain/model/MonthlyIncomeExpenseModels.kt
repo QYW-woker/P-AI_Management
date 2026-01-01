@@ -19,7 +19,7 @@ data class MonthlyIncomeExpenseWithField(
  *
  * 汇总某月的收入和支出总额
  */
-data class MonthlyStats(
+data class IncomeExpenseMonthlyStats(
     val yearMonth: Int,
     val totalIncome: Double,
     val totalExpense: Double
@@ -86,7 +86,7 @@ sealed class IncomeExpenseUiState {
     /** 加载成功 */
     data class Success(
         val records: List<MonthlyIncomeExpenseWithField>,
-        val stats: MonthlyStats,
+        val stats: IncomeExpenseMonthlyStats,
         val incomeByField: List<FieldStats>,
         val expenseByField: List<FieldStats>
     ) : IncomeExpenseUiState()

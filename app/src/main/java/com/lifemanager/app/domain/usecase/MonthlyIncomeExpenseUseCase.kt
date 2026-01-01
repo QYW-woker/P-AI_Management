@@ -6,7 +6,7 @@ import com.lifemanager.app.core.database.entity.ModuleType
 import com.lifemanager.app.core.database.entity.MonthlyIncomeExpenseEntity
 import com.lifemanager.app.domain.model.FieldStats
 import com.lifemanager.app.domain.model.MonthlyIncomeExpenseWithField
-import com.lifemanager.app.domain.model.MonthlyStats
+import com.lifemanager.app.domain.model.IncomeExpenseMonthlyStats
 import com.lifemanager.app.domain.model.MonthlyTrendPoint
 import com.lifemanager.app.domain.repository.CustomFieldRepository
 import com.lifemanager.app.domain.repository.MonthlyIncomeExpenseRepository
@@ -52,11 +52,11 @@ class MonthlyIncomeExpenseUseCase @Inject constructor(
     /**
      * 获取月度统计数据
      */
-    suspend fun getMonthlyStats(yearMonth: Int): MonthlyStats {
+    suspend fun getMonthlyStats(yearMonth: Int): IncomeExpenseMonthlyStats {
         val totalIncome = repository.getTotalIncome(yearMonth)
         val totalExpense = repository.getTotalExpense(yearMonth)
 
-        return MonthlyStats(
+        return IncomeExpenseMonthlyStats(
             yearMonth = yearMonth,
             totalIncome = totalIncome,
             totalExpense = totalExpense
