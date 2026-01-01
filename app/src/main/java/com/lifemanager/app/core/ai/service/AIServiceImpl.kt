@@ -92,21 +92,29 @@ class AIServiceImpl @Inject constructor(
 - 涉及减肥、健身、存钱、学习XX技能、戒烟戒酒、读书N本等目标性描述 → goal（目标）
 - 涉及具体事件/活动/任务（开会、约会、去医院、出差等）→ todo（待办事项）
 - 纯粹表达心情感受（开心、难过、累了）→ diary
+- 涉及提醒、闹钟 → todo（设置reminderMinutesBefore）
 
 【目标vs待办的区分】：
 - goal：需要持续努力才能达成的目标，通常有量化指标（减肥10斤、存款5万、跑步1000公里）
-- todo：一次性可完成的具体事项（开会、看医生、买菜）
+- todo：一次性可完成的具体事项（开会、看医生、买菜、坐飞机）
 
-【日期计算规则】：
+【日期计算规则 - 非常重要】：
 - "今天" = $todayEpochDay
 - "昨天" = ${todayEpochDay - 1}
+- "前天" = ${todayEpochDay - 2}
 - "明天" = ${todayEpochDay + 1}
+- "后天" = ${todayEpochDay + 2}
 - "这个月" = ${today.monthValue}月
 - "下个月" = ${today.plusMonths(1).monthValue}月
+
+【多条记录识别规则】：
+如果用户输入包含多个不同日期的记录，需要返回multiple类型，data为数组。
+例如："昨天今天明天吃饭各10元" → 需要识别为3条记录，分别对应昨天、今天、明天
 
 可用的记账分类：$categoryNames
 
 请严格按以下JSON格式返回：
+单条记录：
 {
   "type": "transaction|todo|goal|diary|habit|timetrack|navigate|query|unknown",
   "data": {
@@ -117,8 +125,17 @@ class AIServiceImpl @Inject constructor(
   }
 }
 
+多条记录（不同日期/不同事项）：
+{
+  "type": "multiple",
+  "data": [
+    {"type":"transaction","data":{...}},
+    {"type":"transaction","data":{...}}
+  ]
+}
+
 【待办事项的四象限判断规则】：
-- IMPORTANT_URGENT（重要且紧急）：关键会议、紧急任务、今天必须完成的重要事项
+- IMPORTANT_URGENT（重要且紧急）：关键会议、紧急任务、今天必须完成的重要事项、坐飞机、赶火车
 - IMPORTANT_NOT_URGENT（重要不紧急）：学习计划、健康检查、长期规划相关
 - NOT_IMPORTANT_URGENT（不重要但紧急）：普通会议、一般约会、日常事务
 - NOT_IMPORTANT_NOT_URGENT（不重要不紧急）：娱乐活动、闲聊
@@ -129,9 +146,18 @@ class AIServiceImpl @Inject constructor(
 - "上午10点" → startTime:"10:00", isAllDay:false
 - 没有提及具体时间 → isAllDay:true
 
+【提醒识别规则】：
+- "7点提醒我" + 事件在8点 → reminderMinutesBefore: 60
+- "提前半小时提醒" → reminderMinutesBefore: 30
+- "提前1小时提醒" → reminderMinutesBefore: 60
+- 无特别说明的重要事件 → reminderMinutesBefore: 30
+
 示例：
 输入："12月1号吃饭100元"
 输出：{"type":"transaction","data":{"transactionType":"expense","amount":100,"category":"餐饮","note":"吃饭","date":${java.time.LocalDate.of(today.year, 12, 1).toEpochDay()}}}
+
+输入："昨天今天明天中午吃饭各10元"
+输出：{"type":"multiple","data":[{"type":"transaction","data":{"transactionType":"expense","amount":10,"category":"餐饮","note":"中午吃饭","date":${todayEpochDay - 1},"time":"12:00"}},{"type":"transaction","data":{"transactionType":"expense","amount":10,"category":"餐饮","note":"中午吃饭","date":${todayEpochDay},"time":"12:00"}},{"type":"transaction","data":{"transactionType":"expense","amount":10,"category":"餐饮","note":"中午吃饭","date":${todayEpochDay + 1},"time":"12:00"}}]}
 
 输入："这个月减肥10斤"
 输出：{"type":"goal","data":{"goalName":"减肥10斤","targetAmount":10,"targetUnit":"斤","deadline":"${today.year}-${today.monthValue}-${today.lengthOfMonth()}","category":"健身"}}
@@ -142,13 +168,13 @@ class AIServiceImpl @Inject constructor(
 输入："后天下午三点在公司开产品评审会"
 输出：{"type":"todo","data":{"title":"产品评审会","dueDate":${todayEpochDay + 2},"startTime":"15:00","location":"公司","isAllDay":false,"priority":"HIGH","quadrant":"IMPORTANT_URGENT","reminderMinutesBefore":30}}
 
-输入："明天要去北京出差"
-输出：{"type":"todo","data":{"title":"去北京出差","dueDate":${todayEpochDay + 1},"isAllDay":true,"priority":"HIGH","quadrant":"IMPORTANT_URGENT"}}
+输入："明天8点飞机去北京，请在7点提醒我"
+输出：{"type":"todo","data":{"title":"坐飞机去北京","dueDate":${todayEpochDay + 1},"startTime":"08:00","location":"北京","isAllDay":false,"priority":"HIGH","quadrant":"IMPORTANT_URGENT","reminderMinutesBefore":60}}
 
 输入："今天很开心"
 输出：{"type":"diary","data":{"content":"今天很开心","mood":5}}
 
-只返回JSON，不要其他文字。
+只返回JSON，不要其他文字。不要创建重复记录！
 """.trimIndent()
 
             val request = ChatRequest(
@@ -499,21 +525,43 @@ $dataStr
                 ?: return CommandIntent.Unknown(originalText)
 
             val type = map["type"] as? String ?: return CommandIntent.Unknown(originalText)
-            val data = map["data"] as? Map<String, Any> ?: emptyMap()
 
             when (type) {
-                "transaction" -> parseTransactionIntent(data)
-                "todo" -> parseTodoIntent(data)
-                "goal" -> parseGoalIntent(data)
-                "diary" -> parseDiaryIntent(data)
-                "habit" -> parseHabitIntent(data)
-                "timetrack" -> parseTimeTrackIntent(data)
-                "navigate" -> parseNavigateIntent(data)
-                "query" -> parseQueryIntent(data)
-                else -> CommandIntent.Unknown(originalText)
+                "multiple" -> {
+                    // 处理多条记录
+                    val dataList = map["data"] as? List<Map<String, Any>> ?: emptyList()
+                    val intents = dataList.mapNotNull { item ->
+                        val itemType = item["type"] as? String ?: return@mapNotNull null
+                        val itemData = item["data"] as? Map<String, Any> ?: emptyMap()
+                        parseSingleIntent(itemType, itemData)
+                    }
+                    if (intents.isNotEmpty()) {
+                        CommandIntent.Multiple(intents)
+                    } else {
+                        CommandIntent.Unknown(originalText)
+                    }
+                }
+                else -> {
+                    val data = map["data"] as? Map<String, Any> ?: emptyMap()
+                    parseSingleIntent(type, data) ?: CommandIntent.Unknown(originalText)
+                }
             }
         } catch (e: Exception) {
             CommandIntent.Unknown(originalText, e.message)
+        }
+    }
+
+    private fun parseSingleIntent(type: String, data: Map<String, Any>): CommandIntent? {
+        return when (type) {
+            "transaction" -> parseTransactionIntent(data)
+            "todo" -> parseTodoIntent(data)
+            "goal" -> parseGoalIntent(data)
+            "diary" -> parseDiaryIntent(data)
+            "habit" -> parseHabitIntent(data)
+            "timetrack" -> parseTimeTrackIntent(data)
+            "navigate" -> parseNavigateIntent(data)
+            "query" -> parseQueryIntent(data)
+            else -> null
         }
     }
 

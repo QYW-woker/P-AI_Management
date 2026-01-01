@@ -53,10 +53,39 @@ class VoiceCommandExecutor @Inject constructor(
                 is CommandIntent.Query -> executeQuery(intent)
                 is CommandIntent.Goal -> executeGoal(intent)
                 is CommandIntent.Savings -> executeSavings(intent)
+                is CommandIntent.Multiple -> executeMultiple(intent)
                 is CommandIntent.Unknown -> ExecutionResult.NotRecognized(intent.originalText)
             }
         } catch (e: Exception) {
             ExecutionResult.Failure(e.message ?: "执行失败")
+        }
+    }
+
+    /**
+     * 执行多条记录
+     */
+    private suspend fun executeMultiple(intent: CommandIntent.Multiple): ExecutionResult {
+        val results = mutableListOf<String>()
+        var successCount = 0
+
+        for (childIntent in intent.intents) {
+            val result = execute(childIntent)
+            when (result) {
+                is ExecutionResult.Success -> {
+                    successCount++
+                    results.add(result.message)
+                }
+                else -> {}
+            }
+        }
+
+        return if (successCount > 0) {
+            ExecutionResult.MultipleAdded(
+                count = successCount,
+                summary = "成功执行 $successCount 条记录:\n${results.joinToString("\n")}"
+            )
+        } else {
+            ExecutionResult.Failure("批量执行失败")
         }
     }
 

@@ -1771,7 +1771,7 @@ private fun TransferDialog(
                             val icon = com.lifemanager.app.core.database.entity.AccountType.getIcon(account.accountType)
                             if (isSelected) {
                                 Button(
-                                    onClick = { fromAccountId = account.id },
+                                    onClick = { fromAccountId = null }, // 再次点击取消选择
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                 ) {
                                     Text("$icon ${account.name}", style = MaterialTheme.typography.bodySmall)
@@ -1801,7 +1801,7 @@ private fun TransferDialog(
                             val icon = com.lifemanager.app.core.database.entity.AccountType.getIcon(account.accountType)
                             if (isSelected) {
                                 Button(
-                                    onClick = { toAccountId = account.id },
+                                    onClick = { toAccountId = null }, // 再次点击取消选择
                                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
                                 ) {
                                     Text("$icon ${account.name}", style = MaterialTheme.typography.bodySmall)

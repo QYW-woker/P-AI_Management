@@ -97,6 +97,13 @@ sealed class CommandIntent {
     ) : CommandIntent()
 
     /**
+     * 多条记录意图（支持一次输入多条记录）
+     */
+    data class Multiple(
+        val intents: List<CommandIntent>
+    ) : CommandIntent()
+
+    /**
      * 无法识别
      */
     data class Unknown(

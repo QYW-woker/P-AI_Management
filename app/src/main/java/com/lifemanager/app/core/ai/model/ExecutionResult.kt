@@ -45,6 +45,14 @@ sealed class ExecutionResult {
         val originalText: String,
         val suggestions: List<String> = emptyList()
     ) : ExecutionResult()
+
+    /**
+     * 批量执行成功
+     */
+    data class MultipleAdded(
+        val count: Int,
+        val summary: String
+    ) : ExecutionResult()
 }
 
 /**
