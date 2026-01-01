@@ -212,14 +212,27 @@ class CategoryMatcher {
             }
         }
 
-        // 未匹配到，返回"其他"分类
+        // 未匹配到，按优先级查找默认分类
         val defaultCategory = categories.find {
-            (it.name == "其他支出" && record.type == "支出") ||
-            (it.name == "其他收入" && record.type == "收入")
+            // 优先查找 "其他支出" 或 "其他收入"
+            (it.name == "其他支出" && record.type == "支出" && it.isEnabled) ||
+            (it.name == "其他收入" && record.type == "收入" && it.isEnabled)
+        } ?: categories.find {
+            // 其次查找 "其他" 分类
+            it.name == "其他" && it.isEnabled
+        } ?: categories.find {
+            // 最后查找 "未分类" 分类
+            it.name == "未分类" && it.isEnabled
         }
 
         return defaultCategory?.id
     }
+
+    /**
+     * 获取或创建"未分类"分类ID的建议
+     * 用于没有匹配到任何分类的记录
+     */
+    fun getUncategorizedName(): String = "未分类"
 
     /**
      * 批量匹配分类

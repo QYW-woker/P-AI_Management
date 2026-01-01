@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -878,8 +879,10 @@ private fun RecentTransactionItem(
     onClick: () -> Unit
 ) {
     val isExpense = transaction.transaction.type == TransactionType.EXPENSE
-    val hasAttachments = transaction.transaction.attachments.isNotBlank() &&
-            transaction.transaction.attachments != "[]"
+    val attachments = com.lifemanager.app.core.util.AttachmentManager.parseAttachments(
+        transaction.transaction.attachments
+    )
+    val hasAttachments = attachments.isNotEmpty()
 
     // 获取卡通图标
     val emoji = transaction.category?.let {
@@ -890,74 +893,117 @@ private fun RecentTransactionItem(
         )
     } ?: if (isExpense) "💸" else "💰"
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(16.dp)
     ) {
-        // 分类图标 - 使用卡通emoji
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(
-                    transaction.category?.let { parseColor(it.color) }
-                        ?: MaterialTheme.colorScheme.primary
-                ),
-            contentAlignment = Alignment.Center
+        Row(
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = emoji,
-                style = MaterialTheme.typography.titleLarge
-            )
-        }
-
-        Spacer(modifier = Modifier.width(12.dp))
-
-        // 信息
-        Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // 分类图标 - 使用卡通emoji
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(
+                        transaction.category?.let { parseColor(it.color) }
+                            ?: MaterialTheme.colorScheme.primary
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
-                    text = transaction.category?.name ?: if (isExpense) "支出" else "收入",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    text = emoji,
+                    style = MaterialTheme.typography.titleLarge
                 )
-                // 附件指示器
-                if (hasAttachments) {
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Icon(
-                        imageVector = Icons.Default.AttachFile,
-                        contentDescription = "有附件",
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // 信息
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = transaction.category?.name ?: if (isExpense) "支出" else "收入",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    // 附件指示器
+                    if (hasAttachments) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Icon(
+                            imageVector = Icons.Default.AttachFile,
+                            contentDescription = "有附件",
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                if (transaction.transaction.note.isNotBlank()) {
+                    Text(
+                        text = transaction.transaction.note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
-            if (transaction.transaction.note.isNotBlank()) {
-                Text(
-                    text = transaction.transaction.note,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // 金额 - 使用智能格式化
+            Text(
+                text = "${if (isExpense) "-" else "+"}${formatAmount(transaction.transaction.amount)}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isExpense) Color(0xFFF44336) else Color(0xFF4CAF50),
+                maxLines = 1
+            )
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
-
-        // 金额 - 使用智能格式化
-        Text(
-            text = "${if (isExpense) "-" else "+"}${formatAmount(transaction.transaction.amount)}",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = if (isExpense) Color(0xFFF44336) else Color(0xFF4CAF50),
-            maxLines = 1
-        )
+        // 附件缩略图预览
+        if (hasAttachments) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 56.dp), // 对齐分类图标后面
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                attachments.take(3).forEach { path ->
+                    coil.compose.AsyncImage(
+                        model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                            .data(java.io.File(path))
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "附件图片",
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(6.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+                if (attachments.size > 3) {
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "+${attachments.size - 3}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

@@ -160,4 +160,14 @@ class AccountingCalendarViewModel @Inject constructor(
         loadMonthData()
         loadSelectedDateTransactions()
     }
+
+    /**
+     * 跳转到指定日期
+     */
+    fun goToDate(date: LocalDate) {
+        _currentYearMonth.value = date.year * 100 + date.monthValue
+        _selectedDate.value = date.toEpochDay().toInt()
+        loadMonthData()
+        loadSelectedDateTransactions()
+    }
 }

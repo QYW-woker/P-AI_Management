@@ -49,6 +49,11 @@ fun AccountingCalendarScreen(
     val selectedDateTransactions by viewModel.selectedDateTransactions.collectAsState()
     val monthStats by viewModel.monthStats.collectAsState()
 
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate.toLong() * 24 * 60 * 60 * 1000
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -59,6 +64,11 @@ fun AccountingCalendarScreen(
                     }
                 },
                 actions = {
+                    // 跳转到指定日期
+                    IconButton(onClick = { showDatePicker = true }) {
+                        Icon(Icons.Default.CalendarMonth, contentDescription = "选择日期")
+                    }
+                    // 回到今天
                     IconButton(onClick = { viewModel.goToToday() }) {
                         Icon(Icons.Default.Today, contentDescription = "今天")
                     }
@@ -103,6 +113,33 @@ fun AccountingCalendarScreen(
                 transactions = selectedDateTransactions,
                 onTransactionClick = { /* TODO: 编辑 */ }
             )
+        }
+    }
+
+    // 日期选择器对话框
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val date = LocalDate.ofEpochDay(millis / (24 * 60 * 60 * 1000))
+                            viewModel.goToDate(date)
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("取消")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
     }
 }

@@ -38,6 +38,9 @@ fun StatisticsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val periodType by viewModel.periodType.collectAsState()
+    val selectedYear by viewModel.selectedYear.collectAsState()
+    val selectedMonth by viewModel.selectedMonth.collectAsState()
+    val selectedQuarter by viewModel.selectedQuarter.collectAsState()
     val monthlyStats by viewModel.monthlyStats.collectAsState()
     val quarterlyStats by viewModel.quarterlyStats.collectAsState()
     val yearlyStats by viewModel.yearlyStats.collectAsState()
@@ -46,6 +49,16 @@ fun StatisticsScreen(
     val yearOverYearComparison by viewModel.yearOverYearComparison.collectAsState()
     val monthOverMonthComparison by viewModel.monthOverMonthComparison.collectAsState()
     val categoryStats by viewModel.categoryStats.collectAsState()
+
+    // 计算当前周期标签（响应式）
+    val periodLabel = remember(periodType, selectedYear, selectedMonth, selectedQuarter) {
+        when (periodType) {
+            StatsPeriodType.MONTHLY -> "${selectedYear}年${selectedMonth}月"
+            StatsPeriodType.QUARTERLY -> "${selectedYear}年第${selectedQuarter}季度"
+            StatsPeriodType.YEARLY -> "${selectedYear}年"
+            StatsPeriodType.WEEKLY -> "本周"
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -70,7 +83,7 @@ fun StatisticsScreen(
             item {
                 PeriodSelector(
                     periodType = periodType,
-                    periodLabel = viewModel.getCurrentPeriodLabel(),
+                    periodLabel = periodLabel,
                     onPeriodTypeChange = { viewModel.setPeriodType(it) },
                     onPrevious = { viewModel.previousPeriod() },
                     onNext = { viewModel.nextPeriod() }

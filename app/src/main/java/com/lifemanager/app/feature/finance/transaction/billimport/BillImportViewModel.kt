@@ -82,6 +82,45 @@ class BillImportViewModel @Inject constructor(
                 _expenseCategories.value = fields
             }
         }
+        // 确保"未分类"分类存在
+        ensureUncategorizedCategoryExists()
+    }
+
+    /**
+     * 确保"未分类"分类存在
+     */
+    private fun ensureUncategorizedCategoryExists() {
+        viewModelScope.launch {
+            // 检查支出模块是否有"未分类"
+            val expenseFields = _expenseCategories.value
+            val hasExpenseUncategorized = expenseFields.any { it.name == "未分类" }
+            if (!hasExpenseUncategorized) {
+                val uncategorized = CustomFieldEntity(
+                    name = "未分类",
+                    iconName = "help_outline",
+                    color = "#9E9E9E",
+                    moduleType = ModuleType.EXPENSE,
+                    isEnabled = true,
+                    sortOrder = 999
+                )
+                customFieldRepository.insertField(uncategorized)
+            }
+
+            // 检查收入模块是否有"未分类"
+            val incomeFields = _incomeCategories.value
+            val hasIncomeUncategorized = incomeFields.any { it.name == "未分类" }
+            if (!hasIncomeUncategorized) {
+                val uncategorized = CustomFieldEntity(
+                    name = "未分类",
+                    iconName = "help_outline",
+                    color = "#9E9E9E",
+                    moduleType = ModuleType.INCOME,
+                    isEnabled = true,
+                    sortOrder = 999
+                )
+                customFieldRepository.insertField(uncategorized)
+            }
+        }
     }
 
     /**
