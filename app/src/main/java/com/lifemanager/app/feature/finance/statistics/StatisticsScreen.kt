@@ -132,6 +132,7 @@ fun StatisticsScreen(
 /**
  * 周期选择器
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PeriodSelector(
     periodType: StatsPeriodType,
