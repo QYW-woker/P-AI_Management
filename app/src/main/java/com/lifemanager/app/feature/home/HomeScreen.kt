@@ -428,7 +428,9 @@ private fun HeroSection(
                     emoji = "💰",
                     label = "今日消费",
                     value = "¥${numberFormat.format(todayStats.todayExpense.toInt())}",
-                    progress = 0.7f, // 预算进度示例
+                    progress = if (todayStats.todayExpense > 0 && todayStats.dailyBudget > 0)
+                        (todayStats.todayExpense / todayStats.dailyBudget).toFloat().coerceIn(0f, 1f)
+                    else 0f,
                     progressColors = AppColors.GradientGold
                 )
 
@@ -524,14 +526,30 @@ private fun QuickAccessSection(onNavigateToModule: (String) -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        // 两行网格布局，每行5个
+        val itemsPerRow = 5
+        val rows = quickAccessItems.chunked(itemsPerRow)
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            items(quickAccessItems, key = { it.route }) { item ->
-                QuickAccessButton(
-                    item = item,
-                    onClick = { onNavigateToModule(item.route) }
-                )
+            rows.forEach { rowItems ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    rowItems.forEach { item ->
+                        QuickAccessButton(
+                            item = item,
+                            onClick = { onNavigateToModule(item.route) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    // 填充空白占位
+                    repeat(itemsPerRow - rowItems.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
     }
@@ -543,7 +561,8 @@ private fun QuickAccessSection(onNavigateToModule: (String) -> Unit) {
 @Composable
 private fun QuickAccessButton(
     item: QuickItem,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
@@ -555,7 +574,7 @@ private fun QuickAccessButton(
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
+        modifier = modifier
             .scale(scale)
             .clickable(
                 interactionSource = interactionSource,

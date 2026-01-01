@@ -76,7 +76,20 @@ fun GoalScreen(
     val showTemplateDialog by viewModel.showTemplateDialog.collectAsState()
     val selectedTemplateCategory by viewModel.selectedTemplateCategory.collectAsState()
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // 显示错误消息
+    LaunchedEffect(uiState) {
+        if (uiState is GoalUiState.Error) {
+            snackbarHostState.showSnackbar(
+                message = (uiState as GoalUiState.Error).message,
+                duration = SnackbarDuration.Short
+            )
+        }
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("目标管理") },
@@ -224,8 +237,10 @@ fun GoalScreen(
                                     onUpdateProgress = { viewModel.showProgressDialog(goal) },
                                     onComplete = { viewModel.completeGoal(goal.id) },
                                     onDelete = { viewModel.showDeleteConfirm(goal.id) },
+                                    onAbandon = { viewModel.abandonGoal(goal.id) },
+                                    onReactivate = { viewModel.reactivateGoal(goal.id) },
                                     onAddSubGoal = { viewModel.showAddSubGoalDialog(goal.id) },
-                                    onToggleExpand = { viewModel.toggleGoalExpanded(goal.id) }
+                                    onToggleExpand = if (childCount > 0) {{ viewModel.toggleGoalExpanded(goal.id) }} else null
                                 )
                             }
 
@@ -248,8 +263,10 @@ fun GoalScreen(
                                             onUpdateProgress = { viewModel.showProgressDialog(childGoal) },
                                             onComplete = { viewModel.completeGoal(childGoal.id) },
                                             onDelete = { viewModel.showDeleteConfirm(childGoal.id) },
+                                            onAbandon = { viewModel.abandonGoal(childGoal.id) },
+                                            onReactivate = { viewModel.reactivateGoal(childGoal.id) },
                                             onAddSubGoal = { viewModel.showAddSubGoalDialog(childGoal.id) },
-                                            onToggleExpand = { viewModel.toggleGoalExpanded(childGoal.id) }
+                                            onToggleExpand = if (subChildCount > 0) {{ viewModel.toggleGoalExpanded(childGoal.id) }} else null
                                         )
                                     }
 
@@ -269,6 +286,8 @@ fun GoalScreen(
                                                     onUpdateProgress = { viewModel.showProgressDialog(grandChild) },
                                                     onComplete = { viewModel.completeGoal(grandChild.id) },
                                                     onDelete = { viewModel.showDeleteConfirm(grandChild.id) },
+                                                    onAbandon = { viewModel.abandonGoal(grandChild.id) },
+                                                    onReactivate = { viewModel.reactivateGoal(grandChild.id) },
                                                     onAddSubGoal = null,
                                                     onToggleExpand = null
                                                 )
@@ -597,6 +616,8 @@ private fun EnhancedGoalCard(
     onUpdateProgress: () -> Unit,
     onComplete: () -> Unit,
     onDelete: () -> Unit,
+    onAbandon: (() -> Unit)? = null,
+    onReactivate: (() -> Unit)? = null,
     onAddSubGoal: (() -> Unit)? = null,
     onToggleExpand: (() -> Unit)? = null
 ) {
@@ -672,35 +693,63 @@ private fun EnhancedGoalCard(
                 }
 
                 // 进度环和状态
-                if (goal.status == GoalStatus.COMPLETED) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = Color(0xFF4CAF50).copy(alpha = 0.1f)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                when (goal.status) {
+                    GoalStatus.COMPLETED -> {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFF4CAF50).copy(alpha = 0.1f)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = null,
-                                tint = Color(0xFF4CAF50),
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "已完成",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color(0xFF4CAF50),
-                                fontWeight = FontWeight.Medium
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = Color(0xFF4CAF50),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "已完成",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color(0xFF4CAF50),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
-                } else {
-                    MiniProgressRing(
-                        progress = animatedProgress,
-                        color = categoryColor
-                    )
+                    GoalStatus.ABANDONED -> {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Color(0xFFF44336).copy(alpha = 0.1f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Cancel,
+                                    contentDescription = null,
+                                    tint = Color(0xFFF44336),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "已放弃",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color(0xFFF44336),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+                    else -> {
+                        MiniProgressRing(
+                            progress = animatedProgress,
+                            color = categoryColor
+                        )
+                    }
                 }
             }
 
@@ -845,69 +894,118 @@ private fun EnhancedGoalCard(
                 }
             }
 
-            // 操作按钮（仅活跃目标显示）
-            if (goal.status == GoalStatus.ACTIVE) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // 添加子目标按钮（仅限前两级目标）
-                    if (onAddSubGoal != null && indentLevel < 2) {
-                        TextButton(
-                            onClick = onAddSubGoal,
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = MaterialTheme.colorScheme.secondary
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.AddTask,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("添加子目标")
-                        }
-                    } else {
-                        Spacer(modifier = Modifier.width(1.dp))
-                    }
-
-                    Row {
-                        TextButton(
-                            onClick = onUpdateProgress,
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = categoryColor
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.TrendingUp,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("更新进度")
-                        }
-
-                        if (progress >= 1f || goal.progressType == "PERCENTAGE") {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            FilledTonalButton(
-                                onClick = onComplete,
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = Color(0xFF4CAF50).copy(alpha = 0.15f),
-                                    contentColor = Color(0xFF4CAF50)
+            // 操作按钮
+            when (goal.status) {
+                GoalStatus.ACTIVE -> {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // 添加子目标按钮（仅限前两级目标）
+                        if (onAddSubGoal != null && indentLevel < 2) {
+                            TextButton(
+                                onClick = onAddSubGoal,
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.secondary
                                 )
                             ) {
                                 Icon(
-                                    Icons.Default.Check,
+                                    Icons.Default.AddTask,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text("完成")
+                                Text("添加子目标")
+                            }
+                        } else {
+                            Spacer(modifier = Modifier.width(1.dp))
+                        }
+
+                        Row {
+                            // 放弃按钮
+                            if (onAbandon != null) {
+                                TextButton(
+                                    onClick = onAbandon,
+                                    colors = ButtonDefaults.textButtonColors(
+                                        contentColor = Color(0xFFF44336)
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Cancel,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("放弃")
+                                }
+                            }
+
+                            TextButton(
+                                onClick = onUpdateProgress,
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = categoryColor
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.TrendingUp,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("更新进度")
+                            }
+
+                            if (progress >= 1f || goal.progressType == "PERCENTAGE") {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                FilledTonalButton(
+                                    onClick = onComplete,
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = Color(0xFF4CAF50).copy(alpha = 0.15f),
+                                        contentColor = Color(0xFF4CAF50)
+                                    )
+                                ) {
+                                    Icon(
+                                        Icons.Default.Check,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("完成")
+                                }
                             }
                         }
                     }
+                }
+                GoalStatus.ABANDONED -> {
+                    // 已放弃的目标可以重新激活
+                    if (onReactivate != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            FilledTonalButton(
+                                onClick = onReactivate,
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text("重新激活")
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    // 已完成的目标不显示操作按钮
                 }
             }
         }

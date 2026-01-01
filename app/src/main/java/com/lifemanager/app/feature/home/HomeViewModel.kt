@@ -241,6 +241,7 @@ data class TodayStatsData(
     val totalTodos: Int = 0,
     val todayExpense: Double = 0.0,
     val todayIncome: Double = 0.0,
+    val dailyBudget: Double = 0.0,
     val completedHabits: Int = 0,
     val totalHabits: Int = 0,
     val focusMinutes: Int = 0

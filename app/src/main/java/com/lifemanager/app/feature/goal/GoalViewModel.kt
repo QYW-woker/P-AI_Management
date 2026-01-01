@@ -367,12 +367,47 @@ class GoalViewModel @Inject constructor(
     }
 
     /**
-     * 完成目标
+     * 完成目标（检查子目标是否全部完成）
      */
     fun completeGoal(goalId: Long) {
         viewModelScope.launch {
             try {
+                // 检查是否有未完成的子目标
+                val childCount = useCase.getChildCount(goalId)
+                if (childCount > 0) {
+                    val completedChildCount = useCase.getCompletedChildCount(goalId)
+                    if (completedChildCount < childCount) {
+                        _uiState.value = GoalUiState.Error("请先完成所有子目标（${completedChildCount}/${childCount}）")
+                        return@launch
+                    }
+                }
                 useCase.completeGoal(goalId)
+            } catch (e: Exception) {
+                _uiState.value = GoalUiState.Error(e.message ?: "操作失败")
+            }
+        }
+    }
+
+    /**
+     * 放弃目标
+     */
+    fun abandonGoal(goalId: Long) {
+        viewModelScope.launch {
+            try {
+                useCase.abandonGoal(goalId)
+            } catch (e: Exception) {
+                _uiState.value = GoalUiState.Error(e.message ?: "操作失败")
+            }
+        }
+    }
+
+    /**
+     * 重新激活目标
+     */
+    fun reactivateGoal(goalId: Long) {
+        viewModelScope.launch {
+            try {
+                useCase.reactivateGoal(goalId)
             } catch (e: Exception) {
                 _uiState.value = GoalUiState.Error(e.message ?: "操作失败")
             }
