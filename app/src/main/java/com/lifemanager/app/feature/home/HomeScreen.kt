@@ -506,7 +506,8 @@ private fun QuickAccessSection(onNavigateToModule: (String) -> Unit) {
             QuickItem("💚", "健康", AppColors.GradientEmerald, Screen.HealthRecord.route),
             QuickItem("📔", "日记", AppColors.GradientNeonCity, Screen.Diary.route),
             QuickItem("🐷", "存钱", AppColors.GradientMango, Screen.SavingsPlan.route),
-            QuickItem("📊", "预算", AppColors.GradientPurpleHaze, Screen.Budget.route)
+            QuickItem("📊", "预算", AppColors.GradientPurpleHaze, Screen.Budget.route),
+            QuickItem("📚", "阅读", AppColors.GradientSky, Screen.Reading.route)
         )
     }
 

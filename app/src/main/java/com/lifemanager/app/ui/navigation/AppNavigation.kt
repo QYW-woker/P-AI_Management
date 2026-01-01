@@ -45,6 +45,8 @@ import com.lifemanager.app.feature.finance.recurring.RecurringTransactionScreen
 import com.lifemanager.app.feature.finance.account.FundAccountScreen
 import com.lifemanager.app.feature.finance.statistics.StatisticsScreen
 import com.lifemanager.app.feature.health.HealthRecordScreen
+import com.lifemanager.app.ui.reading.ReadingScreen
+import com.lifemanager.app.ui.reading.BookDetailScreen
 
 /**
  * 窗口尺寸类型
@@ -467,6 +469,29 @@ fun AppNavHost(
         // 健康记录
         composable(Screen.HealthRecord.route) {
             HealthRecordScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 阅读
+        composable(Screen.Reading.route) {
+            ReadingScreen(
+                onNavigateToBookDetail = { bookId ->
+                    navController.navigate(Screen.BookDetail.createRoute(bookId))
+                },
+                onNavigateToAddBook = { },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 书籍详情
+        composable(
+            route = Screen.BookDetail.route,
+            arguments = listOf(navArgument("bookId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val bookId = backStackEntry.arguments?.getLong("bookId") ?: 0L
+            BookDetailScreen(
+                bookId = bookId,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

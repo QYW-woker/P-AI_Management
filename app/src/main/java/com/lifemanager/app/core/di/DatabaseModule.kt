@@ -207,4 +207,10 @@ object DatabaseModule {
     fun provideHealthRecordDao(database: AppDatabase): HealthRecordDao {
         return database.healthRecordDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideBookDao(database: AppDatabase): BookDao {
+        return database.bookDao()
+    }
 }

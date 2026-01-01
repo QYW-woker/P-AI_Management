@@ -71,9 +71,16 @@ import com.lifemanager.app.core.database.entity.*
         // AI分析
         AIAnalysisEntity::class,
         // 健康记录
-        HealthRecordEntity::class
+        HealthRecordEntity::class,
+        // 阅读模块
+        BookEntity::class,
+        ReadingSessionEntity::class,
+        ReadingNoteEntity::class,
+        BookShelfEntity::class,
+        BookShelfMappingEntity::class,
+        ReadingGoalEntity::class
     ],
-    version = 16,
+    version = 17,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -289,6 +296,13 @@ abstract class AppDatabase : RoomDatabase() {
      * 健康目标DAO
      */
     abstract fun healthGoalDao(): HealthGoalDao
+
+    // ==================== 阅读模块DAO ====================
+
+    /**
+     * 书籍DAO
+     */
+    abstract fun bookDao(): BookDao
 
     companion object {
         /**

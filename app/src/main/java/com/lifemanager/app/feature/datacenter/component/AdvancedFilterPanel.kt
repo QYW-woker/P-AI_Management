@@ -11,6 +11,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -110,11 +112,15 @@ fun AdvancedFilterPanel(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = 8.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier
+                        .heightIn(max = 400.dp)
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // 模块筛选
@@ -123,7 +129,7 @@ fun AdvancedFilterPanel(
                         onSelectionChange = onUpdateModules
                     )
 
-                    Divider()
+                    HorizontalDivider()
 
                     // 对比模式
                     CompareModeSelector(
@@ -131,7 +137,7 @@ fun AdvancedFilterPanel(
                         onModeChange = onUpdateCompareMode
                     )
 
-                    Divider()
+                    HorizontalDivider()
 
                     // 聚合粒度
                     GranularitySelector(
@@ -139,7 +145,7 @@ fun AdvancedFilterPanel(
                         onGranularityChange = onUpdateGranularity
                     )
 
-                    Divider()
+                    HorizontalDivider()
 
                     // 排序方式
                     SortModeSelector(
@@ -147,7 +153,7 @@ fun AdvancedFilterPanel(
                         onSortChange = onUpdateSortMode
                     )
 
-                    Divider()
+                    HorizontalDivider()
 
                     // 金额范围筛选
                     AmountRangeFilter(
@@ -156,7 +162,7 @@ fun AdvancedFilterPanel(
                         onRangeChange = onUpdateAmountRange
                     )
 
-                    Divider()
+                    HorizontalDivider()
 
                     // 搜索关键词
                     SearchKeywordInput(
@@ -164,7 +170,7 @@ fun AdvancedFilterPanel(
                         onKeywordChange = onUpdateSearchKeyword
                     )
 
-                    Divider()
+                    HorizontalDivider()
 
                     // 显示数量
                     ShowTopNSelector(
@@ -174,7 +180,9 @@ fun AdvancedFilterPanel(
 
                     // 重置按钮
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
                         TextButton(onClick = onResetFilters) {

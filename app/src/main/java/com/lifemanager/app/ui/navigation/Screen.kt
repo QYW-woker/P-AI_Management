@@ -113,6 +113,14 @@ sealed class Screen(val route: String) {
     /** 健康记录 */
     object HealthRecord : Screen("health_record")
 
+    /** 阅读 */
+    object Reading : Screen("reading")
+
+    /** 书籍详情 */
+    object BookDetail : Screen("book_detail/{bookId}") {
+        fun createRoute(bookId: Long) = "book_detail/$bookId"
+    }
+
     // ==================== 设置 ====================
 
     /** 设置页面 */
