@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.lifemanager.app.core.database.entity.SavingsDepositEntity
+import com.lifemanager.app.core.database.entity.SavingsRecordEntity
 import com.lifemanager.app.domain.model.SavingsPlanWithDetails
 import com.lifemanager.app.ui.theme.*
 import java.text.NumberFormat
@@ -369,7 +369,7 @@ private fun InfoColumn(
 
 @Composable
 private fun DepositRecordItem(
-    deposit: SavingsDepositEntity,
+    deposit: SavingsRecordEntity,
     planColor: Color,
     onClick: () -> Unit
 ) {

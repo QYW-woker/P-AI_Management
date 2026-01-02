@@ -164,6 +164,13 @@ class SavingsPlanUseCase @Inject constructor(
     }
 
     /**
+     * 根据ID获取存款记录
+     */
+    suspend fun getRecordById(recordId: Long): SavingsRecordEntity? {
+        return repository.getRecordById(recordId)
+    }
+
+    /**
      * 删除存款记录
      */
     suspend fun deleteRecord(recordId: Long) {

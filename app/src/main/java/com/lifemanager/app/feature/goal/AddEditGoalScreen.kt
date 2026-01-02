@@ -398,7 +398,7 @@ fun AddEditGoalScreen(
             if (isMultiLevel) {
                 Spacer(modifier = Modifier.height(AppDimens.SpacingMedium))
 
-                HorizontalDivider()
+                Divider()
 
                 Spacer(modifier = Modifier.height(AppDimens.SpacingMedium))
 

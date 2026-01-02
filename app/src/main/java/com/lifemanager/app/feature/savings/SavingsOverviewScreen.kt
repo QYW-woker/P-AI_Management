@@ -204,7 +204,7 @@ private fun TotalStatsCard(stats: SavingsStats) {
             )
 
             Spacer(modifier = Modifier.height(AppDimens.SpacingNormal))
-            HorizontalDivider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
+            Divider(color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.2f))
             Spacer(modifier = Modifier.height(AppDimens.SpacingNormal))
 
             Row(

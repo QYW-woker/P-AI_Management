@@ -15,7 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.lifemanager.app.core.database.entity.SavingsDepositEntity
+import com.lifemanager.app.core.database.entity.SavingsRecordEntity
 import com.lifemanager.app.ui.theme.*
 import java.text.NumberFormat
 import java.time.Instant
@@ -46,7 +46,7 @@ fun SavingsRecordDetailScreen(
                 title = "存款详情",
                 onNavigateBack = onNavigateBack,
                 actions = {
-                    deposit?.let {
+                    if (deposit != null) {
                         IconButton(onClick = { showDeleteDialog = true }) {
                             Icon(
                                 Icons.Default.Delete,
@@ -59,7 +59,8 @@ fun SavingsRecordDetailScreen(
             )
         }
     ) { paddingValues ->
-        deposit?.let { currentDeposit ->
+        val currentDeposit = deposit
+        if (currentDeposit != null) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -94,7 +95,7 @@ fun SavingsRecordDetailScreen(
 
                 Spacer(modifier = Modifier.height(AppDimens.SpacingNormal))
             }
-        } ?: run {
+        } else {
             // 加载状态
             Box(
                 modifier = Modifier
@@ -138,7 +139,7 @@ fun SavingsRecordDetailScreen(
 
 @Composable
 private fun AmountCard(
-    deposit: SavingsDepositEntity,
+    deposit: SavingsRecordEntity,
     numberFormat: NumberFormat
 ) {
     UnifiedCard {
@@ -185,7 +186,7 @@ private fun AmountCard(
 }
 
 @Composable
-private fun DetailInfoCard(deposit: SavingsDepositEntity) {
+private fun DetailInfoCard(deposit: SavingsRecordEntity) {
     UnifiedCard {
         Column {
             SectionTitle(title = "详细信息", centered = true)
@@ -196,10 +197,10 @@ private fun DetailInfoCard(deposit: SavingsDepositEntity) {
             DetailRow(
                 icon = Icons.Default.CalendarMonth,
                 label = "存款日期",
-                value = formatDateFromInt(deposit.depositDate)
+                value = formatDateFromInt(deposit.date)
             )
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = AppDimens.SpacingMedium))
+            Divider(modifier = Modifier.padding(vertical = AppDimens.SpacingMedium))
 
             // 创建时间
             DetailRow(
@@ -210,7 +211,7 @@ private fun DetailInfoCard(deposit: SavingsDepositEntity) {
 
             // 备注
             if (deposit.note?.isNotBlank() == true) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = AppDimens.SpacingMedium))
+                Divider(modifier = Modifier.padding(vertical = AppDimens.SpacingMedium))
 
                 DetailRow(
                     icon = Icons.Default.Notes,

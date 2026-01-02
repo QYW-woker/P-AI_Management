@@ -380,15 +380,13 @@ class SavingsPlanViewModel @Inject constructor(
     /**
      * 获取计划的存款记录
      */
-    fun getDepositsForPlan(planId: Long) = kotlinx.coroutines.flow.flow {
-        emit(useCase.getDepositsForPlan(planId))
-    }
+    fun getDepositsForPlan(planId: Long) = useCase.getPlanRecords(planId)
 
     /**
      * 根据ID获取存款记录
      */
     fun getDepositById(depositId: Long) = kotlinx.coroutines.flow.flow {
-        emit(useCase.getDepositById(depositId))
+        emit(useCase.getRecordById(depositId))
     }
 
     /**
@@ -397,8 +395,7 @@ class SavingsPlanViewModel @Inject constructor(
     fun deposit(planId: Long, amount: Double, note: String?, date: java.time.LocalDate) {
         viewModelScope.launch {
             try {
-                val dateInt = date.year * 10000 + date.monthValue * 100 + date.dayOfMonth
-                useCase.deposit(planId, amount, note, dateInt)
+                useCase.deposit(planId, amount, note ?: "")
                 loadStats()
             } catch (e: Exception) {
                 _uiState.value = SavingsUiState.Error(e.message ?: "存款失败")
@@ -425,7 +422,7 @@ class SavingsPlanViewModel @Inject constructor(
     fun deleteDeposit(depositId: Long) {
         viewModelScope.launch {
             try {
-                useCase.deleteDeposit(depositId)
+                useCase.deleteRecord(depositId)
                 loadStats()
             } catch (e: Exception) {
                 _uiState.value = SavingsUiState.Error(e.message ?: "删除失败")

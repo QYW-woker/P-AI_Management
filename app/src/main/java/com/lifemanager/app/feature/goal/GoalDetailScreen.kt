@@ -397,7 +397,7 @@ private fun GoalInfoCard(
             }
 
             Spacer(modifier = Modifier.height(AppDimens.SpacingNormal))
-            HorizontalDivider()
+            Divider()
             Spacer(modifier = Modifier.height(AppDimens.SpacingNormal))
 
             // 时间信息
@@ -411,7 +411,7 @@ private fun GoalInfoCard(
                 )
                 InfoColumn(
                     label = "截止日期",
-                    value = goal.deadline?.let { formatDateFromInt(it) } ?: "无"
+                    value = goal.endDate?.let { formatDateFromInt(it) } ?: "无"
                 )
                 InfoColumn(
                     label = "剩余天数",

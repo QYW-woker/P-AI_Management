@@ -28,7 +28,7 @@ fun GoalTypeSelectSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        shape = AppShapes.TopSheet
+        shape = AppShapes.ExtraLarge
     ) {
         Column(
             modifier = Modifier

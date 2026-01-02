@@ -494,7 +494,7 @@ private fun GoalTreeCard(
                     Spacer(modifier = Modifier.height(4.dp))
 
                     LinearProgressIndicator(
-                        progress = { progress },
+                        progress = progress,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(if (treeNode.level > 0) 6.dp else 8.dp)

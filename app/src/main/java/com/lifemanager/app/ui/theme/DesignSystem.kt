@@ -2,6 +2,8 @@ package com.lifemanager.app.ui.theme
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -124,7 +126,7 @@ fun UnifiedTopAppBar(
             if (onNavigateBack != null) {
                 IconButton(onClick = onNavigateBack) {
                     Icon(
-                        imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                        imageVector = Icons.Default.ArrowBack,
                         contentDescription = "返回"
                     )
                 }
