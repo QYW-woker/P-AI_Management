@@ -123,57 +123,58 @@ fun CleanSavingsPlanScreen(
                     }
                 }
 
-            is SavingsUiState.Success -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentPadding = PaddingValues(
-                        horizontal = Spacing.pageHorizontal,
-                        vertical = Spacing.pageVertical
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(Spacing.sectionGap)
-                ) {
-                    // 统计卡片
-                    item(key = "stats") {
-                        CleanSavingsStatsCard(stats = stats)
-                    }
+                is SavingsUiState.Success -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(paddingValues),
+                        contentPadding = PaddingValues(
+                            horizontal = Spacing.pageHorizontal,
+                            vertical = Spacing.pageVertical
+                        ),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.sectionGap)
+                    ) {
+                        // 统计卡片
+                        item(key = "stats") {
+                            CleanSavingsStatsCard(stats = stats)
+                        }
 
-                    // 计划列表标题
-                    item(key = "plans_header") {
-                        Text(
-                            text = "我的计划",
-                            style = CleanTypography.title,
-                            color = CleanColors.textPrimary
-                        )
-                    }
-
-                    if (plans.isEmpty()) {
-                        item(key = "empty") {
-                            EmptyStateView(
-                                message = "暂无存钱计划",
-                                icon = Icons.Outlined.Savings,
-                                actionText = "创建第一个计划",
-                                onActionClick = { viewModel.showAddPlanDialog() }
+                        // 计划列表标题
+                        item(key = "plans_header") {
+                            Text(
+                                text = "我的计划",
+                                style = CleanTypography.title,
+                                color = CleanColors.textPrimary
                             )
                         }
-                    } else {
-                        items(plans, key = { it.plan.id }) { planWithDetails ->
-                            CleanPlanItem(
-                                planWithDetails = planWithDetails,
-                                onDeposit = { viewModel.showDepositDialog(planWithDetails.plan.id) },
-                                onWithdraw = { viewModel.showWithdrawDialog(planWithDetails.plan.id) },
-                                onShowHistory = { viewModel.showHistoryDialog(planWithDetails.plan.id) },
-                                onClick = { onNavigateToDetail(planWithDetails.plan.id) },
-                                onDelete = { viewModel.showDeleteConfirm(planWithDetails.plan.id) },
-                                formatDate = { viewModel.formatDate(it) }
-                            )
-                        }
-                    }
 
-                    // 底部安全间距
-                    item {
-                        Spacer(modifier = Modifier.height(Spacing.bottomSafe + 56.dp))
+                        if (plans.isEmpty()) {
+                            item(key = "empty") {
+                                EmptyStateView(
+                                    message = "暂无存钱计划",
+                                    icon = Icons.Outlined.Savings,
+                                    actionText = "创建第一个计划",
+                                    onActionClick = { viewModel.showAddPlanDialog() }
+                                )
+                            }
+                        } else {
+                            items(plans, key = { it.plan.id }) { planWithDetails ->
+                                CleanPlanItem(
+                                    planWithDetails = planWithDetails,
+                                    onDeposit = { viewModel.showDepositDialog(planWithDetails.plan.id) },
+                                    onWithdraw = { viewModel.showWithdrawDialog(planWithDetails.plan.id) },
+                                    onShowHistory = { viewModel.showHistoryDialog(planWithDetails.plan.id) },
+                                    onClick = { onNavigateToDetail(planWithDetails.plan.id) },
+                                    onDelete = { viewModel.showDeleteConfirm(planWithDetails.plan.id) },
+                                    formatDate = { viewModel.formatDate(it) }
+                                )
+                            }
+                        }
+
+                        // 底部安全间距
+                        item {
+                            Spacer(modifier = Modifier.height(Spacing.bottomSafe + 56.dp))
+                        }
                     }
                 }
             }
