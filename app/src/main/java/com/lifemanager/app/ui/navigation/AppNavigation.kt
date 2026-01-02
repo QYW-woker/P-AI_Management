@@ -27,7 +27,7 @@ import com.lifemanager.app.feature.timetrack.TimeTrackScreen
 import com.lifemanager.app.feature.habit.CleanHabitScreen
 import com.lifemanager.app.feature.habit.CleanHabitDetailScreen
 import com.lifemanager.app.feature.habit.CleanEditHabitScreen
-import com.lifemanager.app.feature.savings.SavingsPlanScreen
+import com.lifemanager.app.feature.savings.CleanSavingsPlanScreen
 import com.lifemanager.app.feature.savings.CleanSavingsPlanDetailScreen
 import com.lifemanager.app.feature.goal.GoalScreen
 import com.lifemanager.app.feature.datacenter.DataCenterScreen
@@ -50,7 +50,7 @@ import com.lifemanager.app.feature.finance.recurring.RecurringTransactionScreen
 import com.lifemanager.app.feature.finance.account.FundAccountScreen
 import com.lifemanager.app.feature.finance.account.FundAccountDetailScreen
 import com.lifemanager.app.feature.finance.statistics.StatisticsScreen
-import com.lifemanager.app.feature.health.HealthRecordScreen
+import com.lifemanager.app.feature.health.CleanHealthRecordScreen
 import com.lifemanager.app.feature.health.CleanHealthRecordDetailScreen
 import com.lifemanager.app.ui.reading.ReadingScreen
 import com.lifemanager.app.ui.reading.BookDetailScreen
@@ -547,9 +547,9 @@ fun AppNavHost(
             )
         }
 
-        // 存钱计划
+        // 存钱计划 - 使用简洁设计版本
         composable(Screen.SavingsPlan.route) {
-            SavingsPlanScreen(
+            CleanSavingsPlanScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetail = { planId ->
                     navController.navigate(Screen.SavingsPlanDetail.createRoute(planId))
@@ -572,9 +572,9 @@ fun AppNavHost(
             )
         }
 
-        // 健康记录
+        // 健康记录 - 使用简洁设计版本
         composable(Screen.HealthRecord.route) {
-            HealthRecordScreen(
+            CleanHealthRecordScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToDetail = { recordId ->
                     navController.navigate(Screen.HealthRecordDetail.createRoute(recordId))
