@@ -144,7 +144,7 @@ class EditHabitViewModel @Inject constructor(
                 if (isEditMode) {
                     habitRepository.updateHabit(habit)
                 } else {
-                    habitRepository.insertHabit(habit)
+                    habitRepository.saveHabit(habit)
                 }
 
                 _saveResult.value = SaveResult.Success

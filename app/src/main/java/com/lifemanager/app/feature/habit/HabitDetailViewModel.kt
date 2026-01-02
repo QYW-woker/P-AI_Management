@@ -89,8 +89,8 @@ class HabitDetailViewModel @Inject constructor(
     private suspend fun calculateStatistics() {
         val today = LocalDate.now().toEpochDay().toInt()
 
-        // 获取所有打卡记录
-        val allRecords = habitRepository.getAllRecordsByHabit(habitId)
+        // 获取所有打卡记录（使用很长的日期范围来获取所有记录）
+        val allRecords = habitRepository.getRecordsByHabitAndDateRange(habitId, 0, today + 365).first()
         val checkedDays = allRecords.map { it.date }.toSet()
 
         // 今日是否已打卡
@@ -151,14 +151,14 @@ class HabitDetailViewModel @Inject constructor(
 
                 if (existingRecord != null) {
                     // 取消打卡
-                    habitRepository.deleteRecord(existingRecord)
+                    habitRepository.deleteRecord(habitId, today)
                 } else {
                     // 打卡
                     val record = HabitRecordEntity(
                         habitId = habitId,
                         date = today
                     )
-                    habitRepository.insertRecord(record)
+                    habitRepository.saveRecord(record)
                 }
 
                 // 刷新数据
@@ -206,7 +206,7 @@ class HabitDetailViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val habitToDelete = _habit.value ?: return@launch
-                habitRepository.deleteHabit(habitToDelete)
+                habitRepository.deleteHabit(habitToDelete.id)
                 hideDeleteConfirm()
                 onComplete()
             } catch (e: Exception) {

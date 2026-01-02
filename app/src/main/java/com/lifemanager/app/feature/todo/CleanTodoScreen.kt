@@ -636,7 +636,7 @@ private fun CleanTodoItem(
             // 优先级指示
             if (todo.priority != Priority.NONE && !isCompleted) {
                 Spacer(modifier = Modifier.width(Spacing.sm))
-                PriorityDot(priority = todo.priority.name)
+                PriorityDot(priority = todo.priority)
             }
 
             // 箭头指示
@@ -659,7 +659,7 @@ private fun CleanTodoItem(
 @Composable
 private fun PriorityCheckbox(
     isCompleted: Boolean,
-    priority: Priority,
+    priority: String,
     onToggle: () -> Unit
 ) {
     val priorityColor = when (priority) {

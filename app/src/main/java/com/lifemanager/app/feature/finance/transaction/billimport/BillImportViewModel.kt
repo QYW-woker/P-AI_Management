@@ -103,7 +103,7 @@ class BillImportViewModel @Inject constructor(
                     isEnabled = true,
                     sortOrder = 999
                 )
-                customFieldRepository.insertField(uncategorized)
+                customFieldRepository.insert(uncategorized)
             }
 
             // 检查收入模块是否有"未分类"
@@ -118,7 +118,7 @@ class BillImportViewModel @Inject constructor(
                     isEnabled = true,
                     sortOrder = 999
                 )
-                customFieldRepository.insertField(uncategorized)
+                customFieldRepository.insert(uncategorized)
             }
         }
     }

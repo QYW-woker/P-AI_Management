@@ -286,7 +286,7 @@ private fun CleanTodoDetailContent(
 private fun CleanStatusHeader(
     isCompleted: Boolean,
     isOverdue: Boolean,
-    priority: Priority,
+    priority: String,
     onToggleComplete: () -> Unit
 ) {
     val statusColor = when {
@@ -463,7 +463,7 @@ private fun CleanDetailsCard(
                 CleanDetailRow(
                     icon = Icons.Outlined.Flag,
                     label = "优先级",
-                    value = formatPriority(todo.priority.name),
+                    value = formatPriority(todo.priority),
                     valueColor = priorityColor
                 )
                 CleanDivider(modifier = Modifier.padding(vertical = Spacing.md))
