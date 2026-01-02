@@ -15,7 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.material.Divider
+import androidx.compose.material.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,12 +32,12 @@ import java.text.NumberFormat
 import java.util.Locale
 
 /**
- * 存钱计划主界面 - 简洁设计版本
+ * 存钱计划主界�?- 简洁设计版�?
  *
  * 设计原则:
- * - 干净、克制、有呼吸感
- * - 轻灵不花哨
- * - 使用统一的设计系统
+ * - 干净、克制、有呼吸�?
+ * - 轻灵不花�?
+ * - 使用统一的设计系�?
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -154,7 +154,7 @@ fun CleanSavingsPlanScreen(
                                 EmptyStateView(
                                     message = "暂无存钱计划",
                                     icon = Icons.Outlined.Savings,
-                                    actionText = "创建第一个计划",
+                                    actionText = "创建第一个计�?,
                                     onActionClick = { viewModel.showAddPlanDialog() }
                                 )
                             }
@@ -182,7 +182,7 @@ fun CleanSavingsPlanScreen(
         }
     }
 
-    // 添加/编辑计划对话框
+    // 添加/编辑计划对话�?
     if (showPlanDialog) {
         AddEditPlanDialog(
             viewModel = viewModel,
@@ -190,7 +190,7 @@ fun CleanSavingsPlanScreen(
         )
     }
 
-    // 存款对话框
+    // 存款对话�?
     if (showDepositDialog) {
         DepositDialog(
             viewModel = viewModel,
@@ -198,17 +198,17 @@ fun CleanSavingsPlanScreen(
         )
     }
 
-    // 删除确认对话框
+    // 删除确认对话�?
     if (showDeleteDialog) {
         CleanDeleteConfirmDialog(
             title = "确认删除",
-            message = "删除计划将同时删除所有存款记录，确定要删除吗？",
+            message = "删除计划将同时删除所有存款记录，确定要删除吗�?,
             onConfirm = { viewModel.confirmDelete() },
             onDismiss = { viewModel.hideDeleteConfirm() }
         )
     }
 
-    // 取款对话框
+    // 取款对话�?
     if (showWithdrawDialog) {
         val currentPlan = plans.find { viewModel.recordEditState.value.planId == it.plan.id }
         WithdrawDialog(
@@ -218,7 +218,7 @@ fun CleanSavingsPlanScreen(
         )
     }
 
-    // 历史记录对话框
+    // 历史记录对话�?
     if (showHistoryDialog && currentHistoryPlan != null) {
         RecordHistoryDialog(
             planDetails = currentHistoryPlan!!,
@@ -229,7 +229,7 @@ fun CleanSavingsPlanScreen(
 }
 
 /**
- * 简洁统计卡片 - 干净的数据展示
+ * 简洁统计卡�?- 干净的数据展�?
  */
 @Composable
 private fun CleanSavingsStatsCard(stats: SavingsStats) {
@@ -248,7 +248,7 @@ private fun CleanSavingsStatsCard(stats: SavingsStats) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "总进度",
+                    text = "总进�?,
                     style = CleanTypography.title,
                     color = CleanColors.textPrimary
                 )
@@ -290,8 +290,8 @@ private fun CleanSavingsStatsCard(stats: SavingsStats) {
                     icon = Icons.Outlined.Flag
                 )
                 CleanStatItem(
-                    label = "进行中",
-                    value = "${stats.activePlans}个",
+                    label = "进行�?,
+                    value = "${stats.activePlans}�?,
                     icon = Icons.Outlined.Loop
                 )
             }
@@ -299,7 +299,7 @@ private fun CleanSavingsStatsCard(stats: SavingsStats) {
             // 本月存款统计
             if (stats.thisMonthDeposit > 0 || stats.lastMonthDeposit > 0) {
                 Spacer(modifier = Modifier.height(Spacing.lg))
-                CleanDivider()
+                CleanHorizontalDivider()
                 Spacer(modifier = Modifier.height(Spacing.lg))
 
                 Row(
@@ -340,10 +340,10 @@ private fun CleanSavingsStatsCard(stats: SavingsStats) {
                 }
             }
 
-            // 存款连续天数和总天数统计
+            // 存款连续天数和总天数统�?
             if (stats.savingsStreak > 0 || stats.totalRecords > 0) {
                 Spacer(modifier = Modifier.height(Spacing.lg))
-                CleanDivider()
+                CleanHorizontalDivider()
                 Spacer(modifier = Modifier.height(Spacing.lg))
 
                 Row(
@@ -352,13 +352,13 @@ private fun CleanSavingsStatsCard(stats: SavingsStats) {
                 ) {
                     CleanStatItem(
                         label = "连续存款",
-                        value = "${stats.savingsStreak}天",
+                        value = "${stats.savingsStreak}�?,
                         icon = Icons.Outlined.LocalFireDepartment,
                         valueColor = if (stats.savingsStreak >= 7) CleanColors.warning else CleanColors.textPrimary
                     )
                     CleanStatItem(
                         label = "累计存款",
-                        value = "${stats.totalRecords}天",
+                        value = "${stats.totalRecords}�?,
                         icon = Icons.Outlined.CalendarMonth
                     )
                 }
@@ -396,12 +396,12 @@ private fun CleanStatItem(
 }
 
 /**
- * 简洁计划项 - 优化版
+ * 简洁计划项 - 优化�?
  *
- * 设计原则：
- * - "存一笔"按钮最突出，一眼可见
+ * 设计原则�?
+ * - "存一�?按钮最突出，一眼可�?
  * - 所有操作无需滑动、无需寻找
- * - 信息展示清晰，分区明确
+ * - 信息展示清晰，分区明�?
  */
 @Composable
 private fun CleanPlanItem(
@@ -442,7 +442,7 @@ private fun CleanPlanItem(
                     )
                     .padding(Spacing.lg)
             ) {
-                // 标题行
+                // 标题�?
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
@@ -489,7 +489,7 @@ private fun CleanPlanItem(
                         Spacer(modifier = Modifier.height(2.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "剩余${planWithDetails.daysRemaining}天",
+                                text = "剩余${planWithDetails.daysRemaining}�?,
                                 style = CleanTypography.caption,
                                 color = CleanColors.textTertiary
                             )
@@ -521,7 +521,7 @@ private fun CleanPlanItem(
 
                 Spacer(modifier = Modifier.height(Spacing.md))
 
-                // 金额和进度显示
+                // 金额和进度显�?
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -556,7 +556,7 @@ private fun CleanPlanItem(
 
                 Spacer(modifier = Modifier.height(Spacing.sm))
 
-                // 进度条
+                // 进度�?
                 LinearProgressIndicator(
                     progress = planWithDetails.progress,
                     modifier = Modifier
@@ -568,10 +568,10 @@ private fun CleanPlanItem(
                 )
             }
 
-            // ============ 第二区：操作区（始终可见，无需滚动） ============
+            // ============ 第二区：操作区（始终可见，无需滚动�?============
             if (plan.status == "ACTIVE") {
-                Divider(
-                    color = CleanColors.divider,
+                HorizontalDivider(
+                    color = CleanColors.HorizontalDivider,
                     thickness = 1.dp
                 )
 
@@ -582,7 +582,7 @@ private fun CleanPlanItem(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // ★★★ 核心操作：存一笔（最突出） ★★★
+                    // ★★�?核心操作：存一笔（最突出�?★★�?
                     Button(
                         onClick = onDeposit,
                         modifier = Modifier.weight(1f),
@@ -600,7 +600,7 @@ private fun CleanPlanItem(
                         )
                         Spacer(modifier = Modifier.width(Spacing.xs))
                         Text(
-                            text = "存一笔",
+                            text = "存一�?,
                             style = CleanTypography.button
                         )
                     }
@@ -684,8 +684,8 @@ private fun CleanPlanItem(
                     }
                 }
             } else {
-                // 非活跃状态：只显示查看详情
-                Divider(color = CleanColors.divider, thickness = 1.dp)
+                // 非活跃状态：只显示查看详�?
+                HorizontalDivider(color = CleanColors.HorizontalDivider, thickness = 1.dp)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -708,7 +708,7 @@ private fun CleanPlanItem(
 }
 
 /**
- * 删除确认对话框
+ * 删除确认对话�?
  */
 @Composable
 private fun CleanDeleteConfirmDialog(
