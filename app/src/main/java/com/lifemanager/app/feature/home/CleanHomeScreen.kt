@@ -284,7 +284,7 @@ private fun StatCard(
 
             // 简洁进度条
             LinearProgressIndicator(
-                progress = { progress },
+                progress = progress,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(4.dp)
@@ -550,7 +550,7 @@ private fun GoalItem(goal: GoalProgressData) {
         Spacer(modifier = Modifier.height(Spacing.sm))
 
         LinearProgressIndicator(
-            progress = { goal.progress },
+            progress = goal.progress,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(6.dp)

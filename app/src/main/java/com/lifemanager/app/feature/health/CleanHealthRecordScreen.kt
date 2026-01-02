@@ -6,7 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.ripple
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -402,7 +402,7 @@ private fun CleanQuickActionButton(
             .clip(RoundedCornerShape(Radius.sm))
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(bounded = true, color = CleanColors.primary),
+                indication = rememberRipple(bounded = true, color = CleanColors.primary),
                 onClick = onClick
             )
             .padding(Spacing.xs)
@@ -500,7 +500,7 @@ private fun CleanWeeklyStatItem(
             contentAlignment = Alignment.Center
         ) {
             CircularProgressIndicator(
-                progress = { progress },
+                progress = progress,
                 modifier = Modifier.size(56.dp),
                 strokeWidth = 4.dp,
                 color = CleanColors.primary,

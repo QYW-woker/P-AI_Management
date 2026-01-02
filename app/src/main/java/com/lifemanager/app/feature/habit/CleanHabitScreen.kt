@@ -251,7 +251,7 @@ private fun CleanHabitStatsCard(stats: HabitStats) {
 
             // 简洁进度条
             LinearProgressIndicator(
-                progress = { progress },
+                progress = progress,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
@@ -363,7 +363,7 @@ private fun CleanWeeklyStatsCard(weeklyStats: WeeklyHabitStats) {
             Spacer(modifier = Modifier.height(Spacing.sm))
 
             LinearProgressIndicator(
-                progress = { weeklyStats.completionRate },
+                progress = weeklyStats.completionRate,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)

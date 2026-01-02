@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.lifemanager.app.core.database.entity.SavingsPlanEntity
 import com.lifemanager.app.core.database.entity.SavingsRecordEntity
 import com.lifemanager.app.domain.model.Milestone
-import com.lifemanager.app.domain.model.getMilestoneProgress
 import com.lifemanager.app.domain.repository.SavingsPlanRepository
 import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -147,21 +146,21 @@ class SavingsPlanDetailViewModel @Inject constructor(
 
     private fun calculateMilestones(plan: SavingsPlanEntity) {
         val milestoneList = listOf(
-            Milestone(0.25f, "25%", "初见成效"),
-            Milestone(0.50f, "50%", "半程达成"),
-            Milestone(0.75f, "75%", "胜利在望"),
-            Milestone(1.00f, "100%", "目标达成")
+            Milestone.QUARTER,
+            Milestone.HALF,
+            Milestone.THREE_QUARTERS,
+            Milestone.COMPLETE
         )
 
-        val progress = if (plan.targetAmount > 0) {
-            (plan.currentAmount / plan.targetAmount).toFloat()
-        } else 0f
+        val progressPercent = if (plan.targetAmount > 0) {
+            ((plan.currentAmount / plan.targetAmount) * 100).toInt()
+        } else 0
 
         _milestones.value = milestoneList.map { milestone ->
             MilestoneWithStatus(
                 milestone = milestone,
-                isAchieved = progress >= milestone.progress,
-                amountReached = plan.targetAmount * milestone.progress
+                isAchieved = progressPercent >= milestone.percentage,
+                amountReached = plan.targetAmount * milestone.percentage / 100.0
             )
         }
     }
@@ -200,7 +199,7 @@ class SavingsPlanDetailViewModel @Inject constructor(
                 val record = SavingsRecordEntity(
                     planId = planId,
                     amount = amount,
-                    note = _depositNote.value.takeIf { it.isNotBlank() },
+                    note = _depositNote.value.takeIf { it.isNotBlank() } ?: "",
                     date = LocalDate.now().toEpochDay().toInt()
                 )
                 repository.saveRecord(record)

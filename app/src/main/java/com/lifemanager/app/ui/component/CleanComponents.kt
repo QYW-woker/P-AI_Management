@@ -19,9 +19,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.material.ripple.rememberRipple
 import com.lifemanager.app.ui.theme.*
 
 /**
@@ -201,7 +203,7 @@ fun CleanDivider(
     modifier: Modifier = Modifier,
     startIndent: Dp = 0.dp
 ) {
-    HorizontalDivider(
+    Divider(
         modifier = modifier.padding(start = startIndent),
         thickness = 1.dp,
         color = CleanColors.divider
@@ -572,7 +574,7 @@ fun Modifier.cleanClickable(
         .clip(RoundedCornerShape(Radius.sm))
         .clickable(
             interactionSource = interactionSource,
-            indication = androidx.compose.material3.ripple(
+            indication = rememberRipple(
                 bounded = true,
                 color = CleanColors.primary
             ),

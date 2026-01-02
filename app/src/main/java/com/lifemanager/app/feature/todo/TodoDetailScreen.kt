@@ -298,7 +298,7 @@ private fun TodoDetailContent(
                     )
                 }
                 if (todo.completedAt != null) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    Divider(modifier = Modifier.padding(horizontal = 16.dp))
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -466,7 +466,7 @@ private fun DetailsCard(
                     value = formatDueDate(date),
                     valueColor = if (isOverdue) Color(0xFFEF4444) else null
                 )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
             }
 
             // 截止时间
@@ -476,7 +476,7 @@ private fun DetailsCard(
                     label = "截止时间",
                     value = time
                 )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
             }
 
             // 地点
@@ -487,7 +487,7 @@ private fun DetailsCard(
                         label = "地点",
                         value = location
                     )
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    Divider(modifier = Modifier.padding(vertical = 12.dp))
                 }
             }
 
@@ -505,7 +505,7 @@ private fun DetailsCard(
                     value = formatPriority(todo.priority),
                     valueColor = priorityColor
                 )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
             }
 
             // 四象限
@@ -515,7 +515,7 @@ private fun DetailsCard(
                     label = "象限",
                     value = formatQuadrant(quadrant)
                 )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
             }
 
             // 提醒时间
@@ -525,7 +525,7 @@ private fun DetailsCard(
                     label = "提醒",
                     value = formatReminderTime(reminder)
                 )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
             }
 
             // 重复规则
@@ -535,7 +535,7 @@ private fun DetailsCard(
                     label = "重复",
                     value = formatRepeatRule(todo.repeatRule)
                 )
-                HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Divider(modifier = Modifier.padding(vertical = 12.dp))
             }
 
             // 关联目标

@@ -386,7 +386,7 @@ private fun PlanHeaderCard(
 
             // 进度条
             LinearProgressIndicator(
-                progress = { statistics.progress },
+                progress = statistics.progress,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(8.dp)

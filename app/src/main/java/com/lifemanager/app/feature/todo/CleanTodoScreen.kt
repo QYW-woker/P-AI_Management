@@ -332,7 +332,7 @@ private fun CleanStatisticsCard(statistics: TodoStatistics) {
 
             // 简洁进度条
             LinearProgressIndicator(
-                progress = { completionRate },
+                progress = completionRate,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
