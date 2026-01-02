@@ -298,7 +298,7 @@ private fun CleanSavingsStatsCard(stats: SavingsStats) {
             // 本月存款统计
             if (stats.thisMonthDeposit > 0 || stats.lastMonthDeposit > 0) {
                 Spacer(modifier = Modifier.height(Spacing.lg))
-                CleanHorizontalDivider()
+                Divider(color = CleanColors.divider, thickness = 1.dp)
                 Spacer(modifier = Modifier.height(Spacing.lg))
 
                 Row(
@@ -342,7 +342,7 @@ private fun CleanSavingsStatsCard(stats: SavingsStats) {
             // 存款连续天数和总天数统计
             if (stats.savingsStreak > 0 || stats.totalRecords > 0) {
                 Spacer(modifier = Modifier.height(Spacing.lg))
-                CleanHorizontalDivider()
+                Divider(color = CleanColors.divider, thickness = 1.dp)
                 Spacer(modifier = Modifier.height(Spacing.lg))
 
                 Row(
@@ -569,7 +569,7 @@ private fun CleanPlanItem(
 
             // ============ 第二区：操作区（始终可见，无需滚动）============
             if (plan.status == "ACTIVE") {
-                HorizontalDivider(
+                Divider(
                     color = CleanColors.divider,
                     thickness = 1.dp
                 )
@@ -684,7 +684,7 @@ private fun CleanPlanItem(
                 }
             } else {
                 // 非活跃状态：只显示查看详情
-                HorizontalDivider(color = CleanColors.divider, thickness = 1.dp)
+                Divider(color = CleanColors.divider, thickness = 1.dp)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
