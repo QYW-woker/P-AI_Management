@@ -27,45 +27,28 @@ import com.lifemanager.app.ui.theme.*
 // ==================== 尺寸常量 ====================
 
 /**
- * 应用尺寸常量 - 基于设计系统的别名
- * 支持 Pascal Case 命名以兼容现有代码
+ * 应用尺寸常量 - 使用 Pascal Case 命名以兼容现有代码
  */
 object AppDimens {
-    // ===== 标准命名 (camelCase) =====
-    /** 最小间距 */
-    val xs: Dp = Spacing.xs
-    /** 小间距 */
-    val sm: Dp = Spacing.sm
-    /** 中间距 */
-    val md: Dp = Spacing.md
-    /** 标准间距 */
-    val lg: Dp = Spacing.lg
-    /** 大间距 */
-    val xl: Dp = Spacing.xl
-    /** 超大间距 */
-    val xxl: Dp = Spacing.xxl
+    /** 最小间距 4dp */
+    val XS: Dp = Spacing.xs
+    /** 小间距 8dp */
+    val SM: Dp = Spacing.sm
+    /** 中间距 12dp */
+    val MD: Dp = Spacing.md
+    /** 标准间距 16dp */
+    val LG: Dp = Spacing.lg
+    /** 大间距 24dp */
+    val XL: Dp = Spacing.xl
+    /** 超大间距 32dp */
+    val XXL: Dp = Spacing.xxl
 
     /** 页面水平边距 */
-    val pageHorizontal: Dp = Spacing.pageHorizontal
-    /** 页面垂直边距 */
-    val pageVertical: Dp = Spacing.pageVertical
-    /** 卡片内边距 */
-    val cardPadding: Dp = Spacing.cardPadding
-    /** 区块间距 */
-    val sectionGap: Dp = Spacing.sectionGap
-
-    /** 图标尺寸 - 小 */
-    val iconSmall: Dp = IconSize.sm
-    /** 图标尺寸 - 中 */
-    val iconMedium: Dp = IconSize.md
-    /** 图标尺寸 - 大 */
-    val iconLarge: Dp = IconSize.lg
-
-    // ===== Pascal Case 命名 (兼容现有代码) =====
-    /** 页面水平边距 - Pascal Case 别名 */
     val PageHorizontalPadding: Dp = Spacing.pageHorizontal
+    /** 页面垂直边距 */
+    val PageVerticalPadding: Dp = Spacing.pageVertical
 
-    /** 间距常量 - Pascal Case 别名 */
+    /** 间距常量 */
     val SpacingSmall: Dp = Spacing.sm        // 8.dp
     val SpacingNormal: Dp = Spacing.md       // 12.dp
     val SpacingMedium: Dp = Spacing.lg       // 16.dp
@@ -73,45 +56,36 @@ object AppDimens {
     val SpacingXLarge: Dp = Spacing.xxl      // 32.dp
     val SpacingXXLarge: Dp = 40.dp           // 超大间距
 
-    /** 卡片内边距 - Pascal Case 别名 */
+    /** 卡片内边距 */
     val CardPadding: Dp = Spacing.cardPadding
 
     /** 进度条高度 */
     val ProgressBarHeight: Dp = 8.dp
 
-    /** 图标尺寸 - Pascal Case 别名 */
-    val IconSmall: Dp = IconSize.sm
-    val IconMedium: Dp = IconSize.md
-    val IconLarge: Dp = IconSize.lg
-    val IconXLarge: Dp = IconSize.xl
+    /** 图标尺寸 */
+    val IconSmall: Dp = IconSize.sm          // 20.dp
+    val IconMedium: Dp = IconSize.md         // 24.dp
+    val IconLarge: Dp = IconSize.lg          // 32.dp
+    val IconXLarge: Dp = IconSize.xl         // 40.dp
     val IconXXLarge: Dp = 48.dp
 }
 
 // ==================== 形状常量 ====================
 
 /**
- * 应用形状常量
- * 支持 Pascal Case 命名以兼容现有代码
+ * 应用形状常量 - 使用 Pascal Case 命名
  */
 object AppShapes {
-    // ===== 标准命名 (camelCase) =====
-    /** 小圆角 */
-    val small = RoundedCornerShape(Radius.sm)
-    /** 中圆角 */
-    val medium = RoundedCornerShape(Radius.md)
-    /** 大圆角 */
-    val large = RoundedCornerShape(Radius.lg)
-    /** 超大圆角 */
-    val extraLarge = RoundedCornerShape(Radius.xl)
+    /** 小圆角 8dp */
+    val Small: RoundedCornerShape = RoundedCornerShape(Radius.sm)
+    /** 中圆角 12dp */
+    val Medium: RoundedCornerShape = RoundedCornerShape(Radius.md)
+    /** 大圆角 16dp */
+    val Large: RoundedCornerShape = RoundedCornerShape(Radius.lg)
+    /** 超大圆角 24dp */
+    val ExtraLarge: RoundedCornerShape = RoundedCornerShape(Radius.xl)
     /** 胶囊形 */
-    val capsule = RoundedCornerShape(Radius.full)
-
-    // ===== Pascal Case 命名 (兼容现有代码) =====
-    val Small = RoundedCornerShape(Radius.sm)
-    val Medium = RoundedCornerShape(Radius.md)
-    val Large = RoundedCornerShape(Radius.lg)
-    val ExtraLarge = RoundedCornerShape(Radius.xl)
-    val Capsule = RoundedCornerShape(Radius.full)
+    val Capsule: RoundedCornerShape = RoundedCornerShape(Radius.full)
 }
 
 // ==================== 顶部应用栏 ====================
@@ -236,7 +210,7 @@ fun UnifiedCard(
 ) {
     Surface(
         modifier = modifier,
-        shape = AppShapes.medium,
+        shape = AppShapes.Medium,
         color = CleanColors.surface,
         shadowElevation = Elevation.xs,
         onClick = onClick ?: {}
@@ -272,7 +246,7 @@ fun UnifiedStatsCard(
 ) {
     Surface(
         modifier = modifier,
-        shape = AppShapes.medium,
+        shape = AppShapes.Medium,
         color = CleanColors.surface,
         shadowElevation = Elevation.xs,
         onClick = onClick ?: {}
@@ -288,7 +262,7 @@ fun UnifiedStatsCard(
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .clip(AppShapes.medium)
+                        .clip(AppShapes.Medium)
                         .background(iconTint.copy(alpha = 0.1f)),
                     contentAlignment = Alignment.Center
                 ) {
@@ -343,7 +317,7 @@ fun UnifiedStatsCard(
 ) {
     Surface(
         modifier = modifier,
-        shape = AppShapes.medium,
+        shape = AppShapes.Medium,
         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
         shadowElevation = Elevation.xs,
         onClick = onClick ?: {}
@@ -376,14 +350,14 @@ fun UnifiedProgressBar(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
-            .clip(AppShapes.capsule)
+            .clip(AppShapes.Capsule)
             .background(trackColor)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxHeight()
                 .fillMaxWidth(progress.coerceIn(0f, 1f))
-                .clip(AppShapes.capsule)
+                .clip(AppShapes.Capsule)
                 .background(color)
         )
     }
