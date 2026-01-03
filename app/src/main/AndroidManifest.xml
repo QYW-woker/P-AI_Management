@@ -84,11 +84,8 @@
         <service
             android:name=".core.floatingball.FloatingBallService"
             android:exported="false"
-            android:foregroundServiceType="specialUse">
-            <property
-                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="floating_ball_voice_assistant" />
-        </service>
+            android:foregroundServiceType="dataSync" />
+        <!-- Note: specialUse requires API 34, using dataSync for SDK 33 compatibility -->
 
         <!-- 悬浮球重启接收器 -->
         <receiver
