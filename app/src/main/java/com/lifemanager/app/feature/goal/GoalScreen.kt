@@ -32,6 +32,8 @@ import com.lifemanager.app.domain.model.GoalTreeNode
 import com.lifemanager.app.domain.model.GoalUiState
 import com.lifemanager.app.domain.model.getCategoryDisplayName
 import com.lifemanager.app.domain.model.getGoalTypeDisplayName
+import com.lifemanager.app.ui.theme.*
+import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
  * 目标管理页面
@@ -65,17 +67,23 @@ fun GoalScreen(
     }
 
     Scaffold(
+        containerColor = CleanColors.background,
         topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
                         text = "目标管理",
-                        fontWeight = FontWeight.Bold
+                        style = CleanTypography.title,
+                        color = CleanColors.textPrimary
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "返回",
+                            tint = CleanColors.textPrimary
+                        )
                     }
                 },
                 actions = {
@@ -96,16 +104,22 @@ fun GoalScreen(
                                 } else {
                                     Icons.Default.UnfoldLess
                                 },
-                                contentDescription = if (expandedGoalIds.isEmpty()) "展开全部" else "收起全部"
+                                contentDescription = if (expandedGoalIds.isEmpty()) "展开全部" else "收起全部",
+                                tint = CleanColors.textPrimary
                             )
                         }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = CleanColors.surface
+                )
             )
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showTypeSelectSheet = true }
+                onClick = { showTypeSelectSheet = true },
+                containerColor = CleanColors.primary,
+                contentColor = CleanColors.onPrimary
             ) {
                 Icon(Icons.Default.Add, contentDescription = "添加目标")
             }
@@ -135,7 +149,7 @@ fun GoalScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = CleanColors.primary)
                     }
                 }
 
@@ -147,11 +161,18 @@ fun GoalScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(
                                 text = (uiState as GoalUiState.Error).message,
-                                color = MaterialTheme.colorScheme.error
+                                style = CleanTypography.body,
+                                color = CleanColors.error
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = { viewModel.loadGoalTree() }) {
-                                Text("重试")
+                            Spacer(modifier = Modifier.height(Spacing.lg))
+                            Button(
+                                onClick = { viewModel.loadGoalTree() },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = CleanColors.primary,
+                                    contentColor = CleanColors.onPrimary
+                                )
+                            ) {
+                                Text("重试", style = CleanTypography.button)
                             }
                         }
                     }
@@ -163,8 +184,11 @@ fun GoalScreen(
                     } else {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(16.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            contentPadding = PaddingValues(
+                                horizontal = Spacing.pageHorizontal,
+                                vertical = Spacing.md
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
                         ) {
                             items(flattenedGoals, key = { it.goal.id }) { treeNode ->
                                 GoalTreeCard(
@@ -201,35 +225,33 @@ fun GoalScreen(
 private fun StatsCard(
     statistics: com.lifemanager.app.domain.model.GoalStatistics
 ) {
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
-        )
+            .padding(horizontal = Spacing.pageHorizontal, vertical = Spacing.md),
+        shape = RoundedCornerShape(Radius.md),
+        color = CleanColors.primaryLight
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(Spacing.lg),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             StatItem(
                 label = "进行中",
                 value = statistics.activeCount.toString(),
-                color = MaterialTheme.colorScheme.primary
+                color = CleanColors.primary
             )
             StatItem(
                 label = "已完成",
                 value = statistics.completedCount.toString(),
-                color = Color(0xFF4CAF50)
+                color = CleanColors.success
             )
             StatItem(
                 label = "平均进度",
                 value = "${(statistics.totalProgress * 100).toInt()}%",
-                color = MaterialTheme.colorScheme.tertiary
+                color = CleanColors.warning
             )
         }
     }
@@ -244,14 +266,14 @@ private fun StatItem(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value,
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
+            style = CleanTypography.amountMedium,
             color = color
         )
+        Spacer(modifier = Modifier.height(Spacing.xs))
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = CleanTypography.caption,
+            color = CleanColors.textSecondary
         )
     }
 }
@@ -262,35 +284,70 @@ private fun FilterChips(
     currentFilter: String,
     onFilterChange: (String) -> Unit
 ) {
+    // 筛选项配置：值、标签、图标
+    data class FilterItem(
+        val value: String,
+        val label: String,
+        val icon: ImageVector
+    )
+
     val filters = listOf(
-        "ACTIVE" to "进行中",
-        "COMPLETED" to "已完成",
-        "ABANDONED" to "已放弃",
-        "ALL" to "全部"
+        FilterItem("ACTIVE", "进行中", Icons.Default.PlayArrow),
+        FilterItem("COMPLETED", "已完成", Icons.Default.CheckCircle),
+        FilterItem("ABANDONED", "已放弃", Icons.Default.Cancel),
+        FilterItem("ALL", "全部", Icons.Default.List)
     )
 
     LazyRow(
         modifier = Modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        contentPadding = PaddingValues(horizontal = Spacing.pageHorizontal),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
     ) {
-        items(filters) { (value, label) ->
-            val isAbandoned = value == "ABANDONED"
+        items(filters) { filter ->
+            val isSelected = currentFilter == filter.value
+            val containerColor = when {
+                !isSelected -> CleanColors.surface
+                filter.value == "ABANDONED" -> CleanColors.errorLight
+                filter.value == "COMPLETED" -> CleanColors.successLight
+                else -> CleanColors.primaryLight
+            }
+            val contentColor = when {
+                !isSelected -> CleanColors.textSecondary
+                filter.value == "ABANDONED" -> CleanColors.error
+                filter.value == "COMPLETED" -> CleanColors.success
+                else -> CleanColors.primary
+            }
+
             FilterChip(
-                selected = currentFilter == value,
-                onClick = { onFilterChange(value) },
-                label = { Text(label) },
-                leadingIcon = if (currentFilter == value) {
-                    { Icon(Icons.Default.Check, contentDescription = null, Modifier.size(18.dp)) }
-                } else null,
-                colors = if (isAbandoned) {
-                    FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.errorContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onErrorContainer
+                selected = isSelected,
+                onClick = { onFilterChange(filter.value) },
+                label = {
+                    Text(
+                        text = filter.label,
+                        style = CleanTypography.button
                     )
-                } else {
-                    FilterChipDefaults.filterChipColors()
-                }
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = filter.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = containerColor,
+                    labelColor = contentColor,
+                    iconColor = contentColor,
+                    selectedContainerColor = containerColor,
+                    selectedLabelColor = contentColor,
+                    selectedLeadingIconColor = contentColor
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    borderColor = if (isSelected) Color.Transparent else CleanColors.borderLight,
+                    selectedBorderColor = Color.Transparent,
+                    enabled = true,
+                    selected = isSelected
+                )
             )
         }
     }
@@ -313,7 +370,7 @@ private fun GoalTreeCard(
     val hasChildren = treeNode.childCount > 0
 
     // 根据层级计算缩进
-    val indentDp = (treeNode.level * 24).dp
+    val indentDp = (treeNode.level * Spacing.xl.value).dp
 
     // 展开箭头旋转动画
     val rotationAngle by animateFloatAsState(
@@ -345,7 +402,7 @@ private fun GoalTreeCard(
                             modifier = Modifier
                                 .size(20.dp)
                                 .rotate(rotationAngle),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = CleanColors.primary
                         )
                     }
                 } else if (treeNode.level > 0) {
@@ -359,7 +416,7 @@ private fun GoalTreeCard(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.outlineVariant)
+                                .background(CleanColors.borderLight)
                         )
                     }
                 } else {
@@ -369,24 +426,20 @@ private fun GoalTreeCard(
         }
 
         // 目标卡片
-        Card(
+        Surface(
             modifier = Modifier
                 .weight(1f)
                 .clickable(onClick = onClick),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (treeNode.level > 0) {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                } else {
-                    MaterialTheme.colorScheme.surface
-                }
-            ),
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = if (treeNode.level == 0) 2.dp else 0.dp
-            )
+            shape = RoundedCornerShape(Radius.md),
+            color = if (treeNode.level > 0) {
+                CleanColors.surfaceVariant
+            } else {
+                CleanColors.surface
+            },
+            shadowElevation = if (treeNode.level == 0) Elevation.xs else Elevation.none
         ) {
             Column(
-                modifier = Modifier.padding(if (treeNode.level > 0) 12.dp else 16.dp)
+                modifier = Modifier.padding(if (treeNode.level > 0) Spacing.md else Spacing.lg)
             ) {
                 // 头部：分类标签和状态
                 Row(
@@ -397,29 +450,29 @@ private fun GoalTreeCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         // 分类标签
                         Surface(
-                            shape = RoundedCornerShape(4.dp),
+                            shape = RoundedCornerShape(Radius.sm),
                             color = categoryColor.copy(alpha = 0.1f)
                         ) {
                             Text(
                                 text = getCategoryDisplayName(goal.category),
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(horizontal = Spacing.xs, vertical = 2.dp),
+                                style = CleanTypography.caption,
                                 color = categoryColor
                             )
                         }
 
                         // 多级目标标识
                         if (hasChildren) {
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(Spacing.xs))
                             Surface(
-                                shape = RoundedCornerShape(4.dp),
-                                color = MaterialTheme.colorScheme.primaryContainer
+                                shape = RoundedCornerShape(Radius.sm),
+                                color = CleanColors.primaryLight
                             ) {
                                 Text(
                                     text = "${treeNode.childCount}个子目标",
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
+                                    modifier = Modifier.padding(horizontal = Spacing.xs, vertical = 2.dp),
+                                    style = CleanTypography.caption,
+                                    color = CleanColors.primary
                                 )
                             }
                         }
@@ -432,63 +485,59 @@ private fun GoalTreeCard(
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
                                     contentDescription = "已完成",
-                                    tint = Color(0xFF4CAF50),
+                                    tint = CleanColors.success,
                                     modifier = Modifier.size(18.dp)
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(Spacing.xs))
                             }
                             GoalStatus.ABANDONED -> {
                                 Surface(
-                                    shape = RoundedCornerShape(4.dp),
-                                    color = MaterialTheme.colorScheme.errorContainer
+                                    shape = RoundedCornerShape(Radius.sm),
+                                    color = CleanColors.errorLight
                                 ) {
                                     Text(
                                         text = "已放弃",
-                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.onErrorContainer
+                                        modifier = Modifier.padding(horizontal = Spacing.xs, vertical = 2.dp),
+                                        style = CleanTypography.caption,
+                                        color = CleanColors.error
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(Spacing.xs))
                             }
                             else -> {}
                         }
                         Icon(
                             imageVector = Icons.Default.ChevronRight,
                             contentDescription = "查看详情",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = CleanColors.textTertiary,
                             modifier = Modifier.size(18.dp)
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(Spacing.sm))
 
                 // 标题
                 Text(
                     text = goal.title,
-                    style = if (treeNode.level > 0) {
-                        MaterialTheme.typography.bodyLarge
-                    } else {
-                        MaterialTheme.typography.titleMedium
-                    },
-                    fontWeight = FontWeight.Bold,
+                    style = if (treeNode.level > 0) CleanTypography.body else CleanTypography.title,
+                    color = CleanColors.textPrimary,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
 
                 if (goal.description.isNotBlank() && treeNode.level == 0) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(Spacing.xs))
                     Text(
                         text = goal.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = CleanTypography.caption,
+                        color = CleanColors.textSecondary,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(Spacing.md))
 
                 // 进度条
                 Column {
@@ -502,8 +551,8 @@ private fun GoalTreeCard(
                             } else {
                                 "${(progress * 100).toInt()}%"
                             },
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium
+                            style = CleanTypography.caption,
+                            color = CleanColors.textPrimary
                         )
                         remainingDays?.let { days ->
                             Text(
@@ -512,22 +561,22 @@ private fun GoalTreeCard(
                                     days == 0 -> "今天截止"
                                     else -> "已逾期${-days}天"
                                 },
-                                style = MaterialTheme.typography.bodySmall,
-                                color = if (days < 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                                style = CleanTypography.caption,
+                                color = if (days < 0) CleanColors.error else CleanColors.textTertiary
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(Spacing.xs))
 
                     LinearProgressIndicator(
-                        progress = progress,
+                        progress = { progress },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(if (treeNode.level > 0) 6.dp else 8.dp)
-                            .clip(RoundedCornerShape(4.dp)),
+                            .clip(RoundedCornerShape(Radius.sm)),
                         color = categoryColor,
-                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        trackColor = CleanColors.borderLight
                     )
                 }
             }
@@ -540,7 +589,7 @@ private fun EmptyState(currentFilter: String) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(Spacing.xxl),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -552,26 +601,26 @@ private fun EmptyState(currentFilter: String) {
                 },
                 contentDescription = null,
                 modifier = Modifier.size(64.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                tint = CleanColors.textTertiary
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Spacing.lg))
             Text(
                 text = when (currentFilter) {
                     "COMPLETED" -> "暂无已完成的目标"
                     "ABANDONED" -> "暂无已放弃的目标"
                     else -> "暂无目标"
                 },
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = CleanTypography.body,
+                color = CleanColors.textSecondary
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.sm))
             Text(
                 text = when (currentFilter) {
                     "ABANDONED" -> "放弃的目标会显示在这里"
                     else -> "点击右下角按钮创建新目标"
                 },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                style = CleanTypography.secondary,
+                color = CleanColors.textTertiary
             )
         }
     }

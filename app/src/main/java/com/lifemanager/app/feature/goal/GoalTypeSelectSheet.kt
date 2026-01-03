@@ -29,34 +29,35 @@ fun GoalTypeSelectSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        shape = AppShapes.ExtraLarge
+        shape = AppShapes.ExtraLarge,
+        containerColor = CleanColors.surface
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(AppDimens.PageHorizontalPadding)
-                .padding(bottom = 32.dp)
+                .padding(horizontal = Spacing.pageHorizontal)
+                .padding(bottom = Spacing.xxl)
         ) {
             // 标题
             Text(
                 text = "选择目标类型",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
+                style = CleanTypography.title,
+                color = CleanColors.textPrimary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.sm))
 
             Text(
                 text = "选择最适合您需求的目标结构",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = CleanTypography.secondary,
+                color = CleanColors.textSecondary,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(Spacing.xl))
 
             // 单级目标选项
             GoalTypeOption(
@@ -69,7 +70,7 @@ fun GoalTypeSelectSheet(
                 }
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(Spacing.md))
 
             // 多级目标选项
             GoalTypeOption(
@@ -94,33 +95,23 @@ private fun GoalTypeOption(
     isPrimary: Boolean = false,
     onClick: () -> Unit
 ) {
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = AppShapes.Medium,
-        colors = CardDefaults.cardColors(
-            containerColor = if (isPrimary) {
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-            }
-        )
+        color = if (isPrimary) CleanColors.primaryLight else CleanColors.surfaceVariant
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(AppDimens.SpacingNormal),
+                .padding(Spacing.md),
             verticalAlignment = Alignment.Top
         ) {
             // 图标
             Surface(
                 shape = AppShapes.Medium,
-                color = if (isPrimary) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant
-                },
+                color = if (isPrimary) CleanColors.primary else CleanColors.surface,
                 modifier = Modifier.size(48.dp)
             ) {
                 Box(
@@ -130,17 +121,13 @@ private fun GoalTypeOption(
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = if (isPrimary) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                        modifier = Modifier.size(24.dp)
+                        tint = if (isPrimary) CleanColors.onPrimary else CleanColors.textSecondary,
+                        modifier = Modifier.size(IconSize.md)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(AppDimens.SpacingNormal))
+            Spacer(modifier = Modifier.width(Spacing.md))
 
             Column(modifier = Modifier.weight(1f)) {
                 Row(
@@ -148,38 +135,38 @@ private fun GoalTypeOption(
                 ) {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        style = CleanTypography.body,
+                        color = CleanColors.textPrimary
                     )
                     if (isPrimary) {
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(Spacing.sm))
                         Surface(
                             shape = AppShapes.Small,
-                            color = MaterialTheme.colorScheme.primary
+                            color = CleanColors.primary
                         ) {
                             Text(
                                 text = "推荐",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                style = CleanTypography.caption,
+                                color = CleanColors.onPrimary,
+                                modifier = Modifier.padding(horizontal = Spacing.xs, vertical = 2.dp)
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(Spacing.xs))
 
                 Text(
                     text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style = CleanTypography.caption,
+                    color = CleanColors.textSecondary
                 )
             }
 
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = CleanColors.textTertiary,
                 modifier = Modifier.align(Alignment.CenterVertically)
             )
         }
