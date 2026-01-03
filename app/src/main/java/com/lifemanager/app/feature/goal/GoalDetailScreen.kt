@@ -24,6 +24,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifemanager.app.core.database.entity.GoalEntity
 import com.lifemanager.app.core.database.entity.GoalStatus
 import com.lifemanager.app.domain.model.AIAnalysisState
+import com.lifemanager.app.domain.model.GoalProgressRecordUI
 import com.lifemanager.app.domain.model.OperationResult
 import com.lifemanager.app.domain.model.getCategoryDisplayName
 import com.lifemanager.app.domain.model.getGoalTypeDisplayName
@@ -208,7 +209,10 @@ fun GoalDetailScreen(
                 }
 
                 item {
-                    ProgressHistoryCard(goal = currentGoal)
+                    ProgressHistoryCard(
+                        goal = currentGoal,
+                        progressRecords = goalDetailState.progressRecords
+                    )
                 }
             }
         } ?: run {
@@ -405,13 +409,18 @@ private fun QuickProgressUpdateCard(
             if (showInput) {
                 OutlinedTextField(
                     value = progressValue,
-                    onValueChange = { onValueChange(it.filter { c -> c.isDigit() || c == '.' }) },
+                    onValueChange = { onValueChange(it.filter { c -> c.isDigit() || c == '.' || c == '-' }) },
                     modifier = Modifier.fillMaxWidth(),
                     label = {
-                        Text(if (goal.progressType == "NUMERIC") "当前数值" else "完成百分比")
+                        Text(if (goal.progressType == "NUMERIC") "本次增加（如+1000）" else "增加百分比")
                     },
                     suffix = {
                         Text(if (goal.progressType == "NUMERIC") goal.unit else "%")
+                    },
+                    supportingText = {
+                        if (goal.progressType == "NUMERIC" && goal.targetValue != null) {
+                            Text("当前：${goal.currentValue.toInt()}${goal.unit} / 目标：${goal.targetValue.toInt()}${goal.unit}")
+                        }
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     singleLine = true,
@@ -656,32 +665,52 @@ private fun InfoColumn(
 }
 
 @Composable
-private fun ProgressHistoryCard(goal: GoalEntity) {
+private fun ProgressHistoryCard(
+    goal: GoalEntity,
+    progressRecords: List<GoalProgressRecordUI>
+) {
     UnifiedCard {
-        // 这里可以展示进度历史时间线
-        // 目前简化为创建和最后更新信息
         Column {
+            // 创建目标记录
             TimelineItem(
                 title = "创建目标",
                 subtitle = "开始追踪进度",
                 time = formatDate(goal.createdAt),
                 isFirst = true,
-                isLast = goal.updatedAt == goal.createdAt
+                isLast = progressRecords.isEmpty() && goal.status != GoalStatus.COMPLETED
             )
 
-            if (goal.updatedAt != goal.createdAt) {
+            // 进度更新记录（按时间倒序显示）
+            progressRecords.forEachIndexed { index, record ->
+                val isLast = index == progressRecords.size - 1 && goal.status != GoalStatus.COMPLETED
+                val changeText = if (record.changeValue >= 0) {
+                    "+${record.changeValue.toInt()}${goal.unit}"
+                } else {
+                    "${record.changeValue.toInt()}${goal.unit}"
+                }
+
                 TimelineItem(
-                    title = "最近更新",
-                    subtitle = "当前进度: ${goal.currentValue.toInt()}${goal.unit}",
-                    time = formatDate(goal.updatedAt),
+                    title = "进度更新",
+                    subtitle = if (goal.progressType == "NUMERIC") {
+                        "$changeText → ${record.totalValue.toInt()}${goal.unit}"
+                    } else {
+                        "${record.previousValue.toInt()}% → ${record.totalValue.toInt()}%"
+                    },
+                    time = formatDateFromEpochDay(record.recordDate),
                     isFirst = false,
-                    isLast = goal.status != GoalStatus.COMPLETED
+                    isLast = isLast,
+                    color = if (record.changeValue >= 0) {
+                        Color(0xFF4CAF50) // 绿色表示进度增加
+                    } else {
+                        MaterialTheme.colorScheme.error // 红色表示进度减少
+                    }
                 )
             }
 
+            // 完成记录
             if (goal.status == GoalStatus.COMPLETED) {
                 TimelineItem(
-                    title = "完成目标",
+                    title = "目标完成",
                     subtitle = "恭喜达成目标！",
                     time = formatDate(goal.updatedAt),
                     isFirst = false,
@@ -689,8 +718,24 @@ private fun ProgressHistoryCard(goal: GoalEntity) {
                     color = Color(0xFF4CAF50)
                 )
             }
+
+            // 如果没有记录，显示提示
+            if (progressRecords.isEmpty() && goal.status != GoalStatus.COMPLETED) {
+                Spacer(modifier = Modifier.height(AppDimens.SpacingSmall))
+                Text(
+                    text = "暂无进度记录，点击上方\"更新进度\"开始记录",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 40.dp)
+                )
+            }
         }
     }
+}
+
+private fun formatDateFromEpochDay(epochDay: Int): String {
+    val date = LocalDate.ofEpochDay(epochDay.toLong())
+    return date.format(DateTimeFormatter.ofPattern("MM-dd"))
 }
 
 @Composable

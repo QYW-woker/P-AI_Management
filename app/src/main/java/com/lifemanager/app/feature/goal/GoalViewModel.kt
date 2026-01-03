@@ -455,11 +455,13 @@ class GoalViewModel @Inject constructor(
                 if (goal != null) {
                     val progress = useCase.calculateProgress(goal)
                     val remainingDays = useCase.getRemainingDays(goal.endDate)
+                    val progressRecords = useCase.getProgressRecords(goalId)
                     _goalDetailState.value = GoalDetailState(
                         goal = goal,
                         isLoading = false,
                         progress = progress,
                         remainingDays = remainingDays,
+                        progressRecords = progressRecords,
                         operationResult = _operationResult.value
                     )
                 } else {

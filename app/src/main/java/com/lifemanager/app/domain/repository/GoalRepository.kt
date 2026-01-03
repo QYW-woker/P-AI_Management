@@ -1,6 +1,7 @@
 package com.lifemanager.app.domain.repository
 
 import com.lifemanager.app.core.database.entity.GoalEntity
+import com.lifemanager.app.core.database.entity.GoalRecordEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -65,4 +66,16 @@ interface GoalRepository {
      * 删除目标及其所有子目标
      */
     suspend fun deleteWithChildren(id: Long)
+
+    // ============ 进度记录相关 ============
+
+    /**
+     * 获取目标的进度记录列表
+     */
+    suspend fun getProgressRecords(goalId: Long): List<GoalRecordEntity>
+
+    /**
+     * 插入进度记录
+     */
+    suspend fun insertProgressRecord(record: GoalRecordEntity): Long
 }

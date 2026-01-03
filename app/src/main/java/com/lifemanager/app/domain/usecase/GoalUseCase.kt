@@ -1,7 +1,10 @@
 package com.lifemanager.app.domain.usecase
 
 import com.lifemanager.app.core.database.entity.GoalEntity
+import com.lifemanager.app.core.database.entity.GoalRecordEntity
+import com.lifemanager.app.core.database.entity.GoalRecordType
 import com.lifemanager.app.core.database.entity.GoalStatus
+import com.lifemanager.app.domain.model.GoalProgressRecordUI
 import com.lifemanager.app.domain.model.GoalStatistics
 import com.lifemanager.app.domain.model.GoalTreeNode
 import com.lifemanager.app.domain.model.SubGoalEditState
@@ -145,21 +148,74 @@ class GoalUseCase @Inject constructor(
     }
 
     /**
-     * 更新目标进度
+     * 更新目标进度（累加制）
+     * @param id 目标ID
+     * @param changeValue 变化值（增加或减少的数值，正数为增加，负数为减少）
      */
-    suspend fun updateProgress(id: Long, value: Double) {
-        repository.updateProgress(id, value)
+    suspend fun updateProgress(id: Long, changeValue: Double) {
+        val goal = repository.getGoalById(id) ?: return
+        val previousValue = goal.currentValue
+        val newValue = previousValue + changeValue
+        val today = getToday()
+
+        // 更新目标进度
+        repository.updateProgress(id, newValue)
+
+        // 创建进度记录
+        val record = GoalRecordEntity(
+            goalId = id,
+            recordType = GoalRecordType.PROGRESS,
+            title = "进度更新",
+            content = if (goal.progressType == "NUMERIC") {
+                "从 ${previousValue.toInt()}${goal.unit} 增加到 ${newValue.toInt()}${goal.unit}（+${changeValue.toInt()}${goal.unit}）"
+            } else {
+                "进度从 ${previousValue.toInt()}% 更新至 ${newValue.toInt()}%"
+            },
+            progressValue = changeValue,
+            previousValue = previousValue,
+            recordDate = today
+        )
+        repository.insertProgressRecord(record)
 
         // 检查是否达成目标
-        val goal = repository.getGoalById(id)
-        if (goal != null && goal.targetValue != null && value >= goal.targetValue) {
+        if (goal.targetValue != null && newValue >= goal.targetValue) {
             repository.updateStatus(id, GoalStatus.COMPLETED)
+            // 添加完成记录
+            val completeRecord = GoalRecordEntity(
+                goalId = id,
+                recordType = GoalRecordType.COMPLETE,
+                title = "目标完成",
+                content = "恭喜！目标已达成！",
+                recordDate = today
+            )
+            repository.insertProgressRecord(completeRecord)
         }
 
         // 如果有父目标，更新父目标进度
-        goal?.parentId?.let { parentId ->
+        goal.parentId?.let { parentId ->
             updateParentProgress(parentId)
         }
+    }
+
+    /**
+     * 获取目标的进度记录列表（转换为UI模型）
+     */
+    suspend fun getProgressRecords(goalId: Long): List<GoalProgressRecordUI> {
+        val records = repository.getProgressRecords(goalId)
+        return records
+            .filter { it.recordType == GoalRecordType.PROGRESS }
+            .map { record ->
+                GoalProgressRecordUI(
+                    id = record.id,
+                    changeValue = record.progressValue ?: 0.0,
+                    totalValue = (record.previousValue ?: 0.0) + (record.progressValue ?: 0.0),
+                    previousValue = record.previousValue ?: 0.0,
+                    title = record.title,
+                    content = record.content,
+                    recordDate = record.recordDate,
+                    createdAt = record.createdAt
+                )
+            }
     }
 
     /**

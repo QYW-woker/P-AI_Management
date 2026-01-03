@@ -281,7 +281,22 @@ data class GoalDetailState(
     val isLoading: Boolean = false,
     val progress: Float = 0f,
     val remainingDays: Int? = null,
+    val progressRecords: List<GoalProgressRecordUI> = emptyList(),
     val operationResult: OperationResult = OperationResult.Idle
+)
+
+/**
+ * 进度记录UI模型（用于详情页展示）
+ */
+data class GoalProgressRecordUI(
+    val id: Long,
+    val changeValue: Double,      // 变化值（本次增加/减少的数值）
+    val totalValue: Double,       // 变化后的总值
+    val previousValue: Double,    // 变化前的值
+    val title: String,
+    val content: String,
+    val recordDate: Int,          // epochDay
+    val createdAt: Long           // 毫秒时间戳
 )
 
 /**

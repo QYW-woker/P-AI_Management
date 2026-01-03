@@ -1,7 +1,9 @@
 package com.lifemanager.app.data.repository
 
 import com.lifemanager.app.core.database.dao.GoalDao
+import com.lifemanager.app.core.database.dao.GoalRecordDao
 import com.lifemanager.app.core.database.entity.GoalEntity
+import com.lifemanager.app.core.database.entity.GoalRecordEntity
 import com.lifemanager.app.domain.repository.GoalRepository
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -12,7 +14,8 @@ import javax.inject.Singleton
  */
 @Singleton
 class GoalRepositoryImpl @Inject constructor(
-    private val goalDao: GoalDao
+    private val goalDao: GoalDao,
+    private val goalRecordDao: GoalRecordDao
 ) : GoalRepository {
 
     override fun getActiveGoals(): Flow<List<GoalEntity>> {
@@ -95,5 +98,15 @@ class GoalRepositoryImpl @Inject constructor(
 
     override suspend fun deleteWithChildren(id: Long) {
         goalDao.deleteWithChildren(id)
+    }
+
+    // ============ 进度记录相关 ============
+
+    override suspend fun getProgressRecords(goalId: Long): List<GoalRecordEntity> {
+        return goalRecordDao.getRecordsByGoalIdSync(goalId)
+    }
+
+    override suspend fun insertProgressRecord(record: GoalRecordEntity): Long {
+        return goalRecordDao.insert(record)
     }
 }
