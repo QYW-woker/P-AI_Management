@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.lifemanager.app.core.database.entity.GoalEntity
 import com.lifemanager.app.core.database.entity.GoalStatus
+import com.lifemanager.app.domain.model.AIAnalysisState
 import com.lifemanager.app.domain.model.GoalStructureType
 import com.lifemanager.app.domain.model.GoalTreeNode
 import com.lifemanager.app.domain.model.GoalUiState
@@ -34,6 +35,9 @@ import com.lifemanager.app.domain.model.getCategoryDisplayName
 import com.lifemanager.app.domain.model.getGoalTypeDisplayName
 import com.lifemanager.app.ui.theme.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 /**
  * 目标管理页面
@@ -54,12 +58,16 @@ fun GoalScreen(
     val expandedGoalIds by viewModel.expandedGoalIds.collectAsState()
     val statistics by viewModel.statistics.collectAsState()
     val currentFilter by viewModel.currentFilter.collectAsState()
+    val aiAnalysisState by viewModel.aiAnalysisState.collectAsState()
 
     // 是否使用树形视图
     var useTreeView by remember { mutableStateOf(true) }
 
     // 目标类型选择弹窗状态
     var showTypeSelectSheet by remember { mutableStateOf(false) }
+
+    // AI分析弹窗状态
+    var showAIAnalysisSheet by remember { mutableStateOf(false) }
 
     // 初始化时加载目标树
     LaunchedEffect(currentFilter) {
@@ -87,6 +95,18 @@ fun GoalScreen(
                     }
                 },
                 actions = {
+                    // AI分析按钮
+                    if (viewModel.isAIConfigured() && flattenedGoals.isNotEmpty()) {
+                        IconButton(
+                            onClick = { showAIAnalysisSheet = true }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AutoAwesome,
+                                contentDescription = "AI分析",
+                                tint = CleanColors.primary
+                            )
+                        }
+                    }
                     // 展开/收起所有按钮
                     if (useTreeView && flattenedGoals.any { it.childCount > 0 }) {
                         IconButton(
@@ -216,6 +236,24 @@ fun GoalScreen(
                     GoalStructureType.SINGLE -> onNavigateToAdd()
                     GoalStructureType.MULTI_LEVEL -> onNavigateToAddMultiLevel()
                 }
+            }
+        )
+    }
+
+    // AI分析弹窗
+    if (showAIAnalysisSheet) {
+        AIAnalysisBottomSheet(
+            statistics = statistics,
+            aiAnalysisState = aiAnalysisState,
+            onAnalyze = {
+                // 分析所有活跃目标的第一个
+                flattenedGoals.firstOrNull()?.let { node ->
+                    viewModel.analyzeGoal(node.goal.id)
+                }
+            },
+            onDismiss = {
+                showAIAnalysisSheet = false
+                viewModel.clearAIAnalysis()
             }
         )
     }
@@ -636,5 +674,265 @@ private fun getCategoryColor(category: String): Color {
         "LIFESTYLE" -> Color(0xFF00BCD4)
         "HOBBY" -> Color(0xFFFF5722)
         else -> Color.Gray
+    }
+}
+
+/**
+ * AI分析底部弹窗
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AIAnalysisBottomSheet(
+    statistics: com.lifemanager.app.domain.model.GoalStatistics,
+    aiAnalysisState: AIAnalysisState,
+    onAnalyze: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(topStart = Radius.xl, topEnd = Radius.xl),
+        containerColor = CleanColors.surface
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.pageHorizontal)
+                .padding(bottom = Spacing.xxl)
+        ) {
+            // 标题
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = CleanColors.primary,
+                    modifier = Modifier.size(IconSize.md)
+                )
+                Spacer(modifier = Modifier.width(Spacing.sm))
+                Text(
+                    text = "AI 目标分析",
+                    style = CleanTypography.title,
+                    color = CleanColors.textPrimary
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            // 目标概况卡片
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(Radius.md),
+                color = CleanColors.primaryLight
+            ) {
+                Column(
+                    modifier = Modifier.padding(Spacing.lg)
+                ) {
+                    Text(
+                        text = "当前目标概况",
+                        style = CleanTypography.secondary,
+                        color = CleanColors.textSecondary
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${statistics.activeCount}",
+                                style = CleanTypography.amountMedium,
+                                color = CleanColors.primary
+                            )
+                            Text(
+                                text = "进行中",
+                                style = CleanTypography.caption,
+                                color = CleanColors.textSecondary
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${statistics.completedCount}",
+                                style = CleanTypography.amountMedium,
+                                color = CleanColors.success
+                            )
+                            Text(
+                                text = "已完成",
+                                style = CleanTypography.caption,
+                                color = CleanColors.textSecondary
+                            )
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "${(statistics.totalProgress * 100).toInt()}%",
+                                style = CleanTypography.amountMedium,
+                                color = CleanColors.warning
+                            )
+                            Text(
+                                text = "平均进度",
+                                style = CleanTypography.caption,
+                                color = CleanColors.textSecondary
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.lg))
+
+            // AI分析结果或按钮
+            when (aiAnalysisState) {
+                is AIAnalysisState.Idle -> {
+                    Button(
+                        onClick = onAnalyze,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CleanColors.primary,
+                            contentColor = CleanColors.onPrimary
+                        ),
+                        shape = RoundedCornerShape(Radius.md)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            modifier = Modifier.size(IconSize.sm)
+                        )
+                        Spacer(modifier = Modifier.width(Spacing.sm))
+                        Text(
+                            text = "开始 AI 分析",
+                            style = CleanTypography.button
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(Spacing.sm))
+                    Text(
+                        text = "AI将分析您的目标进度并给出优化建议",
+                        style = CleanTypography.caption,
+                        color = CleanColors.textTertiary,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                is AIAnalysisState.Loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(
+                                color = CleanColors.primary,
+                                modifier = Modifier.size(40.dp)
+                            )
+                            Spacer(modifier = Modifier.height(Spacing.md))
+                            Text(
+                                text = "AI 正在分析您的目标...",
+                                style = CleanTypography.secondary,
+                                color = CleanColors.textSecondary
+                            )
+                        }
+                    }
+                }
+
+                is AIAnalysisState.Success -> {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(Radius.md),
+                        color = CleanColors.successLight
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .padding(Spacing.lg)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Lightbulb,
+                                    contentDescription = null,
+                                    tint = CleanColors.success,
+                                    modifier = Modifier.size(IconSize.sm)
+                                )
+                                Spacer(modifier = Modifier.width(Spacing.sm))
+                                Text(
+                                    text = "AI 分析建议",
+                                    style = CleanTypography.button,
+                                    color = CleanColors.success
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(Spacing.md))
+                            Text(
+                                text = aiAnalysisState.analysis,
+                                style = CleanTypography.body,
+                                color = CleanColors.textPrimary
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                    OutlinedButton(
+                        onClick = onAnalyze,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(Radius.md),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = CleanColors.primary
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = Modifier.size(IconSize.sm)
+                        )
+                        Spacer(modifier = Modifier.width(Spacing.sm))
+                        Text(
+                            text = "重新分析",
+                            style = CleanTypography.button
+                        )
+                    }
+                }
+
+                is AIAnalysisState.Error -> {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(Radius.md),
+                        color = CleanColors.errorLight
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(Spacing.lg),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ErrorOutline,
+                                contentDescription = null,
+                                tint = CleanColors.error,
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Spacer(modifier = Modifier.height(Spacing.sm))
+                            Text(
+                                text = aiAnalysisState.message,
+                                style = CleanTypography.secondary,
+                                color = CleanColors.error,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(Spacing.md))
+                    Button(
+                        onClick = onAnalyze,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CleanColors.primary,
+                            contentColor = CleanColors.onPrimary
+                        ),
+                        shape = RoundedCornerShape(Radius.md)
+                    ) {
+                        Text(
+                            text = "重试",
+                            style = CleanTypography.button
+                        )
+                    }
+                }
+            }
+        }
     }
 }
