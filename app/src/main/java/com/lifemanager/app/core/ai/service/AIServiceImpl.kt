@@ -47,7 +47,7 @@ class AIServiceImpl @Inject constructor(
                 request = request
             )
 
-            val content = response.choices?.firstOrNull()?.message?.content
+            val content = response.choices?.firstOrNull()?.message?.content as? String
             if (content != null) {
                 Result.success("连接成功: $content")
             } else {
@@ -587,7 +587,7 @@ $dataStr
                 request = request
             )
 
-            val content = response.choices?.firstOrNull()?.message?.content
+            val content = response.choices?.firstOrNull()?.message?.content as? String
                 ?: return@withContext Result.failure(Exception("AI响应为空"))
 
             Result.success(content)
