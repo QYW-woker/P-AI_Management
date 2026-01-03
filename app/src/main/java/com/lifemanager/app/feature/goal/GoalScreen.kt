@@ -382,9 +382,7 @@ private fun FilterChips(
                 ),
                 border = FilterChipDefaults.filterChipBorder(
                     borderColor = if (isSelected) Color.Transparent else CleanColors.borderLight,
-                    selectedBorderColor = Color.Transparent,
-                    enabled = true,
-                    selected = isSelected
+                    selectedBorderColor = Color.Transparent
                 )
             )
         }
@@ -608,7 +606,7 @@ private fun GoalTreeCard(
                     Spacer(modifier = Modifier.height(Spacing.xs))
 
                     LinearProgressIndicator(
-                        progress = { progress },
+                        progress = progress,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(if (treeNode.level > 0) 6.dp else 8.dp)
