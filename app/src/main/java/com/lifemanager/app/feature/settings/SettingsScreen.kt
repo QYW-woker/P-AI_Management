@@ -533,17 +533,13 @@ fun SettingsScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PremiumSettingsTopBar(onNavigateBack: () -> Unit) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("⚙️", fontSize = 24.sp)
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = "设置",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Text(
+                text = "设置",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
         },
         navigationIcon = {
             IconButton(
@@ -561,7 +557,7 @@ private fun PremiumSettingsTopBar(onNavigateBack: () -> Unit) {
                 )
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
             containerColor = Color.Transparent
         )
     )

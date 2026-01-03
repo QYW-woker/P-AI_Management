@@ -219,7 +219,7 @@ private fun CleanTodoTopBar(
     onEnterSelection: () -> Unit,
     onToggleViewMode: () -> Unit
 ) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
         title = {
             Text(
                 text = if (isSelectionMode) "已选择 $selectedCount 项" else "待办记事",
@@ -288,7 +288,7 @@ private fun CleanTodoTopBar(
                 }
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
             containerColor = if (isSelectionMode) CleanColors.primaryLight else CleanColors.background
         )
     )

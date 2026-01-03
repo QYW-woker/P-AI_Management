@@ -57,7 +57,7 @@ fun CleanHabitScreen(
     Scaffold(
         containerColor = CleanColors.background,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
                         text = "习惯打卡",
@@ -74,7 +74,7 @@ fun CleanHabitScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = CleanColors.background
                 )
             )

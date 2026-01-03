@@ -105,7 +105,7 @@ fun UnifiedTopAppBar(
     onNavigateBack: (() -> Unit)? = null,
     actions: @Composable RowScope.() -> Unit = {}
 ) {
-    TopAppBar(
+    CenterAlignedTopAppBar(
         title = {
             Text(
                 text = title,
@@ -128,7 +128,7 @@ fun UnifiedTopAppBar(
             }
         },
         actions = actions,
-        colors = TopAppBarDefaults.topAppBarColors(
+        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
             containerColor = CleanColors.surface,
             scrolledContainerColor = CleanColors.surface,
             titleContentColor = CleanColors.textPrimary

@@ -61,7 +61,7 @@ fun CleanDiaryScreen(
     Scaffold(
         containerColor = CleanColors.background,
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
                     Text(
                         text = "日记",
@@ -87,7 +87,7 @@ fun CleanDiaryScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = CleanColors.background
                 )
             )

@@ -765,11 +765,9 @@ private fun formatDate(timestamp: Long): String {
     return date.format(DateTimeFormatter.ofPattern("MM-dd"))
 }
 
-private fun formatDateFromInt(dateInt: Int): String {
-    val year = dateInt / 10000
-    val month = (dateInt % 10000) / 100
-    val day = dateInt % 100
-    return String.format("%02d-%02d", month, day)
+private fun formatDateFromInt(epochDay: Int): String {
+    val date = LocalDate.ofEpochDay(epochDay.toLong())
+    return date.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
 }
 
 private fun getCategoryColor(category: String): Color {
