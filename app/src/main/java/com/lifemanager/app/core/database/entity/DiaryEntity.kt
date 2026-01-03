@@ -75,6 +75,9 @@ data class DiaryEntity(
     // 位置（兼容旧数据）
     val location: String? = null,
 
+    // 睡眠时长（分钟）
+    val sleepMinutes: Int? = null,
+
     // ==================== 时间戳 ====================
 
     // 创建时间

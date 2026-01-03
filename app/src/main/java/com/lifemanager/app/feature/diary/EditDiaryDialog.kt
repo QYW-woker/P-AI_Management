@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,9 +39,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.lifemanager.app.domain.model.SleepDuration
 import com.lifemanager.app.domain.model.moodList
+import com.lifemanager.app.domain.model.quickSleepOptions
 import com.lifemanager.app.domain.model.weatherList
 import com.lifemanager.app.ui.component.PremiumTextField
+import kotlin.math.roundToInt
 import com.lifemanager.app.ui.theme.AppColors
 
 /**
@@ -202,6 +206,14 @@ fun EditDiaryDialog(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // 睡眠时长选择
+                    SleepDurationSection(
+                        sleepMinutes = editState.sleepMinutes,
+                        onSleepMinutesChange = { viewModel.updateEditSleep(it) }
+                    )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -475,6 +487,125 @@ private fun WeatherChip(
                 Text(text = emoji)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(text = name)
+            }
+        }
+    }
+}
+
+/**
+ * 睡眠时长选择组件
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SleepDurationSection(
+    sleepMinutes: Int?,
+    onSleepMinutesChange: (Int?) -> Unit
+) {
+    val sleepDuration = SleepDuration.fromMinutes(sleepMinutes)
+    var sliderValue by remember(sleepMinutes) {
+        mutableFloatStateOf((sleepMinutes ?: 0).toFloat() / 60f)
+    }
+
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "昨晚睡眠",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium
+            )
+            // 显示当前睡眠时长
+            if (sleepDuration != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "🌙",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = sleepDuration.formatDisplay(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 快捷选择按钮
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            quickSleepOptions.forEach { hours ->
+                val minutes = hours * 60
+                val isSelected = sleepMinutes == minutes
+
+                FilterChip(
+                    selected = isSelected,
+                    onClick = {
+                        if (isSelected) {
+                            onSleepMinutesChange(null)
+                            sliderValue = 0f
+                        } else {
+                            onSleepMinutesChange(minutes)
+                            sliderValue = hours.toFloat()
+                        }
+                    },
+                    label = {
+                        Text("${hours}h")
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // 滑动条
+        Column {
+            Slider(
+                value = sliderValue,
+                onValueChange = { newValue ->
+                    sliderValue = newValue
+                    // 四舍五入到15分钟
+                    val totalMinutes = (newValue * 60).roundToInt()
+                    val roundedMinutes = ((totalMinutes + 7) / 15) * 15
+                    if (roundedMinutes > 0) {
+                        onSleepMinutesChange(roundedMinutes)
+                    } else {
+                        onSleepMinutesChange(null)
+                    }
+                },
+                valueRange = 0f..12f,
+                steps = 47, // 0-12小时，每15分钟一个步进 (12*4 - 1 = 47)
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "0h",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "6h",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "12h",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

@@ -110,6 +110,7 @@ class DiaryUseCase @Inject constructor(
         moodScore: Int? = null,
         weather: String? = null,
         location: String? = null,
+        sleepMinutes: Int? = null,
         attachments: List<String> = emptyList()
     ): Long {
         val existing = repository.getByDate(date)
@@ -121,6 +122,7 @@ class DiaryUseCase @Inject constructor(
                 moodScore = moodScore,
                 weather = weather,
                 location = location,
+                sleepMinutes = sleepMinutes,
                 attachments = attachmentsJson,
                 updatedAt = System.currentTimeMillis()
             )
@@ -131,6 +133,7 @@ class DiaryUseCase @Inject constructor(
                 moodScore = moodScore,
                 weather = weather,
                 location = location,
+                sleepMinutes = sleepMinutes,
                 attachments = attachmentsJson
             )
         }

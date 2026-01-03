@@ -236,6 +236,7 @@ class DiaryViewModel @Inject constructor(
                     moodScore = existing.moodScore,
                     weather = existing.weather,
                     location = existing.location,
+                    sleepMinutes = existing.sleepMinutes,
                     attachments = diaryUseCase.parseAttachments(existing.attachments)
                 )
             } else {
@@ -274,6 +275,13 @@ class DiaryViewModel @Inject constructor(
      */
     fun updateEditWeather(weather: String?) {
         _editState.value = _editState.value.copy(weather = weather)
+    }
+
+    /**
+     * 更新编辑睡眠时长
+     */
+    fun updateEditSleep(sleepMinutes: Int?) {
+        _editState.value = _editState.value.copy(sleepMinutes = sleepMinutes)
     }
 
     /**
@@ -316,6 +324,7 @@ class DiaryViewModel @Inject constructor(
                     moodScore = state.moodScore,
                     weather = state.weather,
                     location = state.location,
+                    sleepMinutes = state.sleepMinutes,
                     attachments = state.attachments
                 )
 

@@ -32,6 +32,7 @@ data class DiaryEditState(
 
     // 旧字段保留兼容
     val location: String? = null,
+    val sleepMinutes: Int? = null,
 
     val attachments: List<String> = emptyList(),
     val isSaving: Boolean = false,
@@ -49,6 +50,36 @@ data class DiaryEditState(
      */
     fun getLocationDisplayName(): String? = poiName ?: locationName
 }
+
+/**
+ * 睡眠时长信息
+ */
+data class SleepDuration(
+    val hours: Int,
+    val minutes: Int
+) {
+    val totalMinutes: Int get() = hours * 60 + minutes
+
+    fun formatDisplay(): String {
+        return if (minutes == 0) {
+            "${hours}小时"
+        } else {
+            "${hours}小时${minutes}分钟"
+        }
+    }
+
+    companion object {
+        fun fromMinutes(totalMinutes: Int?): SleepDuration? {
+            if (totalMinutes == null || totalMinutes <= 0) return null
+            return SleepDuration(totalMinutes / 60, totalMinutes % 60)
+        }
+    }
+}
+
+/**
+ * 预定义快捷睡眠时长（小时）
+ */
+val quickSleepOptions = listOf(5, 6, 7, 8, 9)
 
 /**
  * 日记统计
