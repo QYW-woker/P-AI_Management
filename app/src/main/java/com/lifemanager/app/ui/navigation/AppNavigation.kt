@@ -30,6 +30,8 @@ import com.lifemanager.app.feature.habit.CleanEditHabitScreen
 import com.lifemanager.app.feature.savings.CleanSavingsPlanScreen
 import com.lifemanager.app.feature.savings.CleanSavingsPlanDetailScreen
 import com.lifemanager.app.feature.goal.GoalScreen
+import com.lifemanager.app.feature.goal.GoalDetailScreen
+import com.lifemanager.app.feature.goal.AddEditGoalScreen
 import com.lifemanager.app.feature.datacenter.DataCenterScreen
 import com.lifemanager.app.feature.profile.ProfileScreen
 import com.lifemanager.app.feature.settings.SettingsScreen
@@ -414,7 +416,62 @@ fun AppNavHost(
         // 目标管理
         composable(Screen.Goal.route) {
             GoalScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToDetail = { goalId ->
+                    navController.navigate(Screen.GoalDetail.createRoute(goalId))
+                },
+                onNavigateToAdd = {
+                    navController.navigate(Screen.AddGoal.route)
+                },
+                onNavigateToAddMultiLevel = {
+                    navController.navigate(Screen.AddMultiLevelGoal.route)
+                }
+            )
+        }
+
+        // 添加单级目标
+        composable(Screen.AddGoal.route) {
+            AddEditGoalScreen(
+                goalId = null,
+                isMultiLevel = false,
                 onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 添加多级目标
+        composable(Screen.AddMultiLevelGoal.route) {
+            AddEditGoalScreen(
+                goalId = null,
+                isMultiLevel = true,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 编辑目标
+        composable(
+            route = Screen.EditGoal.route,
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val goalId = backStackEntry.arguments?.getLong("id") ?: 0L
+            AddEditGoalScreen(
+                goalId = goalId,
+                isMultiLevel = false,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 目标详情
+        composable(
+            route = Screen.GoalDetail.route,
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val goalId = backStackEntry.arguments?.getLong("id") ?: 0L
+            GoalDetailScreen(
+                goalId = goalId,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEdit = { id ->
+                    navController.navigate(Screen.EditGoal.createRoute(id))
+                }
             )
         }
 
