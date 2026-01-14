@@ -3,24 +3,26 @@
 
 pluginManagement {
     repositories {
-        // 阿里云镜像加速
-        maven { url = uri("https://maven.aliyun.com/repository/google") }
-        maven { url = uri("https://maven.aliyun.com/repository/central") }
-        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+        // 官方仓库优先（确保 CI 环境兼容性）
         google()
         mavenCentral()
         gradlePluginPortal()
+        // 阿里云镜像加速（本地开发备用）
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/central") }
+        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
     }
 }
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        // 阿里云镜像加速
-        maven { url = uri("https://maven.aliyun.com/repository/google") }
-        maven { url = uri("https://maven.aliyun.com/repository/central") }
+        // 官方仓库优先（确保 CI 环境兼容性）
         google()
         mavenCentral()
+        // 阿里云镜像加速（本地开发备用）
+        maven { url = uri("https://maven.aliyun.com/repository/google") }
+        maven { url = uri("https://maven.aliyun.com/repository/central") }
     }
 }
 
