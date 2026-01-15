@@ -1,5 +1,6 @@
 package com.lifemanager.app.feature.finance.income
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -9,12 +10,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -26,11 +29,12 @@ import com.lifemanager.app.domain.model.MonthlyIncomeExpenseWithField
 import com.lifemanager.app.domain.model.IncomeExpenseMonthlyStats
 import com.lifemanager.app.ui.component.charts.PieChartView
 import com.lifemanager.app.ui.component.charts.PieChartData
+import com.lifemanager.app.ui.theme.*
 import java.text.NumberFormat
 import java.util.Locale
 
 /**
- * 月度收支主界面
+ * 月度收支主界面 - CleanColors设计版
  *
  * 展示月度收入支出统计、分类占比和详细记录
  */
@@ -41,6 +45,7 @@ fun MonthlyIncomeExpenseScreen(
     onNavigateToFieldManagement: () -> Unit = {},
     viewModel: MonthlyIncomeExpenseViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val currentYearMonth by viewModel.currentYearMonth.collectAsState()
     val records by viewModel.records.collectAsState()
@@ -56,17 +61,53 @@ fun MonthlyIncomeExpenseScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("月度收支") },
+                title = {
+                    Text(
+                        "月度收支",
+                        style = CleanTypography.title,
+                        color = CleanColors.textPrimary
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "返回")
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "返回",
+                            tint = CleanColors.textSecondary
+                        )
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNavigateToFieldManagement) {
-                        Icon(Icons.Filled.Settings, contentDescription = "字段管理")
+                    // 导出按钮
+                    IconButton(
+                        onClick = {
+                            IncomeExpenseExportUtil.exportAndShare(
+                                context = context,
+                                yearMonth = currentYearMonth,
+                                stats = monthlyStats,
+                                records = records,
+                                incomeFieldStats = incomeFieldStats,
+                                expenseFieldStats = expenseFieldStats
+                            )
+                        }
+                    ) {
+                        Icon(
+                            Icons.Outlined.FileDownload,
+                            contentDescription = "导出报表",
+                            tint = CleanColors.textSecondary
+                        )
                     }
-                }
+                    IconButton(onClick = onNavigateToFieldManagement) {
+                        Icon(
+                            Icons.Outlined.Settings,
+                            contentDescription = "字段管理",
+                            tint = CleanColors.textSecondary
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = CleanColors.surface
+                )
             )
         },
         floatingActionButton = {
@@ -75,11 +116,14 @@ fun MonthlyIncomeExpenseScreen(
                     viewModel.showAddDialog(
                         if (selectedTab == 0) IncomeExpenseType.INCOME else IncomeExpenseType.EXPENSE
                     )
-                }
+                },
+                containerColor = CleanColors.primary,
+                contentColor = CleanColors.onPrimary
             ) {
                 Icon(Icons.Filled.Add, contentDescription = "添加记录")
             }
-        }
+        },
+        containerColor = CleanColors.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -87,7 +131,7 @@ fun MonthlyIncomeExpenseScreen(
                 .padding(paddingValues)
         ) {
             // 月份选择器
-            MonthSelector(
+            CleanMonthSelector(
                 yearMonth = currentYearMonth,
                 onPreviousMonth = { viewModel.previousMonth() },
                 onNextMonth = { viewModel.nextMonth() },
@@ -100,7 +144,7 @@ fun MonthlyIncomeExpenseScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = CleanColors.primary)
                     }
                 }
 
@@ -110,13 +154,26 @@ fun MonthlyIncomeExpenseScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Outlined.ErrorOutline,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = CleanColors.error
+                            )
+                            Spacer(modifier = Modifier.height(Spacing.md))
                             Text(
                                 text = (uiState as IncomeExpenseUiState.Error).message,
-                                color = MaterialTheme.colorScheme.error
+                                style = CleanTypography.body,
+                                color = CleanColors.error
                             )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(onClick = { viewModel.refresh() }) {
-                                Text("重试")
+                            Spacer(modifier = Modifier.height(Spacing.lg))
+                            Button(
+                                onClick = { viewModel.refresh() },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = CleanColors.primary
+                                )
+                            ) {
+                                Text("重试", style = CleanTypography.button)
                             }
                         }
                     }
@@ -125,38 +182,32 @@ fun MonthlyIncomeExpenseScreen(
                 is IncomeExpenseUiState.Success -> {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        contentPadding = PaddingValues(Spacing.pageHorizontal),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.lg)
                     ) {
-                        // 统计卡片
+                        // 统计概览卡片
                         item {
-                            StatsCard(stats = monthlyStats)
+                            CleanStatsCard(stats = monthlyStats)
+                        }
+
+                        // 储蓄率和开销率可视化
+                        item {
+                            CleanRateCard(stats = monthlyStats)
                         }
 
                         // 标签页切换
                         item {
-                            TabRow(
-                                selectedTabIndex = selectedTab,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Tab(
-                                    selected = selectedTab == 0,
-                                    onClick = { selectedTab = 0 },
-                                    text = { Text("收入") }
-                                )
-                                Tab(
-                                    selected = selectedTab == 1,
-                                    onClick = { selectedTab = 1 },
-                                    text = { Text("支出") }
-                                )
-                            }
+                            CleanTabRow(
+                                selectedTab = selectedTab,
+                                onTabSelected = { selectedTab = it }
+                            )
                         }
 
                         // 分类统计图表
                         item {
                             val chartData = if (selectedTab == 0) incomeFieldStats else expenseFieldStats
                             if (chartData.isNotEmpty()) {
-                                FieldStatsChart(
+                                CleanFieldStatsChart(
                                     title = if (selectedTab == 0) "收入分类" else "支出分类",
                                     stats = chartData
                                 )
@@ -165,10 +216,11 @@ fun MonthlyIncomeExpenseScreen(
 
                         // 记录列表标题
                         item {
+                            Spacer(modifier = Modifier.height(Spacing.sm))
                             Text(
                                 text = "详细记录",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                                style = CleanTypography.title,
+                                color = CleanColors.textPrimary
                             )
                         }
 
@@ -183,18 +235,24 @@ fun MonthlyIncomeExpenseScreen(
 
                         if (filteredRecords.isEmpty()) {
                             item {
-                                EmptyState(
-                                    message = if (selectedTab == 0) "暂无收入记录" else "暂无支出记录"
+                                CleanEmptyState(
+                                    message = if (selectedTab == 0) "暂无收入记录" else "暂无支出记录",
+                                    icon = if (selectedTab == 0) Icons.Outlined.TrendingUp else Icons.Outlined.TrendingDown
                                 )
                             }
                         } else {
                             items(filteredRecords, key = { it.record.id }) { record ->
-                                RecordItem(
+                                CleanRecordItem(
                                     record = record,
                                     onClick = { viewModel.showEditDialog(record.record.id) },
                                     onDelete = { viewModel.showDeleteConfirm(record.record.id) }
                                 )
                             }
+                        }
+
+                        // 底部安全间距
+                        item {
+                            Spacer(modifier = Modifier.height(80.dp))
                         }
                     }
                 }
@@ -214,32 +272,51 @@ fun MonthlyIncomeExpenseScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.hideDeleteConfirm() },
-            title = { Text("确认删除") },
-            text = { Text("确定要删除这条记录吗？此操作不可撤销。") },
+            title = {
+                Text(
+                    "确认删除",
+                    style = CleanTypography.title,
+                    color = CleanColors.textPrimary
+                )
+            },
+            text = {
+                Text(
+                    "确定要删除这条记录吗？此操作不可撤销。",
+                    style = CleanTypography.body,
+                    color = CleanColors.textSecondary
+                )
+            },
             confirmButton = {
                 TextButton(
-                    onClick = { viewModel.confirmDelete() },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
-                    )
+                    onClick = { viewModel.confirmDelete() }
                 ) {
-                    Text("删除")
+                    Text(
+                        "删除",
+                        style = CleanTypography.button,
+                        color = CleanColors.error
+                    )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.hideDeleteConfirm() }) {
-                    Text("取消")
+                    Text(
+                        "取消",
+                        style = CleanTypography.button,
+                        color = CleanColors.textSecondary
+                    )
                 }
-            }
+            },
+            containerColor = CleanColors.surface,
+            shape = RoundedCornerShape(Radius.lg)
         )
     }
 }
 
 /**
- * 月份选择器
+ * 简洁月份选择器
  */
 @Composable
-private fun MonthSelector(
+private fun CleanMonthSelector(
     yearMonth: Int,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
@@ -247,116 +324,112 @@ private fun MonthSelector(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        tonalElevation = 2.dp
+        color = CleanColors.surface,
+        shadowElevation = Elevation.xs
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 8.dp, vertical = 4.dp),
+                .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onPreviousMonth) {
-                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "上个月")
+                Icon(
+                    Icons.Default.KeyboardArrowLeft,
+                    contentDescription = "上个月",
+                    tint = CleanColors.textSecondary
+                )
             }
 
             Text(
                 text = formatYearMonth(yearMonth),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                style = CleanTypography.title,
+                color = CleanColors.textPrimary
             )
 
             IconButton(onClick = onNextMonth) {
-                Icon(Icons.Default.KeyboardArrowRight, contentDescription = "下个月")
+                Icon(
+                    Icons.Default.KeyboardArrowRight,
+                    contentDescription = "下个月",
+                    tint = CleanColors.textSecondary
+                )
             }
         }
     }
 }
 
 /**
- * 统计卡片
+ * 简洁统计卡片
  */
 @Composable
-private fun StatsCard(stats: IncomeExpenseMonthlyStats) {
+private fun CleanStatsCard(stats: IncomeExpenseMonthlyStats) {
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
 
-    Card(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(Radius.lg),
+        color = CleanColors.surface,
+        shadowElevation = Elevation.sm
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(Spacing.lg)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 // 收入
-                StatItem(
+                CleanStatItem(
                     label = "收入",
                     amount = stats.totalIncome,
-                    color = Color(0xFF4CAF50),
+                    color = CleanColors.success,
                     numberFormat = numberFormat
+                )
+
+                // 分隔线
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(50.dp)
+                        .background(CleanColors.divider)
                 )
 
                 // 支出
-                StatItem(
+                CleanStatItem(
                     label = "支出",
                     amount = stats.totalExpense,
-                    color = Color(0xFFF44336),
+                    color = CleanColors.error,
                     numberFormat = numberFormat
+                )
+
+                // 分隔线
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(50.dp)
+                        .background(CleanColors.divider)
                 )
 
                 // 结余
-                StatItem(
+                CleanStatItem(
                     label = "结余",
                     amount = stats.netIncome,
-                    color = if (stats.netIncome >= 0) Color(0xFF2196F3) else Color(0xFFFF9800),
+                    color = if (stats.netIncome >= 0) CleanColors.primary else CleanColors.warning,
                     numberFormat = numberFormat
                 )
-            }
-
-            // 储蓄率
-            if (stats.totalIncome > 0) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Divider()
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "储蓄率: ",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = String.format("%.1f%%", stats.savingsRate),
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = if (stats.savingsRate >= 30) {
-                            Color(0xFF4CAF50)
-                        } else if (stats.savingsRate >= 10) {
-                            Color(0xFFFF9800)
-                        } else {
-                            Color(0xFFF44336)
-                        }
-                    )
-                }
             }
         }
     }
 }
 
 /**
- * 统计项
+ * 简洁统计项
  */
 @Composable
-private fun StatItem(
+private fun CleanStatItem(
     label: String,
     amount: Double,
     color: Color,
@@ -365,43 +438,264 @@ private fun StatItem(
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = CleanTypography.caption,
+            color = CleanColors.textTertiary
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(Spacing.xs))
         Text(
             text = "¥${numberFormat.format(amount)}",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = CleanTypography.amountMedium,
             color = color
         )
     }
 }
 
 /**
- * 字段统计图表
+ * 储蓄率和开销率卡片
  */
 @Composable
-private fun FieldStatsChart(
-    title: String,
-    stats: List<FieldStats>
-) {
-    Card(
+private fun CleanRateCard(stats: IncomeExpenseMonthlyStats) {
+    if (stats.totalIncome <= 0) return
+
+    val savingsRate = stats.savingsRate
+    val expenseRate = if (stats.totalIncome > 0) {
+        (stats.totalExpense / stats.totalIncome) * 100
+    } else 0.0
+
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(Radius.lg),
+        color = CleanColors.surface,
+        shadowElevation = Elevation.sm
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(Spacing.lg)
+        ) {
+            Text(
+                text = "收支比率",
+                style = CleanTypography.secondary,
+                color = CleanColors.textSecondary
+            )
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            // 储蓄率
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "储蓄率",
+                    style = CleanTypography.body,
+                    color = CleanColors.textPrimary,
+                    modifier = Modifier.width(60.dp)
+                )
+
+                LinearProgressIndicator(
+                    progress = (savingsRate / 100f).coerceIn(0f, 1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = getSavingsRateColor(savingsRate),
+                    trackColor = CleanColors.surfaceVariant
+                )
+
+                Text(
+                    text = String.format("%.1f%%", savingsRate),
+                    style = CleanTypography.button,
+                    color = getSavingsRateColor(savingsRate),
+                    modifier = Modifier
+                        .width(60.dp)
+                        .padding(start = Spacing.sm)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            // 开销率
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "开销率",
+                    style = CleanTypography.body,
+                    color = CleanColors.textPrimary,
+                    modifier = Modifier.width(60.dp)
+                )
+
+                LinearProgressIndicator(
+                    progress = (expenseRate / 100f).coerceIn(0f, 1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = getExpenseRateColor(expenseRate),
+                    trackColor = CleanColors.surfaceVariant
+                )
+
+                Text(
+                    text = String.format("%.1f%%", expenseRate),
+                    style = CleanTypography.button,
+                    color = getExpenseRateColor(expenseRate),
+                    modifier = Modifier
+                        .width(60.dp)
+                        .padding(start = Spacing.sm)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(Spacing.md))
+            Divider(color = CleanColors.divider)
+            Spacer(modifier = Modifier.height(Spacing.md))
+
+            // 健康提示
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (savingsRate >= 30) Icons.Outlined.CheckCircle
+                        else if (savingsRate >= 10) Icons.Outlined.Info
+                        else Icons.Outlined.Warning,
+                    contentDescription = null,
+                    tint = getSavingsRateColor(savingsRate),
+                    modifier = Modifier.size(IconSize.sm)
+                )
+                Spacer(modifier = Modifier.width(Spacing.sm))
+                Text(
+                    text = when {
+                        savingsRate >= 30 -> "储蓄率健康，继续保持！"
+                        savingsRate >= 10 -> "储蓄率一般，建议适当控制支出"
+                        else -> "储蓄率较低，需要关注支出情况"
+                    },
+                    style = CleanTypography.caption,
+                    color = CleanColors.textSecondary
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 获取储蓄率颜色
+ */
+private fun getSavingsRateColor(rate: Double): Color {
+    return when {
+        rate >= 30 -> CleanColors.success
+        rate >= 10 -> CleanColors.warning
+        else -> CleanColors.error
+    }
+}
+
+/**
+ * 获取开销率颜色
+ */
+private fun getExpenseRateColor(rate: Double): Color {
+    return when {
+        rate <= 70 -> CleanColors.success
+        rate <= 90 -> CleanColors.warning
+        else -> CleanColors.error
+    }
+}
+
+/**
+ * 简洁Tab切换
+ */
+@Composable
+private fun CleanTabRow(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Radius.md),
+        color = CleanColors.surfaceVariant
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.xs)
+        ) {
+            CleanTab(
+                text = "收入",
+                selected = selectedTab == 0,
+                color = CleanColors.success,
+                onClick = { onTabSelected(0) },
+                modifier = Modifier.weight(1f)
+            )
+            CleanTab(
+                text = "支出",
+                selected = selectedTab == 1,
+                color = CleanColors.error,
+                onClick = { onTabSelected(1) },
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+/**
+ * 简洁Tab项
+ */
+@Composable
+private fun CleanTab(
+    text: String,
+    selected: Boolean,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        modifier = modifier
+            .clip(RoundedCornerShape(Radius.sm))
+            .clickable(onClick = onClick),
+        color = if (selected) color else Color.Transparent,
+        shape = RoundedCornerShape(Radius.sm)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = Spacing.md),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = text,
+                style = CleanTypography.button,
+                color = if (selected) Color.White else CleanColors.textSecondary,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+            )
+        }
+    }
+}
+
+/**
+ * 简洁字段统计图表
+ */
+@Composable
+private fun CleanFieldStatsChart(
+    title: String,
+    stats: List<FieldStats>
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(Radius.lg),
+        color = CleanColors.surface,
+        shadowElevation = Elevation.sm
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.lg)
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                style = CleanTypography.secondary,
+                color = CleanColors.textSecondary
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(Spacing.lg))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -410,8 +704,8 @@ private fun FieldStatsChart(
                 // 饼图
                 Box(
                     modifier = Modifier
-                        .size(120.dp)
-                        .padding(8.dp)
+                        .size(100.dp)
+                        .padding(Spacing.xs)
                 ) {
                     PieChartView(
                         data = stats.map {
@@ -430,17 +724,17 @@ private fun FieldStatsChart(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .padding(start = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                        .padding(start = Spacing.lg),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm)
                 ) {
                     stats.take(5).forEach { stat ->
-                        LegendItem(stat = stat)
+                        CleanLegendItem(stat = stat)
                     }
                     if (stats.size > 5) {
                         Text(
                             text = "...还有${stats.size - 5}项",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            style = CleanTypography.caption,
+                            color = CleanColors.textTertiary
                         )
                     }
                 }
@@ -450,10 +744,10 @@ private fun FieldStatsChart(
 }
 
 /**
- * 图例项
+ * 简洁图例项
  */
 @Composable
-private fun LegendItem(stat: FieldStats) {
+private fun CleanLegendItem(stat: FieldStats) {
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
 
     Row(
@@ -462,82 +756,88 @@ private fun LegendItem(stat: FieldStats) {
     ) {
         Box(
             modifier = Modifier
-                .size(12.dp)
+                .size(10.dp)
                 .clip(CircleShape)
                 .background(parseColor(stat.fieldColor))
         )
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(Spacing.sm))
         Text(
             text = stat.fieldName,
-            style = MaterialTheme.typography.bodySmall,
+            style = CleanTypography.caption,
+            color = CleanColors.textPrimary,
             modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
         Text(
             text = String.format("%.1f%%", stat.percentage),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = CleanTypography.caption,
+            color = CleanColors.textTertiary
         )
     }
 }
 
 /**
- * 记录项
+ * 简洁记录项
  */
 @Composable
-private fun RecordItem(
+private fun CleanRecordItem(
     record: MonthlyIncomeExpenseWithField,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
     val numberFormat = remember { NumberFormat.getNumberInstance(Locale.CHINA) }
 
-    Card(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(Radius.md))
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp)
+        color = CleanColors.surface,
+        shadowElevation = Elevation.xs
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(Spacing.md),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // 类别图标背景
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(CircleShape)
+                    .clip(RoundedCornerShape(Radius.sm))
                     .background(
-                        record.field?.let { parseColor(it.color) }
-                            ?: MaterialTheme.colorScheme.primary
+                        record.field?.let { parseColor(it.color).copy(alpha = 0.15f) }
+                            ?: CleanColors.primaryLight
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.AttachMoney,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(
+                            record.field?.let { parseColor(it.color) }
+                                ?: CleanColors.primary
+                        )
                 )
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(Spacing.md))
 
             // 类别名称和备注
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = record.field?.name ?: "未分类",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium
+                    style = CleanTypography.body,
+                    color = CleanColors.textPrimary
                 )
                 if (record.record.note.isNotBlank()) {
                     Text(
                         text = record.record.note,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = CleanTypography.caption,
+                        color = CleanColors.textTertiary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -549,23 +849,26 @@ private fun RecordItem(
                 text = "${if (record.record.type == IncomeExpenseType.INCOME) "+" else "-"}¥${
                     numberFormat.format(record.record.amount)
                 }",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                style = CleanTypography.amountSmall,
                 color = if (record.record.type == IncomeExpenseType.INCOME) {
-                    Color(0xFF4CAF50)
+                    CleanColors.success
                 } else {
-                    Color(0xFFF44336)
+                    CleanColors.error
                 }
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(Spacing.xs))
 
             // 删除按钮
-            IconButton(onClick = onDelete) {
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(32.dp)
+            ) {
                 Icon(
-                    imageVector = Icons.Filled.Delete,
+                    imageVector = Icons.Outlined.Delete,
                     contentDescription = "删除",
-                    tint = MaterialTheme.colorScheme.error
+                    tint = CleanColors.textTertiary,
+                    modifier = Modifier.size(IconSize.sm)
                 )
             }
         }
@@ -573,28 +876,31 @@ private fun RecordItem(
 }
 
 /**
- * 空状态提示
+ * 简洁空状态提示
  */
 @Composable
-private fun EmptyState(message: String) {
+private fun CleanEmptyState(
+    message: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(32.dp),
+            .padding(Spacing.xxl),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(
-                imageVector = Icons.Filled.AccountBalance,
+                imageVector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(48.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                tint = CleanColors.textPlaceholder
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(Spacing.md))
             Text(
                 text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = CleanTypography.secondary,
+                color = CleanColors.textTertiary
             )
         }
     }
@@ -607,6 +913,6 @@ private fun parseColor(colorString: String): Color {
     return try {
         Color(android.graphics.Color.parseColor(colorString))
     } catch (e: Exception) {
-        Color.Gray
+        CleanColors.primary
     }
 }

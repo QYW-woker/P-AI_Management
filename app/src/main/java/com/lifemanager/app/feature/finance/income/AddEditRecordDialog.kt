@@ -12,6 +12,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,10 +26,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.lifemanager.app.core.database.entity.CustomFieldEntity
 import com.lifemanager.app.core.database.entity.IncomeExpenseType
-import com.lifemanager.app.ui.component.PremiumTextField
+import com.lifemanager.app.ui.theme.*
 
 /**
- * 添加/编辑收支记录对话框
+ * 添加/编辑收支记录对话框 - CleanColors设计版
  *
  * 支持选择类型、类别、输入金额和备注
  */
@@ -58,110 +59,128 @@ fun AddEditRecordDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
-        Card(
+        Surface(
             modifier = Modifier
                 .fillMaxWidth(0.95f)
                 .fillMaxHeight(0.85f),
-            shape = RoundedCornerShape(24.dp)
+            shape = RoundedCornerShape(Radius.xl),
+            color = CleanColors.surface
         ) {
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                // 标题栏
+                // 顶部标题栏
                 TopAppBar(
                     title = {
                         Text(
-                            text = if (editState.isEditing) "编辑记录" else "添加记录"
+                            text = if (editState.isEditing) "编辑记录" else "添加记录",
+                            style = CleanTypography.title,
+                            color = CleanColors.textPrimary
                         )
                     },
                     navigationIcon = {
                         IconButton(onClick = onDismiss) {
-                            Icon(Icons.Filled.Close, contentDescription = "关闭")
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = "关闭",
+                                tint = CleanColors.textSecondary
+                            )
                         }
                     },
                     actions = {
                         TextButton(
                             onClick = { viewModel.saveRecord() },
-                            enabled = !editState.isSaving
+                            enabled = !editState.isSaving && amountText.isNotBlank() && editState.fieldId > 0
                         ) {
                             if (editState.isSaving) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(20.dp),
-                                    strokeWidth = 2.dp
+                                    strokeWidth = 2.dp,
+                                    color = CleanColors.primary
                                 )
                             } else {
-                                Text("保存")
+                                Text(
+                                    "保存",
+                                    style = CleanTypography.button,
+                                    color = if (amountText.isNotBlank() && editState.fieldId > 0)
+                                        CleanColors.primary
+                                    else
+                                        CleanColors.textDisabled
+                                )
                             }
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = CleanColors.surface
+                    )
                 )
+
+                Divider(color = CleanColors.divider)
 
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
+                        .padding(Spacing.pageHorizontal)
                 ) {
                     // 错误提示
                     editState.error?.let { error ->
-                        Card(
+                        Surface(
                             modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.errorContainer
-                            )
+                            shape = RoundedCornerShape(Radius.sm),
+                            color = CleanColors.errorLight
                         ) {
                             Text(
                                 text = error,
-                                modifier = Modifier.padding(12.dp),
-                                color = MaterialTheme.colorScheme.onErrorContainer
+                                modifier = Modifier.padding(Spacing.md),
+                                style = CleanTypography.secondary,
+                                color = CleanColors.error
                             )
                         }
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(Spacing.lg))
                     }
 
                     // 类型选择
                     Text(
                         text = "类型",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Medium
+                        style = CleanTypography.caption,
+                        color = CleanColors.textTertiary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Spacing.sm))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md)
                     ) {
-                        TypeChip(
+                        CleanTypeChip(
                             text = "收入",
                             selected = editState.type == IncomeExpenseType.INCOME,
-                            color = Color(0xFF4CAF50),
+                            color = CleanColors.success,
                             onClick = { viewModel.updateEditType(IncomeExpenseType.INCOME) },
                             modifier = Modifier.weight(1f)
                         )
-                        TypeChip(
+                        CleanTypeChip(
                             text = "支出",
                             selected = editState.type == IncomeExpenseType.EXPENSE,
-                            color = Color(0xFFF44336),
+                            color = CleanColors.error,
                             onClick = { viewModel.updateEditType(IncomeExpenseType.EXPENSE) },
                             modifier = Modifier.weight(1f)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(Spacing.xl))
 
                     // 金额输入
                     Text(
                         text = "金额",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Medium
+                        style = CleanTypography.caption,
+                        color = CleanColors.textTertiary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Spacing.sm))
 
-                    PremiumTextField(
+                    OutlinedTextField(
                         value = amountText,
                         onValueChange = { value ->
-                            // 只允许输入数字和小数点
                             val filtered = value.filter { it.isDigit() || it == '.' }
-                            // 最多两位小数
                             val parts = filtered.split(".")
                             val newValue = when {
                                 parts.size <= 1 -> filtered
@@ -172,39 +191,73 @@ fun AddEditRecordDialog(
                             newValue.toDoubleOrNull()?.let { viewModel.updateEditAmount(it) }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = "请输入金额",
-                        leadingIcon = { Text("¥ ") },
+                        placeholder = {
+                            Text(
+                                "请输入金额",
+                                style = CleanTypography.body,
+                                color = CleanColors.textPlaceholder
+                            )
+                        },
+                        prefix = {
+                            Text(
+                                "¥ ",
+                                style = CleanTypography.body,
+                                color = CleanColors.textSecondary
+                            )
+                        },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true
+                        singleLine = true,
+                        shape = RoundedCornerShape(Radius.md),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CleanColors.primary,
+                            unfocusedBorderColor = CleanColors.border,
+                            cursorColor = CleanColors.primary
+                        )
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(Spacing.xl))
 
                     // 类别选择
                     Text(
                         text = "类别",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Medium
+                        style = CleanTypography.caption,
+                        color = CleanColors.textTertiary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Spacing.sm))
 
                     if (currentFields.isEmpty()) {
-                        Text(
-                            text = "暂无可用类别，请先在设置中添加",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(100.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Outlined.Category,
+                                    contentDescription = null,
+                                    tint = CleanColors.textPlaceholder,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                                Spacer(modifier = Modifier.height(Spacing.sm))
+                                Text(
+                                    text = "暂无可用类别",
+                                    style = CleanTypography.secondary,
+                                    color = CleanColors.textTertiary
+                                )
+                            }
+                        }
                     } else {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(4),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(180.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                                .height(200.dp),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.sm)
                         ) {
                             items(currentFields, key = { it.id }) { field ->
-                                FieldChip(
+                                CleanFieldChip(
                                     field = field,
                                     selected = editState.fieldId == field.id,
                                     onClick = { viewModel.updateEditField(field.id) }
@@ -213,23 +266,35 @@ fun AddEditRecordDialog(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(Spacing.xl))
 
                     // 备注输入
                     Text(
                         text = "备注",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Medium
+                        style = CleanTypography.caption,
+                        color = CleanColors.textTertiary
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(Spacing.sm))
 
-                    PremiumTextField(
+                    OutlinedTextField(
                         value = editState.note,
                         onValueChange = { viewModel.updateEditNote(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = "添加备注（可选）",
+                        placeholder = {
+                            Text(
+                                "添加备注（可选）",
+                                style = CleanTypography.body,
+                                color = CleanColors.textPlaceholder
+                            )
+                        },
                         maxLines = 3,
-                        minLines = 2
+                        minLines = 2,
+                        shape = RoundedCornerShape(Radius.md),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = CleanColors.primary,
+                            unfocusedBorderColor = CleanColors.border,
+                            cursorColor = CleanColors.primary
+                        )
                     )
                 }
             }
@@ -238,10 +303,10 @@ fun AddEditRecordDialog(
 }
 
 /**
- * 类型选择芯片
+ * 简洁类型选择按钮
  */
 @Composable
-private fun TypeChip(
+private fun CleanTypeChip(
     text: String,
     selected: Boolean,
     color: Color,
@@ -250,15 +315,15 @@ private fun TypeChip(
 ) {
     Surface(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Radius.md))
             .clickable(onClick = onClick),
-        color = if (selected) color else MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(12.dp)
+        color = if (selected) color else CleanColors.surfaceVariant,
+        shape = RoundedCornerShape(Radius.md)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 12.dp),
+                .padding(vertical = Spacing.md),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -267,13 +332,14 @@ private fun TypeChip(
                     imageVector = Icons.Filled.Check,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(IconSize.xs)
                 )
-                Spacer(modifier = Modifier.width(4.dp))
+                Spacer(modifier = Modifier.width(Spacing.xs))
             }
             Text(
                 text = text,
-                color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = CleanTypography.button,
+                color = if (selected) Color.White else CleanColors.textSecondary,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
             )
         }
@@ -281,10 +347,10 @@ private fun TypeChip(
 }
 
 /**
- * 类别选择芯片
+ * 简洁类别选择按钮
  */
 @Composable
-private fun FieldChip(
+private fun CleanFieldChip(
     field: CustomFieldEntity,
     selected: Boolean,
     onClick: () -> Unit
@@ -292,28 +358,23 @@ private fun FieldChip(
     val fieldColor = try {
         Color(android.graphics.Color.parseColor(field.color))
     } catch (e: Exception) {
-        MaterialTheme.colorScheme.primary
+        CleanColors.primary
     }
 
     Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Radius.md))
             .clickable(onClick = onClick)
             .background(
-                if (selected) {
-                    fieldColor.copy(alpha = 0.2f)
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant
-                }
+                if (selected) fieldColor.copy(alpha = 0.15f) else CleanColors.surfaceVariant
             )
-            .padding(8.dp),
+            .padding(Spacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 图标圆圈
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(CircleShape)
+                .clip(RoundedCornerShape(Radius.sm))
                 .background(
                     if (selected) fieldColor else fieldColor.copy(alpha = 0.6f)
                 ),
@@ -324,18 +385,18 @@ private fun FieldChip(
                     imageVector = Icons.Filled.Check,
                     contentDescription = null,
                     tint = Color.White,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(IconSize.sm)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(Spacing.xs))
 
         Text(
             text = field.name,
-            style = MaterialTheme.typography.labelSmall,
+            style = CleanTypography.caption,
             maxLines = 1,
-            color = if (selected) fieldColor else MaterialTheme.colorScheme.onSurfaceVariant
+            color = if (selected) fieldColor else CleanColors.textSecondary
         )
     }
 }
