@@ -147,10 +147,8 @@ class ReadingViewModel @Inject constructor(
             try {
                 _selectedBook.value = readingUseCase.getBook(bookId)
 
-                // 加载书籍笔记
-                readingUseCase.getNotesByBook(bookId).collect { notes ->
-                    _bookNotes.value = notes
-                }
+                // 加载书籍笔记 - 使用 first() 获取初始值，避免 collect 阻塞协程
+                _bookNotes.value = readingUseCase.getNotesByBook(bookId).first()
             } catch (e: Exception) {
                 _uiState.update { it.copy(error = e.message) }
             } finally {
