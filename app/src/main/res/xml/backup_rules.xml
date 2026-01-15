@@ -5,6 +5,4 @@
     <include domain="database" path="." />
     <!-- 包含SharedPreferences -->
     <include domain="sharedpref" path="." />
-    <!-- 排除临时文件 -->
-    <exclude domain="cache" path="." />
 </full-backup-content>
