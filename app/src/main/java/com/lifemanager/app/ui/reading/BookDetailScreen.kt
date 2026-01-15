@@ -44,6 +44,7 @@ fun BookDetailScreen(
     var showNoteDialog by remember { mutableStateOf(false) }
     var showRatingDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
     var selectedTab by remember { mutableIntStateOf(0) }
 
     // 阅读计时状态
@@ -101,6 +102,13 @@ fun BookDetailScreen(
                 },
                 actions = {
                     selectedBook?.let { book ->
+                        IconButton(onClick = { showEditDialog = true }) {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = "编辑",
+                                tint = CleanColors.textSecondary
+                            )
+                        }
                         IconButton(onClick = { viewModel.toggleFavorite(book.id) }) {
                             Icon(
                                 imageVector = if (book.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
@@ -308,6 +316,21 @@ fun BookDetailScreen(
             },
             containerColor = CleanColors.surface
         )
+    }
+
+    // 编辑书籍对话框
+    if (showEditDialog) {
+        selectedBook?.let { book ->
+            EditBookDialog(
+                book = book,
+                onDismiss = { showEditDialog = false },
+                onConfirm = { updatedBook ->
+                    viewModel.updateBook(updatedBook)
+                    viewModel.loadBookDetail(book.id)
+                    showEditDialog = false
+                }
+            )
+        }
     }
 }
 
@@ -1214,5 +1237,213 @@ fun BookNotesContent(
     onDeleteNote: (Long) -> Unit
 ) {
     CleanBookNotesContent(notes, onToggleFavorite, onDeleteNote)
+}
+
+/**
+ * 编辑书籍对话框
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditBookDialog(
+    book: BookEntity,
+    onDismiss: () -> Unit,
+    onConfirm: (BookEntity) -> Unit
+) {
+    var title by remember { mutableStateOf(book.title) }
+    var author by remember { mutableStateOf(book.author) }
+    var translator by remember { mutableStateOf(book.translator) }
+    var publisher by remember { mutableStateOf(book.publisher) }
+    var publishYear by remember { mutableStateOf(book.publishYear?.toString() ?: "") }
+    var isbn by remember { mutableStateOf(book.isbn) }
+    var totalPages by remember { mutableStateOf(book.totalPages.toString()) }
+    var price by remember { mutableStateOf(if (book.price > 0) book.price.toString() else "") }
+    var source by remember { mutableStateOf(book.source) }
+    var format by remember { mutableStateOf(book.format) }
+    var notes by remember { mutableStateOf(book.notes) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("编辑书籍", style = CleanTypography.title) },
+        text = {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(Spacing.md),
+                modifier = Modifier.heightIn(max = 400.dp)
+            ) {
+                item {
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        label = { Text("书名 *") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = author,
+                        onValueChange = { author = it },
+                        label = { Text("作者") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = translator,
+                        onValueChange = { translator = it },
+                        label = { Text("译者") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = publisher,
+                        onValueChange = { publisher = it },
+                        label = { Text("出版社") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm)
+                    ) {
+                        OutlinedTextField(
+                            value = publishYear,
+                            onValueChange = { publishYear = it.filter { c -> c.isDigit() } },
+                            label = { Text("出版年份") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                        OutlinedTextField(
+                            value = totalPages,
+                            onValueChange = { totalPages = it.filter { c -> c.isDigit() } },
+                            label = { Text("总页数") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        )
+                    }
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = isbn,
+                        onValueChange = { isbn = it },
+                        label = { Text("ISBN") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = price,
+                        onValueChange = { price = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("价格") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        prefix = { Text("¥") }
+                    )
+                }
+
+                item {
+                    Text("书籍格式", style = CleanTypography.caption, color = CleanColors.textSecondary)
+                    Spacer(Modifier.height(Spacing.xs))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        listOf(
+                            BookFormat.PAPER to "纸质书",
+                            BookFormat.EBOOK to "电子书",
+                            BookFormat.AUDIOBOOK to "有声书"
+                        ).forEach { (formatValue, label) ->
+                            FilterChip(
+                                selected = format == formatValue,
+                                onClick = { format = formatValue },
+                                label = { Text(label, style = CleanTypography.caption) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = CleanColors.primaryLight,
+                                    selectedLabelColor = CleanColors.primary
+                                )
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    Text("书籍来源", style = CleanTypography.caption, color = CleanColors.textSecondary)
+                    Spacer(Modifier.height(Spacing.xs))
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.sm)) {
+                        listOf(
+                            BookSource.BOUGHT to "购买",
+                            BookSource.BORROWED to "借阅",
+                            BookSource.GIFT to "赠送"
+                        ).forEach { (sourceValue, label) ->
+                            FilterChip(
+                                selected = source == sourceValue,
+                                onClick = { source = sourceValue },
+                                label = { Text(label, style = CleanTypography.caption) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = CleanColors.primaryLight,
+                                    selectedLabelColor = CleanColors.primary
+                                )
+                            )
+                        }
+                    }
+                }
+
+                item {
+                    OutlinedTextField(
+                        value = notes,
+                        onValueChange = { notes = it },
+                        label = { Text("备注") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                        maxLines = 4
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (title.isNotBlank()) {
+                        onConfirm(
+                            book.copy(
+                                title = title.trim(),
+                                author = author.trim(),
+                                translator = translator.trim(),
+                                publisher = publisher.trim(),
+                                publishYear = publishYear.toIntOrNull(),
+                                isbn = isbn.trim(),
+                                totalPages = totalPages.toIntOrNull() ?: 0,
+                                price = price.toDoubleOrNull() ?: 0.0,
+                                source = source,
+                                format = format,
+                                notes = notes.trim(),
+                                updatedAt = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                },
+                enabled = title.isNotBlank()
+            ) {
+                Text("保存", color = CleanColors.primary)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("取消", color = CleanColors.textSecondary)
+            }
+        },
+        containerColor = CleanColors.surface
+    )
 }
 
