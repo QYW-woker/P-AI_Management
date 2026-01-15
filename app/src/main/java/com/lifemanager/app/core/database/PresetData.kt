@@ -757,9 +757,102 @@ object PresetData {
     )
 
     /**
+     * 定投类别预设
+     *
+     * 主要分类：
+     * - 创业板：创业板指数基金定投
+     * - 科创50：科创50指数基金定投
+     * - 中证500：中证500指数基金定投
+     * - 沪深300：沪深300指数基金定投
+     */
+    val investmentFields = listOf(
+        CustomFieldEntity(
+            moduleType = ModuleType.INVESTMENT,
+            name = "创业板",
+            iconName = "trending_up",
+            color = "#E91E63",
+            tagType = TagType.INVESTMENT,
+            sortOrder = 1,
+            isPreset = true
+        ),
+        CustomFieldEntity(
+            moduleType = ModuleType.INVESTMENT,
+            name = "科创50",
+            iconName = "science",
+            color = "#9C27B0",
+            tagType = TagType.INVESTMENT,
+            sortOrder = 2,
+            isPreset = true
+        ),
+        CustomFieldEntity(
+            moduleType = ModuleType.INVESTMENT,
+            name = "中证500",
+            iconName = "analytics",
+            color = "#3F51B5",
+            tagType = TagType.INVESTMENT,
+            sortOrder = 3,
+            isPreset = true
+        ),
+        CustomFieldEntity(
+            moduleType = ModuleType.INVESTMENT,
+            name = "沪深300",
+            iconName = "show_chart",
+            color = "#2196F3",
+            tagType = TagType.INVESTMENT,
+            sortOrder = 4,
+            isPreset = true
+        ),
+        CustomFieldEntity(
+            moduleType = ModuleType.INVESTMENT,
+            name = "纳斯达克100",
+            iconName = "public",
+            color = "#00BCD4",
+            tagType = TagType.INVESTMENT,
+            sortOrder = 5,
+            isPreset = true
+        ),
+        CustomFieldEntity(
+            moduleType = ModuleType.INVESTMENT,
+            name = "标普500",
+            iconName = "language",
+            color = "#009688",
+            tagType = TagType.INVESTMENT,
+            sortOrder = 6,
+            isPreset = true
+        ),
+        CustomFieldEntity(
+            moduleType = ModuleType.INVESTMENT,
+            name = "黄金ETF",
+            iconName = "diamond",
+            color = "#FFD700",
+            tagType = TagType.INVESTMENT,
+            sortOrder = 7,
+            isPreset = true
+        ),
+        CustomFieldEntity(
+            moduleType = ModuleType.INVESTMENT,
+            name = "债券基金",
+            iconName = "request_quote",
+            color = "#4CAF50",
+            tagType = TagType.INVESTMENT,
+            sortOrder = 8,
+            isPreset = true
+        ),
+        CustomFieldEntity(
+            moduleType = ModuleType.INVESTMENT,
+            name = "其他定投",
+            iconName = "more_horiz",
+            color = "#9E9E9E",
+            tagType = TagType.INVESTMENT,
+            sortOrder = 99,
+            isPreset = true
+        )
+    )
+
+    /**
      * 获取所有自定义字段预设
      */
     fun getAllCustomFields(): List<CustomFieldEntity> {
-        return incomeFields + expenseFields + assetFields + liabilityFields + monthlyExpenseFields
+        return incomeFields + expenseFields + assetFields + liabilityFields + monthlyExpenseFields + investmentFields
     }
 }

@@ -65,6 +65,7 @@ object ModuleType {
     const val ASSET = "ASSET"                   // 资产
     const val LIABILITY = "LIABILITY"           // 负债
     const val MONTHLY_EXPENSE = "MONTHLY_EXPENSE" // 月度开销
+    const val INVESTMENT = "INVESTMENT"         // 定投
 }
 
 /**

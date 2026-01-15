@@ -52,6 +52,8 @@ import com.lifemanager.app.feature.finance.recurring.RecurringTransactionScreen
 import com.lifemanager.app.feature.finance.account.FundAccountScreen
 import com.lifemanager.app.feature.finance.account.FundAccountDetailScreen
 import com.lifemanager.app.feature.finance.statistics.StatisticsScreen
+import com.lifemanager.app.feature.finance.statistics.MonthlyStatisticsScreen
+import com.lifemanager.app.feature.finance.investment.MonthlyInvestmentScreen
 import com.lifemanager.app.feature.health.CleanHealthRecordScreen
 import com.lifemanager.app.feature.health.CleanHealthRecordDetailScreen
 import com.lifemanager.app.ui.reading.ReadingScreen
@@ -409,6 +411,23 @@ fun AppNavHost(
         // 统计分析
         composable(Screen.Statistics.route) {
             StatisticsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // 月度统计（统一入口）
+        composable(Screen.MonthlyStatistics.route) {
+            MonthlyStatisticsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToModule = { route ->
+                    navController.navigate(route)
+                }
+            )
+        }
+
+        // 月度定投
+        composable(Screen.MonthlyInvestment.route) {
+            MonthlyInvestmentScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

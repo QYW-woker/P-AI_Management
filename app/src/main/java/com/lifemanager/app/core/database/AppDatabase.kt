@@ -29,6 +29,7 @@ import com.lifemanager.app.core.database.entity.*
         MonthlyIncomeExpenseEntity::class,
         MonthlyAssetEntity::class,
         MonthlyExpenseEntity::class,
+        MonthlyInvestmentEntity::class,
         DailyTransactionEntity::class,
         BudgetEntity::class,
         LedgerEntity::class,
@@ -82,7 +83,7 @@ import com.lifemanager.app.core.database.entity.*
         BookShelfMappingEntity::class,
         ReadingGoalEntity::class
     ],
-    version = 18,
+    version = 19,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -124,6 +125,11 @@ abstract class AppDatabase : RoomDatabase() {
      * 月度开销DAO
      */
     abstract fun monthlyExpenseDao(): MonthlyExpenseDao
+
+    /**
+     * 月度定投DAO
+     */
+    abstract fun monthlyInvestmentDao(): MonthlyInvestmentDao
 
     /**
      * 日常交易DAO

@@ -36,6 +36,12 @@ sealed class Screen(val route: String) {
     /** 月度开销 */
     object MonthlyExpense : Screen("monthly_expense")
 
+    /** 月度定投 */
+    object MonthlyInvestment : Screen("monthly_investment")
+
+    /** 月度统计（统一入口） */
+    object MonthlyStatistics : Screen("monthly_statistics")
+
     /** 日常记账 */
     object DailyTransaction : Screen("daily_transaction")
 

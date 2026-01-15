@@ -321,7 +321,8 @@ private fun QuickActionsSection(
         QuickAction("存钱", Icons.Outlined.Savings, Screen.SavingsPlan.route),
         QuickAction("目标", Icons.Outlined.Flag, Screen.Goal.route),
         QuickAction("阅读", Icons.Outlined.MenuBook, Screen.Reading.route),
-        QuickAction("时间", Icons.Outlined.Timer, Screen.TimeTrack.route)
+        QuickAction("时间", Icons.Outlined.Timer, Screen.TimeTrack.route),
+        QuickAction("月统计", Icons.Outlined.BarChart, Screen.MonthlyStatistics.route)
     )
 
     Column {

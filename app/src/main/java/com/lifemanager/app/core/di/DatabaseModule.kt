@@ -102,6 +102,12 @@ object DatabaseModule {
 
     @Provides
     @Singleton
+    fun provideMonthlyInvestmentDao(database: AppDatabase): MonthlyInvestmentDao {
+        return database.monthlyInvestmentDao()
+    }
+
+    @Provides
+    @Singleton
     fun provideDailyTransactionDao(database: AppDatabase): DailyTransactionDao {
         return database.dailyTransactionDao()
     }
